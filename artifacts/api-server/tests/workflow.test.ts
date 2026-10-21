@@ -169,7 +169,8 @@ test("rules fallback, bilingual notices and synthetic source are explicit", () =
   assert.equal(ws.demo,true); assert.equal(typeof ws.aiAvailable,"boolean"); assert.match(ws.source,/Synthetic/);
   assert.ok(ws.invoices.every(i=>i.source.includes("Synthetic")));
   for(const t of ws.plans[0]!.tasks) { assert.match(t.noticeEn,/Demo/); assert.match(t.noticeMs,/Demo/); }
-  assert.equal(service.settings(s,{...s.settings,aiMode:"gemini"}).aiMode,"gemini");
+  assert.equal(service.settings(s,{...s.settings,aiMode:"openai"}).aiMode,"openai");
+  assert.throws(()=>service.settings(s,{...s.settings,aiMode:"gemini"}),/retired/);
   assert.ok(service.generate(s,{}).tasks.length>0);
 });
 test("planning separates escalation from extension, supplies alternatives", () => {

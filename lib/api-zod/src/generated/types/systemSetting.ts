@@ -59,5 +59,6 @@ export interface SystemSetting {
   concentrationCount: number;
   weights: Weights;
   language: SystemSettingLanguage;
+  /** gemini is read-only legacy compatibility; choose rules or openai for new requests. */
   aiMode: SystemSettingAiMode;
 }

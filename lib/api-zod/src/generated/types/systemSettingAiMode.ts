@@ -6,10 +6,14 @@
  * OpenAPI spec version: 1.0.0
  */
 
+/**
+ * gemini is read-only legacy compatibility; choose rules or openai for new requests.
+ */
 export type SystemSettingAiMode = typeof SystemSettingAiMode[keyof typeof SystemSettingAiMode];
 
 
 export const SystemSettingAiMode = {
   rules: 'rules',
+  openai: 'openai',
   gemini: 'gemini',
 } as const;

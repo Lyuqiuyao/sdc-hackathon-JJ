@@ -10,6 +10,7 @@ export type CollectionPlanProviderMode = typeof CollectionPlanProviderMode[keyof
 
 
 export const CollectionPlanProviderMode = {
+  openai: 'openai',
   gemini: 'gemini',
   rules_fallback: 'rules_fallback',
 } as const;

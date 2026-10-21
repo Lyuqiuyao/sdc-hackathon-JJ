@@ -6,11 +6,12 @@ const REASONS: Record<string, string> = {
   missing_api_key: 'Server key missing; bilingual rule templates used.',
   rules_selected: 'Rules mode selected; no model request.',
   pending_generation: 'Model generation not completed; rules templates remain available.',
-  timeout: 'Gemini timed out; rules templates used.',
+  timeout: 'Model request timed out; rules templates used.',
   invalid_response: 'Response failed schema or evidence checks; rules templates used.',
-  api_error: 'Gemini request failed; rules templates used.',
+  api_error: 'Model request failed; rules templates used.',
   context_limit: 'Plan exceeds the 50-task AI request limit; rules templates used.',
-  validated_response: 'Real Gemini response validated; deterministic scores/ranks unchanged.',
+  validated_response: 'Model response validated; deterministic scores/ranks unchanged.',
+  legacy_provider_retired: 'Gemini mode is retired. Select and save OpenAI or Rules in Settings.',
 };
 
 export function ProviderDetails({ plan }: { plan: CollectionPlan }) {
@@ -18,12 +19,12 @@ export function ProviderDetails({ plan }: { plan: CollectionPlan }) {
   const generation = plan.aiGeneration;
   return <div className="space-y-2 text-xs" data-testid="plan-provider-details">
     <div className="flex flex-wrap items-center gap-2">
-      <Tag tone={provider === 'gemini' ? 'green' : 'orange'}>{provider}</Tag>
+      <Tag tone={provider === 'openai' || provider === 'gemini' ? 'green' : 'orange'}>{provider === 'gemini' ? 'gemini (historical)' : provider}</Tag>
       {generation ? <span>{generation.status} · {generation.model || 'No LLM'} · {fmtDateTime(generation.generatedAt)} · {generation.durationMs} ms</span>
-        : <span>Legacy rules/template plan; not Gemini output.</span>}
+        : <span>Legacy rules/template plan; not model output.</span>}
     </div>
     {generation && <p className="text-muted-foreground">{REASONS[generation.reasonCode] ?? generation.reasonCode}</p>}
-    {plan.aiRiskExplanation && <div><strong>Gemini risk explanation · 风险归因：</strong><p className="mt-1 whitespace-pre-wrap">{plan.aiRiskExplanation}</p></div>}
+    {plan.aiRiskExplanation && <div><strong>{provider === 'gemini' ? 'Historical Gemini' : 'OpenAI'} risk explanation · 风险归因：</strong><p className="mt-1 whitespace-pre-wrap">{plan.aiRiskExplanation}</p></div>}
     <p className="text-muted-foreground">Provider describes original recommendations. Drafts may include later human edits; each language shows its own source. AI never approves or executes.</p>
   </div>;
 }

@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { seedState } from "../src/lib/receivables/seed";
-import { businessContext, createGeminiTransport, generateAdvice, GEMINI_MODEL } from "../src/lib/receivables/ai-provider";
+// Historical filename retained so existing test commands continue to work.
+import { businessContext, createOpenAITransport, generateAdvice, OPENAI_MODEL } from "../src/lib/receivables/ai-provider";
 import { applyAdvice, decide, edit, execute, workspace } from "../src/lib/receivables/service";
 import type { AdviceResponse } from "../src/lib/receivables/ai-schema";
 import type { CollectionPlan } from "@workspace/api-zod";
 
 function setup() {
-  const state = seedState(); state.settings.aiMode = "gemini";
+  const state = seedState(); state.settings.aiMode = "openai";
   // Generate a fresh deterministic plan after changing only this isolated fixture.
   const event = state.riskEvents[0]!;
   const plan = state.plans[0]!;
@@ -52,26 +53,28 @@ test("successful structured output contains contextual explanation, alternatives
   const result=await generateAdvice(state,plan,{configured:true,transport:async context=>{
     calls++;assert.ok(context);return JSON.stringify(response(state,plan));
   }});
-  assert.equal(calls,1);assert.equal(result.providerMode,"gemini");assert.equal(result.generation.status,"success");
-  assert.equal(result.generation.model,GEMINI_MODEL);assert.ok(result.generation.generatedAt);
+  assert.equal(calls,1);assert.equal(result.providerMode,"openai");assert.equal(result.generation.status,"success");
+  assert.equal(result.generation.model,OPENAI_MODEL);assert.ok(result.generation.generatedAt);
   for(const t of result.advice!.tasks){
     assert.equal(t.strategies.length,3);assert.match(t.noticeMs,/Tuan\/Puan/);
     if(t.esgEvidence==="unknown"){assert.equal(t.esgRating,"unknown");assert.match(t.esgConsiderations,/not evidence/);}
   }
 });
-test("official Google SDK actually constructs a generateContent HTTP request (intercepted, NOT a live API test)",async()=>{
+test("official OpenAI SDK constructs strict Responses request (intercepted, NOT a live API test)",async()=>{
   const {state,plan}=setup();let calls=0;
-  const transport=createGeminiTransport("synthetic-test-value-not-a-real-key",async (input,init)=>{
-    calls++;assert.match(String(input),/generativelanguage.googleapis.com/);
-    assert.ok(String(input).includes(GEMINI_MODEL));assert.match(String(input),/generateContent/);
+  const transport=createOpenAITransport("synthetic-test-value-not-a-real-key",async (input,init)=>{
+    calls++;assert.equal(String(input),"https://api.openai.com/v1/responses");
     const payload=JSON.parse(String(init?.body));
-    assert.ok(payload.generationConfig.responseJsonSchema);assert.equal(payload.generationConfig.responseMimeType,"application/json");
-    assert.ok(payload.systemInstruction);assert.ok(payload.contents);
-    return new Response(JSON.stringify({candidates:[{content:{role:"model",parts:[{text:JSON.stringify(response(state,plan))}]},finishReason:"STOP"}]}),
+    assert.equal(payload.model,OPENAI_MODEL);assert.equal(payload.store,false);
+    assert.equal(payload.text.format.type,"json_schema");assert.equal(payload.text.format.strict,true);
+    assert.equal(payload.text.format.schema.additionalProperties,false);
+    assert.ok(payload.instructions);assert.ok(payload.input);
+    return new Response(JSON.stringify({id:"resp_synthetic",object:"response",status:"completed",
+      output:[{type:"message",role:"assistant",content:[{type:"output_text",text:JSON.stringify(response(state,plan)),annotations:[]}]}]}),
       {status:200,headers:{"Content-Type":"application/json"}});
   });
   const result=await generateAdvice(state,plan,{configured:true,transport});
-  assert.equal(calls,1);assert.equal(result.providerMode,"gemini");
+  assert.equal(calls,1);assert.equal(result.providerMode,"openai");
 });
 test("malformed JSON and schema violations activate fallback with no raw errors",async()=>{
   const {state,plan}=setup();
@@ -85,6 +88,20 @@ test("API failure is sanitized and keeps rule templates",async()=>{
   const result=await generateAdvice(state,plan,{configured:true,transport:async()=>{throw Error("PRIVATE_ERROR_MUST_NOT_PERSIST");}});
   assert.equal(result.generation.reasonCode,"api_error");
   assert.ok(!JSON.stringify(result).includes("PRIVATE_ERROR"));assert.equal(JSON.stringify(plan.tasks),before);
+});
+test("both full synthetic labels and no-send declarations are mandatory in model notices",async()=>{
+  const {state,plan}=setup();
+  for(const field of ["noticeEn","noticeMs"] as const){
+    for(const text of ["This is only a demo reminder and an example of a generic notice without the required declaration.",
+      field==="noticeEn"?"Synthetic Demo draft. Please contact finance regarding your outstanding balance."
+        :"Draf demo sintetik. Sila hubungi pihak kewangan untuk membincangkan baki tertunggak."]){
+      const data=response(state,plan);data.tasks[0]![field]=text;
+      const result=await generateAdvice(state,plan,{configured:true,transport:async()=>JSON.stringify(data)});
+      assert.equal(result.generation.reasonCode,"invalid_response");
+    }
+  }
+  const data=response(state,plan);data.tasks[0]!.strategies[2]!.kind="payment_full";
+  assert.equal((await generateAdvice(state,plan,{configured:true,transport:async()=>JSON.stringify(data)})).generation.reasonCode,"invalid_response");
 });
 test("timeout aborts request and safely falls back",async()=>{
   const {state,plan}=setup();let signal:AbortSignal|undefined;
@@ -114,8 +131,8 @@ test("whitelisted AI merge preserves deterministic results, finances/history/set
   const audits=state.auditLogs.length,expected=JSON.stringify(plan);
   const result=await generateAdvice(state,plan,{configured:true,transport:async()=>JSON.stringify(response(state,plan))});
   applyAdvice(state,plan.id,result,expected);
-  assert.deepEqual(core(plan),beforeCore);assert.equal(plan.providerMode,"gemini");
-  assert.equal(plan.tasks[0]!.noticeEnSource,"gemini");assert.match(plan.aiRiskExplanation!,/Cash projected/);
+  assert.deepEqual(core(plan),beforeCore);assert.equal(plan.providerMode,"openai");
+  assert.equal(plan.tasks[0]!.noticeEnSource,"openai");assert.match(plan.aiRiskExplanation!,/Cash projected/);
   assert.equal(JSON.stringify({invoices:state.invoices,settings:state.settings,documents:state.documents,approvals:state.approvals}),baseline);
   assert.equal(state.auditLogs.length,audits+1);assert.equal(state.auditLogs.at(-1)!.type,"AI generation");
   assert.throws(()=>execute(state,plan.id),/not been approved/);
@@ -148,7 +165,7 @@ test("human and method/template edits keep per-language source honest",async()=>
   tasks[0]!.method="Extension negotiation";tasks[0]!.noticeEn="Human custom draft: synthetic demo.";
   const next=edit(state,plan.id,{tasks,notes:"Human edit"});
   assert.equal(next.tasks[0]!.noticeEnSource,"human");assert.equal(next.tasks[0]!.noticeMsSource,"rules_fallback");
-  assert.equal(next.tasks[1]!.noticeEnSource,"gemini");
+  assert.equal(next.tasks[1]!.noticeEnSource,"openai");
 });
 test("outbound context excludes customer names, contact data, approval/audit history and document identifiers",()=>{
   const {state,plan}=setup(),context=JSON.stringify(businessContext(state,plan));

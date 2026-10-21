@@ -110,11 +110,15 @@ export const SystemSettingLanguage = {
   ms: 'ms',
 } as const;
 
+/**
+ * gemini is read-only legacy compatibility; choose rules or openai for new requests.
+ */
 export type SystemSettingAiMode = typeof SystemSettingAiMode[keyof typeof SystemSettingAiMode];
 
 
 export const SystemSettingAiMode = {
   rules: 'rules',
+  openai: 'openai',
   gemini: 'gemini',
 } as const;
 
@@ -167,6 +171,7 @@ export interface SystemSetting {
   concentrationCount: number;
   weights: Weights;
   language: SystemSettingLanguage;
+  /** gemini is read-only legacy compatibility; choose rules or openai for new requests. */
   aiMode: SystemSettingAiMode;
 }
 
@@ -199,6 +204,7 @@ export type CollectionTaskNoticeEnSource = typeof CollectionTaskNoticeEnSource[k
 
 
 export const CollectionTaskNoticeEnSource = {
+  openai: 'openai',
   gemini: 'gemini',
   rules_fallback: 'rules_fallback',
   human: 'human',
@@ -208,6 +214,7 @@ export type CollectionTaskNoticeMsSource = typeof CollectionTaskNoticeMsSource[k
 
 
 export const CollectionTaskNoticeMsSource = {
+  openai: 'openai',
   gemini: 'gemini',
   rules_fallback: 'rules_fallback',
   human: 'human',
@@ -292,6 +299,7 @@ export type AIGenerationRequestedProvider = typeof AIGenerationRequestedProvider
 
 export const AIGenerationRequestedProvider = {
   rules: 'rules',
+  openai: 'openai',
   gemini: 'gemini',
 } as const;
 
@@ -328,6 +336,7 @@ export type CollectionPlanProviderMode = typeof CollectionPlanProviderMode[keyof
 
 
 export const CollectionPlanProviderMode = {
+  openai: 'openai',
   gemini: 'gemini',
   rules_fallback: 'rules_fallback',
 } as const;

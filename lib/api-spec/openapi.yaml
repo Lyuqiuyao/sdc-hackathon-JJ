@@ -240,7 +240,7 @@ components:
         concentrationCount: { type: integer, minimum: 1, maximum: 1000 }
         weights: { $ref: "#/components/schemas/Weights" }
         language: { type: string, enum: [en, ms] }
-        aiMode: { type: string, enum: [rules, gemini] }
+        aiMode: { type: string, enum: [rules, openai, gemini], description: "gemini is read-only legacy compatibility; choose rules or openai for new requests." }
     RiskEvent:
       type: object
       required: [id, createdAt, level, reasons, dueCents, overdueCents, expectedCollectionCents, projectedCashCents, gapCents, horizonDays, settingsSnapshot]
@@ -285,8 +285,8 @@ components:
         noticeEn: { type: string }
         noticeMs: { type: string }
         status: { type: string }
-        noticeEnSource: { type: string, enum: [gemini, rules_fallback, human] }
-        noticeMsSource: { type: string, enum: [gemini, rules_fallback, human] }
+        noticeEnSource: { type: string, enum: [openai, gemini, rules_fallback, human] }
+        noticeMsSource: { type: string, enum: [openai, gemini, rules_fallback, human] }
     AIStrategy:
       type: object
       required: [kind, proposal, conditions]
@@ -311,7 +311,7 @@ components:
       type: object
       required: [requestedProvider, generatedAt, durationMs, status, reasonCode, model]
       properties:
-        requestedProvider: { type: string, enum: [rules, gemini] }
+        requestedProvider: { type: string, enum: [rules, openai, gemini] }
         generatedAt: { type: string }
         durationMs: { type: integer }
         status: { type: string, enum: [success, fallback] }
@@ -328,7 +328,7 @@ components:
         createdAt: { type: string }
         status: { type: string, enum: [Pending, Approved, Rejected, Deferred, Superseded, Executed] }
         mode: { type: string }
-        providerMode: { type: string, enum: [gemini, rules_fallback] }
+        providerMode: { type: string, enum: [openai, gemini, rules_fallback] }
         aiRiskExplanation: { type: string }
         aiGeneration: { $ref: "#/components/schemas/AIGeneration" }
         weights: { $ref: "#/components/schemas/Weights" }

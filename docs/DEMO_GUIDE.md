@@ -213,8 +213,8 @@ payment_status、industry、esg_rating。
 | 项目 | 当前状态 |
 |---|---|
 | 规则引擎、风险计算、CSV 校验、持久化、版本与审批门禁 | 真实运行的应用逻辑 |
-| 通知内容 | 规则模式为 EN/MS 模板；真实 Gemini 成功并校验后可填充模型草稿；逐语言标注 gemini / rules_fallback / human，均可人工编辑 |
-| Gemini | 已实现官方 SDK 直连及安全回退；密钥已配置，模型列表请求成功，但真实生成返回 504，尚未通过生成成功验收。见 GEMINI_SETUP.md |
+| 通知内容 | 规则模式为 EN/MS 模板；OpenAI 有效响应校验后可填充草稿；逐语言标注 openai / rules_fallback / human；历史 gemini 标签保留，均可人工编辑 |
+| OpenAI | 已迁移官方 SDK 与严格结构化输出；真实调用返回 429、安全回退，尚无真实生成成功证据。当前说明见 OPENAI_SETUP.md；GEMINI_SETUP.md 仅为历史资料 |
 | 执行、邮件、短信、付款 | 仅 Demo 模拟；不真实发送、不扣款、不转账、不改变已收金额 |
 | Demo 登录 | 无生产身份认证、权限隔离或多租户能力 |
 | ESG 文件 | 明确标记的模拟审核文本，不提供伪造官方证书、不具备真实认证效力 |

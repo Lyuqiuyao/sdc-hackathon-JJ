@@ -210,7 +210,7 @@ export const GetWorkspaceResponse = zod.object({
   "esg": zod.number().int().min(getWorkspaceResponseRiskEventsItemSettingsSnapshotWeightsEsgMin).max(getWorkspaceResponseRiskEventsItemSettingsSnapshotWeightsEsgMax)
 }),
   "language": zod.enum(['en', 'ms']),
-  "aiMode": zod.enum(['rules', 'gemini'])
+  "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 }),
   "dataSignature": zod.string().optional().describe('Source data fingerprint; absent on legacy demo events, which must be refreshed before planning.')
 })),
@@ -222,10 +222,10 @@ export const GetWorkspaceResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
-  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "providerMode": zod.enum(['openai', 'gemini', 'rules_fallback']).optional(),
   "aiRiskExplanation": zod.string().optional(),
   "aiGeneration": zod.object({
-  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "requestedProvider": zod.enum(['rules', 'openai', 'gemini']),
   "generatedAt": zod.string(),
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
@@ -277,8 +277,8 @@ export const GetWorkspaceResponse = zod.object({
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
   "status": zod.string(),
-  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
+  "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -335,7 +335,7 @@ export const GetWorkspaceResponse = zod.object({
   "esg": zod.number().int().min(getWorkspaceResponseSettingsWeightsEsgMin).max(getWorkspaceResponseSettingsWeightsEsgMax)
 }),
   "language": zod.enum(['en', 'ms']),
-  "aiMode": zod.enum(['rules', 'gemini'])
+  "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 }),
   "dashboard": zod.object({
   "cashCents": zod.number().int(),
@@ -389,7 +389,7 @@ export const GetWorkspaceResponse = zod.object({
   "esg": zod.number().int().min(getWorkspaceResponseDashboardRiskSettingsSnapshotWeightsEsgMin).max(getWorkspaceResponseDashboardRiskSettingsSnapshotWeightsEsgMax)
 }),
   "language": zod.enum(['en', 'ms']),
-  "aiMode": zod.enum(['rules', 'gemini'])
+  "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 }),
   "dataSignature": zod.string().optional().describe('Source data fingerprint; absent on legacy demo events, which must be refreshed before planning.')
 })
@@ -467,7 +467,7 @@ export const RunRiskCheckResponse = zod.object({
   "esg": zod.number().int().min(runRiskCheckResponseSettingsSnapshotWeightsEsgMin).max(runRiskCheckResponseSettingsSnapshotWeightsEsgMax)
 }),
   "language": zod.enum(['en', 'ms']),
-  "aiMode": zod.enum(['rules', 'gemini'])
+  "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 }),
   "dataSignature": zod.string().optional().describe('Source data fingerprint; absent on legacy demo events, which must be refreshed before planning.')
 })
@@ -519,10 +519,10 @@ export const GeneratePlanResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
-  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "providerMode": zod.enum(['openai', 'gemini', 'rules_fallback']).optional(),
   "aiRiskExplanation": zod.string().optional(),
   "aiGeneration": zod.object({
-  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "requestedProvider": zod.enum(['rules', 'openai', 'gemini']),
   "generatedAt": zod.string(),
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
@@ -574,8 +574,8 @@ export const GeneratePlanResponse = zod.object({
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
   "status": zod.string(),
-  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
+  "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -628,10 +628,10 @@ export const EditPlanResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
-  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "providerMode": zod.enum(['openai', 'gemini', 'rules_fallback']).optional(),
   "aiRiskExplanation": zod.string().optional(),
   "aiGeneration": zod.object({
-  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "requestedProvider": zod.enum(['rules', 'openai', 'gemini']),
   "generatedAt": zod.string(),
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
@@ -683,8 +683,8 @@ export const EditPlanResponse = zod.object({
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
   "status": zod.string(),
-  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
+  "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -726,10 +726,10 @@ export const DecidePlanResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
-  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "providerMode": zod.enum(['openai', 'gemini', 'rules_fallback']).optional(),
   "aiRiskExplanation": zod.string().optional(),
   "aiGeneration": zod.object({
-  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "requestedProvider": zod.enum(['rules', 'openai', 'gemini']),
   "generatedAt": zod.string(),
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
@@ -781,8 +781,8 @@ export const DecidePlanResponse = zod.object({
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
   "status": zod.string(),
-  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
+  "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -815,10 +815,10 @@ export const ExecutePlanResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
-  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "providerMode": zod.enum(['openai', 'gemini', 'rules_fallback']).optional(),
   "aiRiskExplanation": zod.string().optional(),
   "aiGeneration": zod.object({
-  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "requestedProvider": zod.enum(['rules', 'openai', 'gemini']),
   "generatedAt": zod.string(),
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
@@ -870,8 +870,8 @@ export const ExecutePlanResponse = zod.object({
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
   "status": zod.string(),
-  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
+  "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -932,7 +932,7 @@ export const SaveSettingsBody = zod.object({
   "esg": zod.number().int().min(saveSettingsBodyWeightsEsgMin).max(saveSettingsBodyWeightsEsgMax)
 }),
   "language": zod.enum(['en', 'ms']),
-  "aiMode": zod.enum(['rules', 'gemini'])
+  "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 })
 
 export const saveSettingsResponseCashCentsMin = 0;
@@ -989,7 +989,7 @@ export const SaveSettingsResponse = zod.object({
   "esg": zod.number().int().min(saveSettingsResponseWeightsEsgMin).max(saveSettingsResponseWeightsEsgMax)
 }),
   "language": zod.enum(['en', 'ms']),
-  "aiMode": zod.enum(['rules', 'gemini'])
+  "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 })
 
 

@@ -30,7 +30,7 @@ export function TaskDetail({ t, weights, defaultLanguage = 'en' }: { t: Collecti
           {t.esgNote && <div><dt className="inline font-semibold">ESG note: </dt><dd className="inline">{t.esgNote}</dd></div>}
         </dl>
         {t.aiAdvice && <div className="space-y-2 rounded border p-2 text-xs" data-testid={`ai-advice-${t.id}`}>
-          <strong>Gemini recommendations · 建议（不改变评分或合同）</strong>
+          <strong>{t.noticeEnSource === 'gemini' || t.noticeMsSource === 'gemini' ? 'Historical Gemini' : 'AI'} recommendations · 建议（不改变评分或合同）</strong>
           <p>{t.aiAdvice.reasoning}</p>
           <ul className="list-disc space-y-1 pl-4">{t.aiAdvice.strategies.map(s => <li key={s.kind}><strong>{s.kind}: </strong>{s.proposal} <span className="text-muted-foreground">{s.conditions}</span></li>)}</ul>
           <p><strong>Assumptions: </strong>{t.aiAdvice.assumptions.join(' ')}</p>

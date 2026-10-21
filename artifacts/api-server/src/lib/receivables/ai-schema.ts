@@ -23,5 +23,16 @@ export const responseSchema = z.object({
   tasks: z.array(adviceSchema).min(1).max(50),
 }).strict();
 export type AdviceResponse = z.infer<typeof responseSchema>;
-// Same schema drives the Gemini structured-output request and local validation.
+// Local validation retains every original bound. Wire schema uses the OpenAI
+// strict subset; unsupported length bounds stay enforced locally, never skipped.
 export const responseJsonSchema = z.toJSONSchema(responseSchema);
+function strictWireSchema(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(strictWireSchema);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value)
+      .filter(([key]) => !["$schema", "minLength", "maxLength", "minItems", "maxItems"].includes(key))
+      .map(([key, child]) => [key, strictWireSchema(child)]));
+  }
+  return value;
+}
+export const openaiJsonSchema = strictWireSchema(responseJsonSchema) as Record<string, unknown>;

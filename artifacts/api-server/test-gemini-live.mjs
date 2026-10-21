@@ -3,6 +3,8 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+console.log(JSON.stringify({result:"NOT_RUN",reason:"Gemini retired. Use pnpm --filter @workspace/api-server run test:openai-live."}));
+process.exit(2);
 const dir=await mkdtemp(join(tmpdir(),"gemini-live-"));
 try {
   const file=join(dir,"live.mjs");

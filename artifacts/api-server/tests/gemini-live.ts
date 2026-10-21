@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import { seedState } from "../src/lib/receivables/seed";
 import { generate, applyAdvice, decide, execute } from "../src/lib/receivables/service";
-import { generateAdvice, geminiConfigured, officialGeminiTransport } from "../src/lib/receivables/ai-provider";
+import { generateAdvice } from "../src/lib/receivables/ai-provider";
+import { geminiConfigured, officialGeminiTransport } from "../src/lib/receivables/legacy-gemini";
 
 // This is a REAL Google request, no mocks or test transport. Only synthetic,
 // in-memory records are used; no customer/workspace data is modified.
-if (!geminiConfigured()) {
+// Archived diagnostic entry point is disabled after migration; never call Google.
+if (true) {
+  console.log(JSON.stringify({result:"NOT_RUN",reason:"Gemini retired. Use test:openai-live."}));
+  process.exitCode=2;
+} else if (!geminiConfigured()) {
   console.log(JSON.stringify({result:"NOT_RUN",reason:"GEMINI_API_KEY is missing; no live API request issued."}));
   process.exitCode=2;
 } else {

@@ -8,7 +8,7 @@ import { calculateRisk, customersNow, dashboard, invoicesNow, signature, validat
 import { buildPlan, METHODS } from "./planner";
 import { importCsv } from "./csv";
 import { seedState } from "./seed";
-import { rulesAdvisor, geminiConfigured, type AdvisorResult } from "./ai-provider";
+import { rulesAdvisor, openaiConfigured, type AdvisorResult } from "./ai-provider";
 import { communication } from "./communication";
 
 export function audit(state: DemoState, type: string, content: string, related = "",
@@ -24,10 +24,10 @@ export function workspace(state: DemoState): Workspace {
   const invoices = invoicesNow(state);
   return {
     demo: true, today: today(), source: "Synthetic Demo Data · shared administrator sandbox",
-    aiAvailable: geminiConfigured(),
-    aiMessage: geminiConfigured()
-      ? "Server-side Gemini key is configured, not proof of connectivity. Select Gemini in Settings; only a plan marked gemini / success contains validated model output. Errors use rules_fallback."
-      : "GEMINI_API_KEY is missing. Gemini requests use rules_fallback bilingual templates. Configure the server secret and select Gemini to enable real model requests.",
+    aiAvailable: openaiConfigured(),
+    aiMessage: openaiConfigured()
+      ? "Server-side OpenAI key is configured, not proof of connectivity. Select OpenAI in Settings; only a plan marked openai / success contains validated model output. Errors use rules_fallback."
+      : "OPENAI_API_KEY is missing. OpenAI requests use rules_fallback bilingual templates. Configure the server secret and select OpenAI to enable real model requests.",
     customers: customersNow(state, invoices), invoices,
     documents: state.documents.map(d => ({ ...d, status: d.validUntil < today() ? "Expired" : d.status })),
     riskEvents: [...state.riskEvents].reverse(), plans: [...state.plans].reverse(),
@@ -84,7 +84,7 @@ export function applyAdvice(state: DemoState, id: string, result: AdvisorResult,
   plan.providerMode = result.providerMode;
   plan.mode = result.providerMode;
   plan.aiGeneration = result.generation;
-  if (result.providerMode === "gemini" && result.advice) {
+  if (result.providerMode === "openai" && result.advice) {
     plan.aiRiskExplanation = result.advice.riskExplanation;
     const byId = new Map(result.advice.tasks.map(a => [a.taskId, a]));
     for (const task of plan.tasks) {
@@ -92,13 +92,13 @@ export function applyAdvice(state: DemoState, id: string, result: AdvisorResult,
       task.aiAdvice = advice;
       task.noticeEn = advice.noticeEn;
       task.noticeMs = advice.noticeMs;
-      task.noticeEnSource = "gemini";
-      task.noticeMsSource = "gemini";
+      task.noticeEnSource = "openai";
+      task.noticeMsSource = "openai";
     }
   }
-  audit(state, "AI generation", result.providerMode === "gemini"
-    ? "Validated Gemini recommendations applied to pending draft only. Deterministic results unchanged; human approval required."
-    : "Rules fallback retained. No content is labelled as Gemini-generated.",
+  audit(state, "AI generation", result.providerMode === "openai"
+    ? "Validated OpenAI recommendations applied to pending draft only. Deterministic results unchanged; human approval required."
+    : "Rules fallback retained. No content is labelled as OpenAI-generated.",
     plan.id, "", JSON.stringify({ providerMode: result.providerMode, ...result.generation }), plan);
   return plan;
 }
@@ -208,6 +208,7 @@ export function execute(state: DemoState, id: string) {
 }
 
 export function settings(state: DemoState, input: SystemSetting) {
+  if (input.aiMode === "gemini") throw new BusinessError("Gemini is retired. Select OpenAI or Rules engine.");
   validateWeights(input.weights);
   const before = JSON.stringify(state.settings);
   state.settings = input;

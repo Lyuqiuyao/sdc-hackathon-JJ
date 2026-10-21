@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+console.log(JSON.stringify({result:"NOT_RUN",reason:"Archived Gemini diagnostic. No request issued. See docs/OPENAI_SETUP.md."}));
+process.exit(2);
 const origin=process.argv[2];
 if(!origin?.startsWith("http"))throw new Error("Pass the running synthetic demo origin.");
 async function api(path,method="GET",body,status=200){

@@ -11,5 +11,6 @@ export type AIGenerationRequestedProvider = typeof AIGenerationRequestedProvider
 
 export const AIGenerationRequestedProvider = {
   rules: 'rules',
+  openai: 'openai',
   gemini: 'gemini',
 } as const;

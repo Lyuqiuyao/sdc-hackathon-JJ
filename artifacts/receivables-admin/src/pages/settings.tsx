@@ -21,7 +21,7 @@ const NUM = [
 ] as const;
 
 function init(s: SystemSetting): Form {
-  const f: Form = { language: s.language, aiMode: s.aiMode };
+  const f: Form = { language: s.language, aiMode: s.aiMode === 'gemini' ? 'rules' : s.aiMode };
   MONEY.forEach(([k]) => (f[k] = (s[k] / 100).toFixed(2)));
   NUM.forEach(([k]) => (f[k] = String(s[k])));
   (['lateFee', 'urgency', 'importance', 'esg'] as const).forEach((k) => (f['w_' + k] = String(s.weights[k])));
@@ -74,8 +74,8 @@ function SettingsForm({ ws }: { ws: Workspace }) {
           </Panel>
           <Panel title="Language and AI mode" zh="通知语言与 AI 模式" bodyClass="space-y-3">
             <Field label="Default notice language · 默认通知语言"><Select value={f.language} onValueChange={(v) => set('language', v)}><SelectTrigger data-testid="select-language"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">English</SelectItem><SelectItem value="ms">Bahasa Melayu</SelectItem></SelectContent></Select></Field>
-            <Field label="AI mode · AI 模式"><Select value={f.aiMode} onValueChange={(v) => set('aiMode', v)}><SelectTrigger data-testid="select-ai-mode"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="rules">Rules engine (explainable demo)</SelectItem><SelectItem value="gemini">Gemini API</SelectItem></SelectContent></Select></Field>
-            <Alert><AlertDescription className="text-xs"><Tag tone={ws.aiAvailable ? 'green' : 'orange'}>{ws.aiAvailable ? 'Key configured (not connectivity verified)' : 'Server key missing'}</Tag> <span className="ml-1">{ws.aiMessage}</span> Add GEMINI_API_KEY in Replit Secrets, never in this page. Selecting Gemini sends minimal synthetic context to Google when a new draft is generated; failures retain rules_fallback. Existing approved versions are not rewritten.</AlertDescription></Alert>
+            <Field label="AI mode · AI 模式"><Select value={f.aiMode} onValueChange={(v) => set('aiMode', v)}><SelectTrigger data-testid="select-ai-mode"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="rules">Rules engine (explainable demo)</SelectItem><SelectItem value="openai">OpenAI API</SelectItem></SelectContent></Select></Field>
+            <Alert><AlertDescription className="text-xs"><Tag tone={ws.aiAvailable ? 'green' : 'orange'}>{ws.aiAvailable ? 'Key configured (not connectivity verified)' : 'Server key missing'}</Tag> <span className="ml-1">{ws.aiMessage}</span> Add OPENAI_API_KEY in Replit Secrets, never in this page. Selecting OpenAI sends minimal synthetic context to OpenAI when a new draft is generated; failures retain rules_fallback. Existing approved versions are not rewritten.{ws.settings.aiMode === 'gemini' && ' Saved Gemini mode is retired; choose and save Rules or OpenAI explicitly. Historical records keep their original provider labels.'}</AlertDescription></Alert>
           </Panel>
         </div>
       </div>

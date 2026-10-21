@@ -6,6 +6,7 @@
   "scripts": {
     "test:workflow": "node test-workflow.mjs",
     "test:gemini-live": "node test-gemini-live.mjs",
+    "test:openai-live": "node test-openai-live.mjs",
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
@@ -19,6 +20,7 @@
     "cors": "^2.8.6",
     "drizzle-orm": "catalog:",
     "express": "^5.2.1",
+    "openai": "^7.39.0",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
     "zod": "catalog:"

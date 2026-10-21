@@ -10,6 +10,7 @@ export type CollectionTaskNoticeMsSource = typeof CollectionTaskNoticeMsSource[k
 
 
 export const CollectionTaskNoticeMsSource = {
+  openai: 'openai',
   gemini: 'gemini',
   rules_fallback: 'rules_fallback',
   human: 'human',
