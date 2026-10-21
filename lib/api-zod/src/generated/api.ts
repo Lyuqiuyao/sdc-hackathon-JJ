@@ -231,7 +231,8 @@ export const GetWorkspaceResponse = zod.object({
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
   "model": zod.string(),
-  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
+  "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(getWorkspaceResponsePlansItemWeightsLateFeeMin).max(getWorkspaceResponsePlansItemWeightsLateFeeMax),
@@ -529,7 +530,8 @@ export const GeneratePlanResponse = zod.object({
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
   "model": zod.string(),
-  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
+  "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(generatePlanResponseWeightsLateFeeMin).max(generatePlanResponseWeightsLateFeeMax),
@@ -639,7 +641,8 @@ export const EditPlanResponse = zod.object({
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
   "model": zod.string(),
-  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
+  "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(editPlanResponseWeightsLateFeeMin).max(editPlanResponseWeightsLateFeeMax),
@@ -738,7 +741,8 @@ export const DecidePlanResponse = zod.object({
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
   "model": zod.string(),
-  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
+  "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(decidePlanResponseWeightsLateFeeMin).max(decidePlanResponseWeightsLateFeeMax),
@@ -828,7 +832,8 @@ export const ExecutePlanResponse = zod.object({
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
   "model": zod.string(),
-  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
+  "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(executePlanResponseWeightsLateFeeMin).max(executePlanResponseWeightsLateFeeMax),
@@ -1006,7 +1011,8 @@ export const importInvoicesBodyFilenameMax = 200;
 
 export const ImportInvoicesBody = zod.object({
   "csv": zod.string().min(1).max(importInvoicesBodyCsvMax),
-  "filename": zod.string().min(1).max(importInvoicesBodyFilenameMax)
+  "filename": zod.string().min(1).max(importInvoicesBodyFilenameMax),
+  "demoDataConfirmed": zod.boolean().describe('User attestation that input is synthetic demo data. Not independent verification of provenance.')
 })
 
 export const ImportInvoicesResponse = zod.object({

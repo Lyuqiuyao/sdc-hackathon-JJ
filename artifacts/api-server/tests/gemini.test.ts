@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { seedState } from "../src/lib/receivables/seed";
 // Historical filename retained so existing test commands continue to work.
 import { businessContext, createOpenAITransport, generateAdvice, OPENAI_MODEL } from "../src/lib/receivables/ai-provider";
-import { applyAdvice, decide, edit, execute, workspace } from "../src/lib/receivables/service";
+import { applyAdvice, decide, edit, execute, workspace, generate } from "../src/lib/receivables/service";
 import type { AdviceResponse } from "../src/lib/receivables/ai-schema";
 import type { CollectionPlan } from "@workspace/api-zod";
 
@@ -11,7 +11,7 @@ function setup() {
   const state = seedState(); state.settings.aiMode = "openai";
   // Generate a fresh deterministic plan after changing only this isolated fixture.
   const event = state.riskEvents[0]!;
-  const plan = state.plans[0]!;
+  const plan = generate(state, {});
   return {state,event,plan};
 }
 function response(state: ReturnType<typeof seedState>, plan: CollectionPlan): AdviceResponse {
@@ -133,7 +133,7 @@ test("whitelisted AI merge preserves deterministic results, finances/history/set
   const result=await generateAdvice(state,plan,{configured:true,transport:async()=>JSON.stringify(response(state,plan))});
   applyAdvice(state,plan.id,result,expected);
   assert.deepEqual(core(plan),beforeCore);assert.equal(plan.providerMode,"openai");
-  assert.equal(plan.tasks[0]!.noticeEnSource,"openai");assert.match(plan.aiRiskExplanation!,/Cash projected/);
+  assert.equal(plan.tasks[0]!.noticeEnSource,"rules_fallback");assert.match(plan.aiRiskExplanation!,/cash-flow risk/);
   assert.equal(JSON.stringify({invoices:state.invoices,settings:state.settings,documents:state.documents,approvals:state.approvals}),baseline);
   assert.equal(state.auditLogs.length,audits+1);assert.equal(state.auditLogs.at(-1)!.type,"AI generation");
   assert.throws(()=>execute(state,plan.id),/not been approved/);
@@ -166,7 +166,7 @@ test("human and method/template edits keep per-language source honest",async()=>
   tasks[0]!.method="Extension negotiation";tasks[0]!.noticeEn="Human custom draft: synthetic demo.";
   const next=edit(state,plan.id,{tasks,notes:"Human edit"});
   assert.equal(next.tasks[0]!.noticeEnSource,"human");assert.equal(next.tasks[0]!.noticeMsSource,"rules_fallback");
-  assert.equal(next.tasks[1]!.noticeEnSource,"openai");
+  assert.equal(next.tasks[1]!.noticeEnSource,"rules_fallback");
 });
 test("outbound context excludes customer names, contact data, approval/audit history and document identifiers",()=>{
   const {state,plan}=setup(),context=JSON.stringify(businessContext(state,plan));

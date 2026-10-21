@@ -35,13 +35,15 @@ export default function Receivables() {
   const [sel, setSel] = useState<Invoice | null>(null);
   const [result, setResult] = useState<{ imported: number; errors: string[]; warnings: string[]; message: string; file: string } | null>(null);
   const [upErr, setUpErr] = useState('');
+  const [demoConfirmed, setDemoConfirmed] = useState(false);
 
   const upload = async (f?: File) => {
     if (!f) return;
+    if (!demoConfirmed) { setUpErr('Confirm that the file contains synthetic demo data only.'); return; }
     setUpErr('');
     try {
       const csv = await f.text();
-      const r = await imp.mutateAsync({ data: { csv, filename: f.name } });
+      const r = await imp.mutateAsync({ data: { csv, filename: f.name, demoDataConfirmed: demoConfirmed } });
       setResult({ ...r, file: f.name });
       await refresh();
       toast({ title: `Import finished: ${r.imported} invoice(s)`, description: r.message });
@@ -59,7 +61,11 @@ export default function Receivables() {
         <>
           <Button variant="outline" size="sm" onClick={() => download('arus-invoice-template.csv', toCsv(TEMPLATE))} data-testid="button-template"><FileDown className="mr-1 h-4 w-4" />Template</Button>
           <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => upload(e.target.files?.[0])} data-testid="input-csv" />
-          <Button size="sm" onClick={() => fileRef.current?.click()} disabled={imp.isPending} data-testid="button-upload-csv"><Upload className="mr-1 h-4 w-4" />{imp.isPending ? 'Importing...' : 'Upload CSV'}</Button>
+          <label className="flex max-w-sm items-start gap-2 text-xs">
+            <input type="checkbox" checked={demoConfirmed} onChange={e => setDemoConfirmed(e.target.checked)} data-testid="confirm-synthetic-csv" />
+            <span>I confirm this file contains synthetic demo data only, not real business records. This declaration does not verify its provenance.</span>
+          </label>
+          <Button size="sm" onClick={() => fileRef.current?.click()} disabled={imp.isPending || !demoConfirmed} data-testid="button-upload-csv"><Upload className="mr-1 h-4 w-4" />{imp.isPending ? 'Importing...' : 'Upload CSV'}</Button>
         </>
       }
     >

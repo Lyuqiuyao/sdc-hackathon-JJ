@@ -1,32 +1,7 @@
-import type { CollectionPlan } from "@workspace/api-zod";
 import { readState, changeState } from "./repository";
-import { generateAdvice, openaiConfigured } from "./ai-provider";
-import { applyAdvice, humanAdjusted } from "./service";
-import { BusinessError } from "./model";
+import { createPlanEnricher } from "./ai-enrichment";
 
-const inFlight = new Map<string, Promise<CollectionPlan>>();
-
-// External I/O is deliberately outside the PostgreSQL row lock. After the call,
-// optimistic checks prevent overwriting an intervening edit/approval/data change.
-export function enrichPlan(id: string): Promise<CollectionPlan> {
-  const existing = inFlight.get(id);
-  if (existing) return existing;
-  const run = (async () => {
-    const state = await readState();
-    const plan = state.plans.find(p => p.id === id);
-    if (!plan) throw new BusinessError("Plan not found.", 404);
-    if (plan.status !== "Pending" || plan.providerMode === "openai" || plan.providerMode === "gemini" || humanAdjusted(state, plan)) return plan;
-    if (state.settings.aiMode === "rules" && plan.aiGeneration?.reasonCode === "rules_selected") return plan;
-    if (!openaiConfigured() && plan.aiGeneration?.requestedProvider === "openai"
-      && plan.aiGeneration.reasonCode === "missing_managed_config") return plan;
-    const expected = JSON.stringify(plan);
-    const result = await generateAdvice(state, plan);
-    return changeState(current => applyAdvice(current, id, result, expected));
-  })();
-  inFlight.set(id, run);
-  void run.finally(() => { if (inFlight.get(id) === run) inFlight.delete(id); }).catch(() => {});
-  return run;
-}
+export const enrichPlan = createPlanEnricher({ readState, changeState });
 
 export async function enrichRiskDraft(eventId: string) {
   const state = await readState();

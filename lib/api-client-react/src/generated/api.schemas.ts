@@ -321,6 +321,16 @@ export const AIGenerationConnectionMode = {
   replit_managed: 'replit_managed',
 } as const;
 
+/**
+ * New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.
+ */
+export type AIGenerationContentPolicy = typeof AIGenerationContentPolicy[keyof typeof AIGenerationContentPolicy];
+
+
+export const AIGenerationContentPolicy = {
+  server_controlled_v1: 'server_controlled_v1',
+} as const;
+
 export interface AIGeneration {
   requestedProvider: AIGenerationRequestedProvider;
   generatedAt: string;
@@ -330,6 +340,8 @@ export interface AIGeneration {
   model: string;
   /** Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections. */
   connectionMode?: AIGenerationConnectionMode;
+  /** New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records. */
+  contentPolicy?: AIGenerationContentPolicy;
 }
 
 export type CollectionPlanStatus = typeof CollectionPlanStatus[keyof typeof CollectionPlanStatus];
@@ -511,6 +523,8 @@ export interface ImportInput {
      * @maxLength 200
      */
   filename: string;
+  /** User attestation that input is synthetic demo data. Not independent verification of provenance. */
+  demoDataConfirmed: boolean;
 }
 
 export interface ImportResult {

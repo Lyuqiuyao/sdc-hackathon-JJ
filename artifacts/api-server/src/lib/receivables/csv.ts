@@ -48,6 +48,10 @@ function date(text: string, name: string) {
 }
 
 export function importCsv(state: DemoState, input: ImportInput): ImportResult {
+  if (input.demoDataConfirmed !== true) return {
+    imported: 0, errors: ["Explicit synthetic demo data confirmation is required."], warnings: [],
+    message: "Nothing imported. This sandbox accepts user-declared synthetic demo data only; provenance is not verified.",
+  };
   const rows = parseCsv(input.csv);
   const headers = rows.shift()?.map(h => h.toLowerCase()) ?? [];
   const errors: string[] = [], warnings: string[] = [];
@@ -106,7 +110,8 @@ export function importCsv(state: DemoState, input: ImportInput): ImportResult {
         id: `INV-${randomUUID().slice(0, 8)}`, number, customerId: customer.id, customerName: customer.name,
         invoiceDate, dueDate, totalCents, paidCents, outstandingCents: r.payment_status === "Cancelled" ? 0 : totalCents - paidCents,
         currency: "MYR", lateFeeBps, status: r.payment_status === "Cancelled" ? "Cancelled" : "Upcoming",
-        daysOverdue: 0, importance: customer.importance, esgRating: "Uncertified", source: `CSV upload (unverified): ${input.filename}`,
+        daysOverdue: 0, importance: customer.importance, esgRating: "Uncertified",
+        source: `User-declared synthetic/demo CSV (provenance unverified): ${input.filename}`,
         importedAt: now(), estimatedFields,
       });
       seen.add(number);
@@ -115,5 +120,5 @@ export function importCsv(state: DemoState, input: ImportInput): ImportResult {
   if (errors.length) return { imported: 0, errors, warnings, message: "Nothing imported. Validation is atomic; fix all listed rows." };
   state.customers.push(...stagedCustomers);
   state.invoices.push(...stagedInvoices);
-  return { imported: stagedInvoices.length, errors, warnings, message: `${stagedInvoices.length} MYR invoices imported. Uploaded data is unverified; estimates are labelled per invoice.` };
+  return { imported: stagedInvoices.length, errors, warnings, message: `${stagedInvoices.length} MYR invoices imported as user-declared synthetic/demo data. Provenance is NOT independently verified; estimates are labelled per invoice.` };
 }

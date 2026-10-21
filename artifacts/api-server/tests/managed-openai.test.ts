@@ -5,12 +5,12 @@ import { fileURLToPath } from "node:url";
 import { seedState } from "../src/lib/receivables/seed";
 import { businessContext, createOpenAITransport, generateAdvice, openaiConfigured,
   loadManagedOpenAIClient, OPENAI_TIMEOUT_MS } from "../src/lib/receivables/ai-provider";
-import { applyAdvice, workspace } from "../src/lib/receivables/service";
+import { applyAdvice, workspace, generate } from "../src/lib/receivables/service";
 import { GetWorkspaceResponse } from "@workspace/api-zod";
 
 function fixture() {
   const state=seedState();state.settings.aiMode="openai";
-  const plan=state.plans[0]!,ctx=businessContext(state,plan);
+  const plan=generate(state,{}),ctx=businessContext(state,plan);
   const prose="Synthetic conditional proposal only; a person must verify and agree.";
   const data={riskExplanation:"Synthetic liquidity pressure requires review; the supplied scoring and forecasts remain authoritative.",
     tasks:ctx.tasks.map(t=>({

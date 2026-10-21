@@ -1,5 +1,8 @@
 # Replit 托管 OpenAI：迁移与模拟验收
 
+> 后续管理员端边界修复及 **89/89** 模拟回归见 [ADMIN_PHASE_ONE.md](ADMIN_PHASE_ONE.md)。
+> 本文保留迁移时的历史 50/50 结果；当前通知与未知 ESG 文本采用受控投影，不能统一称为模型原创。
+
 ## 状态与边界
 
 正式应用已改为 Replit AI Integrations OpenAI 接入，不再使用私人 `OPENAI_API_KEY`。

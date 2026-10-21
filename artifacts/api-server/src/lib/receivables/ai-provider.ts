@@ -4,6 +4,8 @@ import { now, type DemoState } from "./model";
 import { validEsg } from "./compute";
 import { buildPlan } from "./planner";
 import { openaiJsonSchema, responseSchema, type AdviceResponse } from "./ai-schema";
+import { AdviceBoundaryError, assertAdviceInput } from "./ai-preflight";
+import { protectAdviceContent } from "./ai-content-safety";
 
 export const OPENAI_MODEL = "gpt-5-mini";
 export const OPENAI_TIMEOUT_MS = 45_000;
@@ -32,6 +34,7 @@ Write professional English noticeEn and Bahasa Melayu noticeMs, addressed generi
 Use only supplied MYR outstanding amounts and due dates in notices; do not invent fees, new contractual terms or numerical credit/default probabilities.
 All notices must explicitly say Synthetic Demo draft / Draf demo sintetik and no message sent / tiada mesej dihantar.
 ESG approved/valid ratings in this dataset are synthetic reviewed evidence, not real certification. Only repeat the supplied evidence status and rating. Unknown/unverified ESG stays unknown and neutral, NEVER poor ESG, fraud, or bad-debt evidence. Never invent certifications/ratings. Do not mention ESG in customer notices. esgConsiderations is internal auxiliary caution, not a credit rating or prediction.
+Internal reasoning, assumptions and strategies must contain no numeric amounts, dates, rates or contractual promises; reference the supplied figures qualitatively. Apart from esgEvidence/esgRating/esgConsiderations, do not discuss ESG, certification or environmental/labour claims in any field. Customer notices and ESG prose will be replaced by authoritative server templates.
 Use 1-2 short sentences for reasoning and ESG considerations, 1 short assumption and 1 uncertainty, and concise options. No external tools.`;
 
 // Only this server module handles credentials. No raw SDK error/response is logged.
@@ -58,7 +61,7 @@ export const officialOpenAITransport: OpenAITransport = (context, signal) =>
   createOpenAITransport()(context, signal);
 
 export function businessContext(state: DemoState, plan: CollectionPlan) {
-  const risk = state.riskEvents.find(r => r.id === plan.riskEventId)!;
+  const risk = assertAdviceInput(state, plan);
   return {
     source: "Synthetic Demo Data — no real customer financial records",
     risk: { level: risk.level, cashCents: risk.settingsSnapshot.cashCents,
@@ -69,11 +72,13 @@ export function businessContext(state: DemoState, plan: CollectionPlan) {
     weights: plan.weights,
     tasks: plan.tasks.map(t => {
       const doc = validEsg(state, t.customerId);
-      const invoice = state.invoices.find(i => i.id === t.invoiceId)!;
+      const invoice = state.invoices.find(i => i.id === t.invoiceId);
+      const customer = state.customers.find(c => c.id === t.customerId);
+      if (!invoice || !customer) throw new AdviceBoundaryError("invalid_association");
       return { taskId: t.id, rank: t.rank, outstandingCents: t.outstandingCents,
         outstandingMYR: (t.outstandingCents / 100).toFixed(2), dueDate: t.dueDate, daysOverdue: t.daysOverdue,
         annualLateFeeBps: invoice.lateFeeBps,
-        importance: state.customers.find(c => c.id === t.customerId)!.importance,
+        importance: customer.importance,
         lateFeeScore: t.lateFeeScore, urgencyScore: t.urgencyScore,
         importanceScore: t.importanceScore, esgScore: t.esgScore, score: t.score, preliminaryMethod: t.method,
         esg: { evidence: doc ? "verified" : "unknown", rating: doc?.rating ?? "unknown",
@@ -98,6 +103,9 @@ function validateAdvice(raw: string, state: DemoState, plan: CollectionPlan): Ad
       || !/Draf demo sintetik/i.test(a.noticeMs) || !/tiada mesej dihantar/i.test(a.noticeMs))
       throw new Error("Unlabelled or unsafe notice");
   }
+  protectAdviceContent(result, state, plan);
+  // Projection/conditional suffixes may not bypass the original local bounds.
+  responseSchema.parse(result);
   return result;
 }
 
@@ -126,12 +134,14 @@ export async function generateAdvice(state: DemoState, plan: CollectionPlan, opt
     ]);
     let advice: AdviceResponse;
     try { advice = validateAdvice(raw, state, plan); }
-    catch { return fallback("invalid_response"); }
+    catch (error) { return fallback(error instanceof AdviceBoundaryError ? error.reasonCode : "invalid_response"); }
     return { providerMode: "openai", advice,
       generation: { requestedProvider, generatedAt: now(), durationMs: Date.now() - started,
         connectionMode: "replit_managed",
+        contentPolicy: "server_controlled_v1",
         status: "success", reasonCode: "validated_response", model: OPENAI_MODEL } };
   } catch (error) {
+    if (error instanceof AdviceBoundaryError) return fallback(error.reasonCode);
     return fallback(controller.signal.aborted || error instanceof OpenAI.APIConnectionTimeoutError ? "timeout" : "api_error");
   } finally {
     if (timer) clearTimeout(timer);

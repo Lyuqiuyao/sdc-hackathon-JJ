@@ -17,4 +17,6 @@ export interface ImportInput {
      * @maxLength 200
      */
   filename: string;
+  /** User attestation that input is synthetic demo data. Not independent verification of provenance. */
+  demoDataConfirmed: boolean;
 }

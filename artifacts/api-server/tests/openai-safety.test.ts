@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { generate } from "../src/lib/receivables/service";
 import { seedState } from "../src/lib/receivables/seed";
 import { generateAdvice, createOpenAITransport } from "../src/lib/receivables/ai-provider";
 import { openaiJsonSchema, responseJsonSchema, responseSchema } from "../src/lib/receivables/ai-schema";
@@ -32,7 +33,7 @@ test("official SDK API failure makes one request, no automatic retries",async()=
     calls++;return new Response(JSON.stringify({error:{message:"PRIVATE",type:"server_error"}}),
       {status:504,headers:{"content-type":"application/json"}});
   }});
-  const result=await generateAdvice(state,state.plans[0]!,{configured:true,transport});
+  const result=await generateAdvice(state,generate(state,{}),{configured:true,transport});
   assert.equal(calls,1);assert.equal(result.generation.reasonCode,"api_error");
   assert.ok(!JSON.stringify(result).includes("PRIVATE"));
 });
@@ -41,7 +42,7 @@ test("successful HTTP with incomplete or empty model response cannot be accepted
     const state=seedState();state.settings.aiMode="openai";
     const transport=createOpenAITransport({fetch:async()=>new Response(JSON.stringify({
       id:"resp_synthetic",object:"response",status,output:[]}),{status:200,headers:{"content-type":"application/json"}})});
-    const result=await generateAdvice(state,state.plans[0]!,{configured:true,transport});
+    const result=await generateAdvice(state,generate(state,{}),{configured:true,transport});
     assert.equal(result.providerMode,"rules_fallback");
     assert.equal(result.generation.reasonCode,status==="incomplete"?"api_error":"invalid_response");
   }

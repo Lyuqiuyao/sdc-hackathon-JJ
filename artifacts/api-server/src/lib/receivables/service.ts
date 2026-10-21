@@ -92,12 +92,12 @@ export function applyAdvice(state: DemoState, id: string, result: AdvisorResult,
       task.aiAdvice = advice;
       task.noticeEn = advice.noticeEn;
       task.noticeMs = advice.noticeMs;
-      task.noticeEnSource = "openai";
-      task.noticeMsSource = "openai";
+      task.noticeEnSource = "rules_fallback";
+      task.noticeMsSource = "rules_fallback";
     }
   }
   audit(state, "AI generation", result.providerMode === "openai"
-    ? "Validated OpenAI (Replit managed) recommendations applied to pending draft only. Deterministic results unchanged; human approval required."
+    ? "Validated OpenAI (Replit managed) internal recommendations applied to pending draft only. Customer notices and ESG prose are server-controlled. Deterministic results unchanged; human approval required."
     : "Rules fallback retained. No content is labelled as OpenAI-generated.",
     plan.id, "", JSON.stringify({ providerMode: result.providerMode, ...result.generation }), plan);
   return plan;
@@ -220,7 +220,7 @@ export function settings(state: DemoState, input: SystemSetting) {
 export function importData(state: DemoState, input: ImportInput) {
   const beforeCount = state.invoices.length;
   const result = importCsv(state, input);
-  if (result.imported > 0) audit(state, "Data import", `${input.filename}: ${result.message} ${result.warnings.join(" ")}`,
+  if (result.imported > 0) audit(state, "Data import", `${input.filename}: User synthetic-data attestation received, provenance unverified. ${result.message} ${result.warnings.join(" ")}`,
     input.filename, `${beforeCount} invoices`, `${state.invoices.length} invoices`);
   return result;
 }

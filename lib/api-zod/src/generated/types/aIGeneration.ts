@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AIGenerationConnectionMode } from './aIGenerationConnectionMode';
+import type { AIGenerationContentPolicy } from './aIGenerationContentPolicy';
 import type { AIGenerationRequestedProvider } from './aIGenerationRequestedProvider';
 import type { AIGenerationStatus } from './aIGenerationStatus';
 
@@ -18,4 +19,6 @@ export interface AIGeneration {
   model: string;
   /** Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections. */
   connectionMode?: AIGenerationConnectionMode;
+  /** New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records. */
+  contentPolicy?: AIGenerationContentPolicy;
 }

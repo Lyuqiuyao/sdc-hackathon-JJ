@@ -321,6 +321,10 @@ components:
           type: string
           enum: [replit_managed]
           description: "Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections."
+        contentPolicy:
+          type: string
+          enum: [server_controlled_v1]
+          description: "New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records."
     CollectionPlan:
       type: object
       required: [id, familyId, version, riskEventId, createdAt, status, mode, weights, tasks, notes, dataSignature]
@@ -458,10 +462,13 @@ components:
         notes: { type: string, maxLength: 5000 }
     ImportInput:
       type: object
-      required: [csv, filename]
+      required: [csv, filename, demoDataConfirmed]
       properties:
         csv: { type: string, minLength: 1, maxLength: 1000000 }
         filename: { type: string, minLength: 1, maxLength: 200 }
+        demoDataConfirmed:
+          type: boolean
+          description: "User attestation that input is synthetic demo data. Not independent verification of provenance."
     ImportResult:
       type: object
       required: [imported, errors, warnings, message]
