@@ -1,10 +1,12 @@
-# [Project name]
+# Arus — SME Receivables Risk & AI Collection Scheduler
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+中小微企业应收账款风险预警与 ESG 加权催收排程管理员演示系统。
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- Start the managed workflows `artifacts/api-server: API Server` and `artifacts/receivables-admin: web`; they supply ports and routing.
+- `pnpm --filter @workspace/api-server run dev` — API workflow command
+- `pnpm --filter @workspace/receivables-admin run dev` — web workflow command
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -14,6 +16,7 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React, Vite, Tailwind CSS, Recharts, TanStack Query
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,23 +25,38 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/receivables-admin/src/pages/` — dashboard and ten supporting administrator pages
+- `artifacts/receivables-admin/src/components/` — layout, tables, score breakdown and notification views
+- `artifacts/receivables-admin/src/index.css` — visual tokens and theme
+- `artifacts/api-server/src/lib/receivables/` — typed models, seed, computation, planner, provider contract, CSV validation, transactional persistence and workflow operations
+- `artifacts/api-server/src/routes/receivables.ts` — validated HTTP routes
+- `lib/api-spec/openapi.yaml` — API contract; regenerate clients after changing it
+- `lib/db/src/schema/demo-workspace.ts` — PostgreSQL aggregate schema
+- `docs/DEMO_GUIDE.md` — architecture, CSV contract, seven demo scenarios and simulation boundaries
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Demo entities are stored in one typed JSONB aggregate rather than ten normalized tables. This keeps version snapshots and audit entries atomic with workflow changes and allows straightforward migration to normalized repositories later. This is a competition MVP, not a multi-tenant accounting ledger.
+- Row locks serialize workflow mutations across browser tabs. An operation and its audit record commit together; failed operations roll back.
+- The demo role entry deliberately has no identity protection. All visitors share one synthetic workspace. It must not hold real customer data.
+- Gemini is a server-only provider extension point, deliberately disconnected in the MVP. Rules-engine notices are labelled templates.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Ten administrator modules: Dashboard, Receivables, Customers, ESG Documents, Risk Triggers, AI Collection Planner, Approval Center, Execution Results, Audit Logs and Settings. Default demo includes 10 customers, 26 invoices, 8 simulated ESG reviews and one pending plan.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+See project scope memory for standing exclusions. Visual brief: navy/white/light gray, orange warning, red high risk, green normal; desktop-first responsive SaaS admin.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Monetary API values use integer MYR cents; annual late-fee rates use basis points (1200 = 12%). Critical amount products use BigInt integer rounding.
+- Current dates use Asia/Kuala_Lumpur. Seed dates are relative to initialization/reset, and statuses are recalculated on every read.
+- Changing invoices, settings, ESG validity or the calendar day invalidates existing plan data signatures; Defer & Recalculate before approval/execution.
+- Both bilingual drafts are generated; the saved default language controls the initially selected notice tab.
+- Reset restores financial demo data but preserves audit history, old plan versions, approvals and execution records; old active plans are superseded.
+- For shell verification use typecheck, not frontend build, which depends on workflow-supplied PORT/BASE_PATH.
 
 ## Pointers
 

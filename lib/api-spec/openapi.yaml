@@ -1,36 +1,442 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
+  description: Synthetic MYR receivables administrator demonstration
 servers:
   - url: /api
-    description: Base API path
-tags:
-  - name: health
-    description: Health operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+  /workspace:
+    get:
+      operationId: getWorkspace
+      responses:
+        "200":
+          description: Complete live demo state and computed dashboard
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Workspace" }
+  /demo-login:
+    post:
+      operationId: demoLogin
+      responses:
+        "200":
+          description: Demo entry recorded, not production authentication
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActionResult" }
+  /risk-checks:
+    post:
+      operationId: runRiskCheck
+      responses:
+        "200":
+          description: New recorded risk event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RiskEvent" }
+  /plans:
+    post:
+      operationId: generatePlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanInput" }
+      responses:
+        "200":
+          description: New pending plan or existing identical pending plan for event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CollectionPlan" }
+  /plans/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    patch:
+      operationId: editPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanEdit" }
+      responses:
+        "200":
+          description: New pending version preserving original
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CollectionPlan" }
+  /plans/{id}/decision:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: decidePlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApprovalInput" }
+      responses:
+        "200":
+          description: Approved, rejected, or a newly recalculated pending version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CollectionPlan" }
+  /plans/{id}/execute:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: executePlan
+      responses:
+        "200":
+          description: Idempotent simulated execution, never sends or collects money
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CollectionPlan" }
+  /settings:
+    put:
+      operationId: saveSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SystemSetting" }
+      responses:
+        "200":
+          description: Validated settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemSetting" }
+  /imports:
+    post:
+      operationId: importInvoices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImportInput" }
+      responses:
+        "200":
+          description: Atomically imported CSV or validation errors without partial writes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportResult" }
+  /documents/{id}/view:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: viewDocument
+      responses:
+        "200":
+          description: Plain demo document content, not an official certificate
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentView" }
+  /demo-reset:
+    post:
+      operationId: resetDemo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResetInput" }
+      responses:
+        "200":
+          description: Demo data reset; existing audit trail retained
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActionResult" }
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+    ActionResult:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    Customer:
+      type: object
+      required: [id, name, industry, importance, esgRating, outstandingCents, overdueCents, earliestDue, risk, paymentHistory]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        industry: { type: string }
+        importance: { type: string, enum: [High, Medium, Low] }
+        esgRating: { type: string }
+        outstandingCents: { type: integer }
+        overdueCents: { type: integer }
+        earliestDue: { type: string }
+        risk: { type: string }
+        paymentHistory: { type: string }
+    Invoice:
+      type: object
+      required: [id, number, customerId, customerName, invoiceDate, dueDate, totalCents, paidCents, outstandingCents, currency, lateFeeBps, status, daysOverdue, importance, esgRating, source, importedAt, estimatedFields]
+      properties:
+        id: { type: string }
+        number: { type: string }
+        customerId: { type: string }
+        customerName: { type: string }
+        invoiceDate: { type: string }
+        dueDate: { type: string }
+        totalCents: { type: integer }
+        paidCents: { type: integer }
+        outstandingCents: { type: integer }
+        currency: { type: string }
+        lateFeeBps: { type: integer, description: Annual late fee in basis points; 1200 means 12 percent per year }
+        status: { type: string }
+        daysOverdue: { type: integer }
+        importance: { type: string }
+        esgRating: { type: string }
+        source: { type: string }
+        importedAt: { type: string }
+        estimatedFields: { type: array, items: { type: string } }
+    ESGDocument:
+      type: object
+      required: [id, customerId, customerName, type, number, uploadedAt, validUntil, status, conclusion, reason, rating, source]
+      properties:
+        id: { type: string }
+        customerId: { type: string }
+        customerName: { type: string }
+        type: { type: string }
+        number: { type: string }
+        uploadedAt: { type: string }
+        validUntil: { type: string }
+        status: { type: string }
+        conclusion: { type: string }
+        reason: { type: string }
+        rating: { type: string }
+        source: { type: string }
+    Weights:
+      type: object
+      required: [lateFee, urgency, importance, esg]
+      properties:
+        lateFee: { type: integer, minimum: 0, maximum: 100 }
+        urgency: { type: integer, minimum: 0, maximum: 100 }
+        importance: { type: integer, minimum: 0, maximum: 100 }
+        esg: { type: integer, minimum: 0, maximum: 100 }
+    SystemSetting:
+      type: object
+      required: [currency, cashCents, minimumCashCents, expectedExpenseCents, horizonDays, mediumBufferPercent, collectionRatePercent, overdueThresholdCents, largeInvoiceCents, concentrationCount, weights, language, aiMode]
+      properties:
+        currency: { type: string, enum: [MYR] }
+        cashCents: { type: integer, minimum: 0, maximum: 100000000000 }
+        minimumCashCents: { type: integer, minimum: 1, maximum: 100000000000 }
+        expectedExpenseCents: { type: integer, minimum: 0, maximum: 100000000000 }
+        horizonDays: { type: integer, minimum: 1, maximum: 90 }
+        mediumBufferPercent: { type: integer, minimum: 0, maximum: 100 }
+        collectionRatePercent: { type: integer, minimum: 0, maximum: 100 }
+        overdueThresholdCents: { type: integer, minimum: 1, maximum: 100000000000 }
+        largeInvoiceCents: { type: integer, minimum: 1, maximum: 100000000000 }
+        concentrationCount: { type: integer, minimum: 1, maximum: 1000 }
+        weights: { $ref: "#/components/schemas/Weights" }
+        language: { type: string, enum: [en, ms] }
+        aiMode: { type: string, enum: [rules, gemini] }
+    RiskEvent:
+      type: object
+      required: [id, createdAt, level, reasons, dueCents, overdueCents, expectedCollectionCents, projectedCashCents, gapCents, horizonDays, settingsSnapshot]
+      properties:
+        id: { type: string }
+        createdAt: { type: string }
+        level: { type: string, enum: [Low, Medium, High] }
+        reasons: { type: array, items: { type: string } }
+        dueCents: { type: integer }
+        overdueCents: { type: integer }
+        expectedCollectionCents: { type: integer }
+        projectedCashCents: { type: integer }
+        gapCents: { type: integer }
+        horizonDays: { type: integer }
+        settingsSnapshot: { $ref: "#/components/schemas/SystemSetting" }
+    CollectionTask:
+      type: object
+      required: [id, invoiceId, invoiceNumber, customerId, customerName, outstandingCents, dueDate, daysOverdue, rank, lateFeeScore, urgencyScore, importanceScore, esgScore, score, method, scheduledAt, negotiation, reason, uncertainty, esgNote, noticeEn, noticeMs, status]
+      properties:
+        id: { type: string }
+        invoiceId: { type: string }
+        invoiceNumber: { type: string }
+        customerId: { type: string }
+        customerName: { type: string }
+        outstandingCents: { type: integer }
+        dueDate: { type: string }
+        daysOverdue: { type: integer }
+        rank: { type: integer }
+        lateFeeScore: { type: number }
+        urgencyScore: { type: number }
+        importanceScore: { type: number }
+        esgScore: { type: number }
+        score: { type: number }
+        method: { type: string }
+        scheduledAt: { type: string }
+        negotiation: { type: string }
+        reason: { type: string }
+        uncertainty: { type: string }
+        esgNote: { type: string }
+        noticeEn: { type: string }
+        noticeMs: { type: string }
+        status: { type: string }
+    CollectionPlan:
+      type: object
+      required: [id, familyId, version, riskEventId, createdAt, status, mode, weights, tasks, notes, dataSignature]
+      properties:
+        id: { type: string }
+        familyId: { type: string }
+        version: { type: integer }
+        riskEventId: { type: string }
+        createdAt: { type: string }
+        status: { type: string, enum: [Pending, Approved, Rejected, Deferred, Superseded, Executed] }
+        mode: { type: string }
+        weights: { $ref: "#/components/schemas/Weights" }
+        tasks: { type: array, items: { $ref: "#/components/schemas/CollectionTask" } }
+        notes: { type: string }
+        dataSignature: { type: string }
+    ApprovalRecord:
+      type: object
+      required: [id, planId, version, decision, notes, actor, createdAt, originalSnapshot, finalSnapshot]
+      properties:
+        id: { type: string }
+        planId: { type: string }
+        version: { type: integer }
+        decision: { type: string }
+        notes: { type: string }
+        actor: { type: string }
+        createdAt: { type: string }
+        originalSnapshot: { type: string }
+        finalSnapshot: { type: string }
+    ExecutionRecord:
+      type: object
+      required: [id, planId, taskId, invoiceNumber, customerName, actor, executedAt, result, noticeStatus]
+      properties:
+        id: { type: string }
+        planId: { type: string }
+        taskId: { type: string }
+        invoiceNumber: { type: string }
+        customerName: { type: string }
+        actor: { type: string }
+        executedAt: { type: string }
+        result: { type: string }
+        noticeStatus: { type: string }
+    AuditLog:
+      type: object
+      required: [id, type, createdAt, actor, related, content, before, after, planVersion, result]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        createdAt: { type: string }
+        actor: { type: string }
+        related: { type: string }
+        content: { type: string }
+        before: { type: string }
+        after: { type: string }
+        planVersion: { type: string }
+        result: { type: string }
+    StatusGroup:
+      type: object
+      required: [status, count, amountCents]
+      properties:
+        status: { type: string }
+        count: { type: integer }
+        amountCents: { type: integer }
+    TrendPoint:
+      type: object
+      required: [date, dueCents, cumulativeCents, projectedCashCents]
+      properties:
+        date: { type: string }
+        dueCents: { type: integer }
+        cumulativeCents: { type: integer }
+        projectedCashCents: { type: integer }
+    Dashboard:
+      type: object
+      required: [cashCents, outstandingCents, outstandingCount, overdueCents, overdueCount, due7Cents, due7Count, due30Cents, paidCents, pendingApprovals, esgUpdates, statusGroups, trend, risk]
+      properties:
+        cashCents: { type: integer }
+        outstandingCents: { type: integer }
+        outstandingCount: { type: integer }
+        overdueCents: { type: integer }
+        overdueCount: { type: integer }
+        due7Cents: { type: integer }
+        due7Count: { type: integer }
+        due30Cents: { type: integer }
+        paidCents: { type: integer }
+        pendingApprovals: { type: integer }
+        esgUpdates: { type: integer }
+        statusGroups: { type: array, items: { $ref: "#/components/schemas/StatusGroup" } }
+        trend: { type: array, items: { $ref: "#/components/schemas/TrendPoint" } }
+        risk: { $ref: "#/components/schemas/RiskEvent" }
+    Workspace:
+      type: object
+      required: [demo, today, source, aiAvailable, aiMessage, customers, invoices, documents, riskEvents, plans, approvals, executions, auditLogs, settings, dashboard]
+      properties:
+        demo: { type: boolean }
+        today: { type: string }
+        source: { type: string }
+        aiAvailable: { type: boolean }
+        aiMessage: { type: string }
+        customers: { type: array, items: { $ref: "#/components/schemas/Customer" } }
+        invoices: { type: array, items: { $ref: "#/components/schemas/Invoice" } }
+        documents: { type: array, items: { $ref: "#/components/schemas/ESGDocument" } }
+        riskEvents: { type: array, items: { $ref: "#/components/schemas/RiskEvent" } }
+        plans: { type: array, items: { $ref: "#/components/schemas/CollectionPlan" } }
+        approvals: { type: array, items: { $ref: "#/components/schemas/ApprovalRecord" } }
+        executions: { type: array, items: { $ref: "#/components/schemas/ExecutionRecord" } }
+        auditLogs: { type: array, items: { $ref: "#/components/schemas/AuditLog" } }
+        settings: { $ref: "#/components/schemas/SystemSetting" }
+        dashboard: { $ref: "#/components/schemas/Dashboard" }
+    PlanInput:
+      type: object
+      properties:
+        riskEventId: { type: string }
+        weights: { $ref: "#/components/schemas/Weights" }
+    TaskEdit:
+      type: object
+      required: [id, method, noticeEn, noticeMs]
+      properties:
+        id: { type: string }
+        method: { type: string, minLength: 1, maxLength: 100 }
+        noticeEn: { type: string, minLength: 1, maxLength: 10000 }
+        noticeMs: { type: string, minLength: 1, maxLength: 10000 }
+    PlanEdit:
+      type: object
+      required: [tasks, notes]
+      properties:
+        tasks: { type: array, items: { $ref: "#/components/schemas/TaskEdit" } }
+        notes: { type: string, maxLength: 5000 }
+    ApprovalInput:
+      type: object
+      required: [decision, notes]
+      properties:
+        decision: { type: string, enum: [approve, defer, reject] }
+        notes: { type: string, maxLength: 5000 }
+    ImportInput:
+      type: object
+      required: [csv, filename]
+      properties:
+        csv: { type: string, minLength: 1, maxLength: 1000000 }
+        filename: { type: string, minLength: 1, maxLength: 200 }
+    ImportResult:
+      type: object
+      required: [imported, errors, warnings, message]
+      properties:
+        imported: { type: integer }
+        errors: { type: array, items: { type: string } }
+        warnings: { type: array, items: { type: string } }
+        message: { type: string }
+    DocumentView:
+      type: object
+      required: [title, content]
+      properties:
+        title: { type: string }
+        content: { type: string }
+    ResetInput:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: { type: boolean }

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "SME Receivables Risk & AI Collection Scheduler"
+description = "中小微企业应收账款风险预警与 ESG 加权催收排程管理员演示系统，包含风险分析、人工审批、模拟执行和追加式审计记录。"
+version = "1.0.0"
+id = "artifacts/receivables-admin"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25220
+
+[services.development]
+run = "pnpm --filter @workspace/receivables-admin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/receivables-admin", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/receivables-admin/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25220"
+BASE_PATH = "/"

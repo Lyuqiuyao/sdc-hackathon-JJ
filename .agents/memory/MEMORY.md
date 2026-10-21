@@ -1,0 +1,1 @@
+- [Administrator-only demo scope](product-scope.md) — do not expand into customer/certifier apps or request real financial customer records.
