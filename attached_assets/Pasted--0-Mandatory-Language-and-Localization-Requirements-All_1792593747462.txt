@@ -1,0 +1,38 @@
+## 0. Mandatory Language and Localization Requirements
+
+All development work must use English. All user-facing content in the website must be in English only.
+
+### Code and Development
+- Write source code, variable names, function names, type definitions, comments, documentation, commit messages, test descriptions, and developer-facing error messages in English.
+- Use clear and consistent English naming conventions.
+- Do not introduce Chinese characters into source code, UI components, mock data, test fixtures, or application configuration unless explicitly required for a non-UI technical reason.
+
+### Website UI — English Only
+All visible website content must use English, including:
+- Page titles, navigation labels, buttons, form labels, placeholders, tooltips, and help text.
+- Tables, column headers, filters, status labels, badges, and pagination.
+- Dialogs, confirmation prompts, validation messages, error messages, success notifications, and empty states.
+- Dashboard cards, charts, legends, summaries, risk explanations, and audit logs.
+- AI-generated content displayed in the interface, except that customer communication drafts must support the required English and Malay languages.
+- Demo customer names, sample company profiles, sample audit events, and other visible demo content.
+
+Do not display Chinese characters anywhere in the website UI, including fallback messages, debug labels, loading states, and error states.
+
+### Customer Communication Language
+- Customer communication drafts must support English and Malay as required by the product.
+- The website interface that displays, edits, approves, and simulates sending those drafts must remain English-only.
+- Do not translate the website UI into Chinese.
+
+### Existing Content Audit
+Before implementation, search the existing frontend, shared UI components, mock data, and user-facing backend messages for Chinese characters.
+
+Report any existing Chinese text and replace it with accurate English equivalents where it is user-facing. Do not modify business logic merely to change display language.
+
+### Validation
+- Add or update an automated check that scans relevant frontend source files and user-facing demo fixtures for Chinese Unicode characters.
+- Ensure the check distinguishes legitimate technical data from user-visible content where appropriate.
+- Run the check alongside existing tests, type checks, and the production build.
+- Report the scan scope, any exclusions, and the final result.
+- Do not claim the website is fully English-only unless the relevant scan and UI verification support that conclusion.
+
+This requirement applies to the entire administrator website, including existing pages and newly implemented features. The application must remain an administrator-only product, and no separate client or certification-officer interface should be introduced.

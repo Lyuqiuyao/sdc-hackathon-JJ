@@ -23,3 +23,23 @@ Do not ask the user for real customer financial records; use explicitly labelled
 
 **How to apply:** 不把演示入口或工作区 ID 一致性检查描述为正式身份认证、授权或租户隔离；正式鉴权需单独明确范围。
 
+## Final administrator MVP requirements
+
+The administrator website must be English-only. Customer communication drafts must support English and Malay. Development naming, comments, documentation, tests and developer-facing errors must use English. Audit existing UI text before implementation and add a relevant Unicode language check; do not claim full UI compliance from a source scan alone.
+
+**Why:** The user explicitly supplied mandatory project language requirements.
+
+**How to apply:** Keep the language policy project-specific. Retain historical records; use English interface labels without rewriting original audit history merely for localization.
+
+The final MVP replaces four-dimensional collection ranking with deterministic two-dimensional ranking (overdue days, outstanding amount) for customers without an assigned ESG rating and three-dimensional ranking (the same two dimensions plus the assigned ESG rating) for customers with one. The exact formulas, weights, rating mapping, normalization and ordering require business confirmation before algorithm changes. Missing ESG must not cause a penalty.
+
+**Why:** The user explicitly changed the ranking requirements and prohibited assuming weights. This supersedes the previous requirement to retain four-dimensional ranking, but not the independent cash-flow/risk rules or historical scoring snapshots.
+
+**How to apply:** Preserve historical versions and separate ranking from risk warnings. AI may explain and suggest communication only; it cannot change financial facts, weights, scores, rank or approval. Do not assume an unconfirmed proposal is accepted.
+
+Provide administrator-only synthetic SEDG submission/import, company information folders and human collection review. SEDG review is not certification or verification of a company, file or ESG rating. NLP extraction from Excel/WhatsApp is deferred. Email execution must remain simulated, displaying recipient, final body, status, time and audit provenance.
+
+**Why:** The user specified these final MVP scope and trust boundaries.
+
+**How to apply:** Do not introduce a customer or certifier portal, NLP profile generation, real email integration, model calls, Secret changes or shared database operations under this implementation scope.
+

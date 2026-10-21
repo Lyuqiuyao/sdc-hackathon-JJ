@@ -1,4 +1,4 @@
-- [Administrator-only demo scope](product-scope.md) — do not expand into customer/certifier apps or request real financial customer records.
+- [Administrator MVP scope](product-scope.md) — English UI; confirmed weights required for 2D/3D migration; synthetic SEDG review, no additional role apps.
 - [AI 接入验收边界](gemini-integration.md) — 当前 Replit 托管 OpenAI；模拟成功不等于真实生成成功，历史直连来源不可改标。
 - [建议文本安全边界](advisory-content-boundary.md) — 关键事实与未知 ESG 使用受控内容，诚实标示来源；CSV 确认不等于来源验证。
 - [生成协调与留存边界](advice-coordination-boundary.md) — 租约不保证供应商计费 exactly-once；共享演示不留原始模型正文，追加式审计不是 WORM。
