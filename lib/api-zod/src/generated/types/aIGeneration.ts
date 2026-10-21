@@ -5,6 +5,7 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { AIGenerationConnectionMode } from './aIGenerationConnectionMode';
 import type { AIGenerationRequestedProvider } from './aIGenerationRequestedProvider';
 import type { AIGenerationStatus } from './aIGenerationStatus';
 
@@ -15,4 +16,6 @@ export interface AIGeneration {
   status: AIGenerationStatus;
   reasonCode: string;
   model: string;
+  /** Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections. */
+  connectionMode?: AIGenerationConnectionMode;
 }

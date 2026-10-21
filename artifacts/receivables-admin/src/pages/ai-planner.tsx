@@ -52,7 +52,7 @@ export default function AiPlanner() {
     };
     return (
       <div className="space-y-4">
-        <Alert><AlertTitle>Recommendations: {ws.settings.aiMode === 'openai' ? 'OpenAI with safe fallback' : ws.settings.aiMode === 'gemini' ? 'Legacy Gemini retired — select OpenAI in Settings' : 'Explainable rules engine'}</AlertTitle><AlertDescription>{ws.aiMessage} Scoring always remains deterministic; weights are demo defaults, not validated business parameters.</AlertDescription></Alert>
+        <Alert><AlertTitle>Recommendations: {ws.settings.aiMode === 'openai' ? 'OpenAI (Replit managed) with safe fallback' : ws.settings.aiMode === 'gemini' ? 'Legacy Gemini retired — select OpenAI in Settings' : 'Explainable rules engine'}</AlertTitle><AlertDescription>{ws.aiMessage} Scoring always remains deterministic; weights are demo defaults, not validated business parameters.</AlertDescription></Alert>
         {err && <Alert variant="destructive" data-testid="alert-plan-error"><AlertDescription>{err}</AlertDescription></Alert>}
         <div className="grid gap-4 lg:grid-cols-3">
           <Panel title="Scoring weights" zh="四维权重 (合计须为 100%)" className="lg:col-span-1">

@@ -17,7 +17,8 @@ export function enrichPlan(id: string): Promise<CollectionPlan> {
     if (!plan) throw new BusinessError("Plan not found.", 404);
     if (plan.status !== "Pending" || plan.providerMode === "openai" || plan.providerMode === "gemini" || humanAdjusted(state, plan)) return plan;
     if (state.settings.aiMode === "rules" && plan.aiGeneration?.reasonCode === "rules_selected") return plan;
-    if (!openaiConfigured() && plan.aiGeneration?.requestedProvider === "openai" && plan.aiGeneration.reasonCode === "missing_api_key") return plan;
+    if (!openaiConfigured() && plan.aiGeneration?.requestedProvider === "openai"
+      && plan.aiGeneration.reasonCode === "missing_managed_config") return plan;
     const expected = JSON.stringify(plan);
     const result = await generateAdvice(state, plan);
     return changeState(current => applyAdvice(current, id, result, expected));

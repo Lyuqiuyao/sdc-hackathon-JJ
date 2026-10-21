@@ -317,6 +317,10 @@ components:
         status: { type: string, enum: [success, fallback] }
         reasonCode: { type: string }
         model: { type: string }
+        connectionMode:
+          type: string
+          enum: [replit_managed]
+          description: "Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections."
     CollectionPlan:
       type: object
       required: [id, familyId, version, riskEventId, createdAt, status, mode, weights, tasks, notes, dataSignature]

@@ -8,6 +8,7 @@
 
 export * from './actionResult';
 export * from './aIGeneration';
+export * from './aIGenerationConnectionMode';
 export * from './aIGenerationRequestedProvider';
 export * from './aIGenerationStatus';
 export * from './aIStrategy';

@@ -4,6 +4,7 @@ import { fmtDateTime } from '@/lib/arus';
 
 const REASONS: Record<string, string> = {
   missing_api_key: 'Server key missing; bilingual rule templates used.',
+  missing_managed_config: 'Replit managed configuration unavailable; bilingual rule templates used. No private-key fallback.',
   rules_selected: 'Rules mode selected; no model request.',
   pending_generation: 'Model generation not completed; rules templates remain available.',
   timeout: 'Model request timed out; rules templates used.',
@@ -22,6 +23,8 @@ export function ProviderDetails({ plan }: { plan: CollectionPlan }) {
       <Tag tone={provider === 'openai' || provider === 'gemini' ? 'green' : 'orange'}>{provider === 'gemini' ? 'gemini (historical)' : provider}</Tag>
       {generation ? <span>{generation.status} · {generation.model || 'No LLM'} · {fmtDateTime(generation.generatedAt)} · {generation.durationMs} ms</span>
         : <span>Legacy rules/template plan; not model output.</span>}
+      {generation?.requestedProvider === 'openai' && <span>{generation.connectionMode === 'replit_managed'
+        ? 'OpenAI (Replit managed)' : 'Historical OpenAI · connection unrecorded'}</span>}
     </div>
     {generation && <p className="text-muted-foreground">{REASONS[generation.reasonCode] ?? generation.reasonCode}</p>}
     {plan.aiRiskExplanation && <div><strong>{provider === 'gemini' ? 'Historical Gemini' : 'OpenAI'} risk explanation · 风险归因：</strong><p className="mt-1 whitespace-pre-wrap">{plan.aiRiskExplanation}</p></div>}

@@ -51,6 +51,7 @@ export function buildPlan(state: DemoState, riskEventId: string, weights: Weight
     version: previous ? Math.max(...state.plans.filter(p => p.familyId === previous.familyId).map(p => p.version)) + 1 : 1,
     riskEventId, createdAt: now(), status: "Pending", mode: "rules_fallback", providerMode: "rules_fallback",
     aiGeneration: { requestedProvider: state.settings.aiMode, generatedAt: now(), durationMs: 0,
+      ...(state.settings.aiMode === "openai" ? { connectionMode: "replit_managed" as const } : {}),
       status: "fallback", reasonCode: state.settings.aiMode === "openai" ? "pending_generation"
         : state.settings.aiMode === "gemini" ? "legacy_provider_retired" : "rules_selected", model: "" },
     weights: structuredClone(weights), tasks, notes: "", dataSignature: signature(state) };

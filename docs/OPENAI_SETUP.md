@@ -1,5 +1,9 @@
 # OpenAI 迁移与实际验收
 
+> 历史直连资料：正式应用现已改为 Replit 托管 OpenAI，当前接入不再使用私人 Key。
+> 本文保留之前直连迁移和 429 证据，不代表当前配置。当前说明见
+> [REPLIT_MANAGED_OPENAI.md](REPLIT_MANAGED_OPENAI.md)；本轮未进行真实托管模型调用。
+
 ## 当前结论（2026-10-21）
 
 正式提供方已从 Gemini 切换为 OpenAI，未重建项目、未改变页面布局。

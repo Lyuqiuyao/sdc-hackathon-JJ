@@ -1,2 +1,2 @@
 - [Administrator-only demo scope](product-scope.md) — do not expand into customer/certifier apps or request real financial customer records.
-- [AI 接入验收边界](gemini-integration.md) — 当前 OpenAI；配置、模型元数据或模拟成功不等于真实业务生成成功，旧来源不可改标。
+- [AI 接入验收边界](gemini-integration.md) — 当前 Replit 托管 OpenAI；模拟成功不等于真实生成成功，历史直连来源不可改标。

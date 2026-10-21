@@ -26,8 +26,8 @@ export function workspace(state: DemoState): Workspace {
     demo: true, today: today(), source: "Synthetic Demo Data · shared administrator sandbox",
     aiAvailable: openaiConfigured(),
     aiMessage: openaiConfigured()
-      ? "Server-side OpenAI key is configured, not proof of connectivity. Select OpenAI in Settings; only a plan marked openai / success contains validated model output. Errors use rules_fallback."
-      : "OPENAI_API_KEY is missing. OpenAI requests use rules_fallback bilingual templates. Configure the server secret and select OpenAI to enable real model requests.",
+      ? "OpenAI (Replit managed) configuration is present, not proof of connectivity. Runtime usage is billed through Replit credits. Only openai / success with replit_managed contains validated managed output. Errors use rules_fallback; no private-key fallback."
+      : "OpenAI (Replit managed) configuration is unavailable. Rules and bilingual templates remain usable. Enable the official Replit OpenAI integration; a private OPENAI_API_KEY is not used as a fallback.",
     customers: customersNow(state, invoices), invoices,
     documents: state.documents.map(d => ({ ...d, status: d.validUntil < today() ? "Expired" : d.status })),
     riskEvents: [...state.riskEvents].reverse(), plans: [...state.plans].reverse(),
@@ -97,7 +97,7 @@ export function applyAdvice(state: DemoState, id: string, result: AdvisorResult,
     }
   }
   audit(state, "AI generation", result.providerMode === "openai"
-    ? "Validated OpenAI recommendations applied to pending draft only. Deterministic results unchanged; human approval required."
+    ? "Validated OpenAI (Replit managed) recommendations applied to pending draft only. Deterministic results unchanged; human approval required."
     : "Rules fallback retained. No content is labelled as OpenAI-generated.",
     plan.id, "", JSON.stringify({ providerMode: result.providerMode, ...result.generation }), plan);
   return plan;

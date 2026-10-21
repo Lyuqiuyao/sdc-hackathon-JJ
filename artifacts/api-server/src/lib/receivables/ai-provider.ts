@@ -7,7 +7,11 @@ import { openaiJsonSchema, responseSchema, type AdviceResponse } from "./ai-sche
 
 export const OPENAI_MODEL = "gpt-5-mini";
 export const OPENAI_TIMEOUT_MS = 45_000;
-export const openaiConfigured = () => Boolean(process.env.OPENAI_API_KEY?.trim());
+export const OPENAI_MAX_OUTPUT_TOKENS = 8192;
+export const openaiConfigured = (env: NodeJS.ProcessEnv = process.env) =>
+  Boolean(env.AI_INTEGRATIONS_OPENAI_BASE_URL?.trim() && env.AI_INTEGRATIONS_OPENAI_API_KEY?.trim());
+export const loadManagedOpenAIClient = async (): Promise<OpenAI> =>
+  (await import("@workspace/integrations-openai-ai-server")).openai;
 
 export const rulesAdvisor = { createDraft: buildPlan };
 
@@ -31,13 +35,19 @@ ESG approved/valid ratings in this dataset are synthetic reviewed evidence, not 
 Use 1-2 short sentences for reasoning and ESG considerations, 1 short assumption and 1 uncertainty, and concise options. No external tools.`;
 
 // Only this server module handles credentials. No raw SDK error/response is logged.
-export function createOpenAITransport(apiKey: string, fetch?: typeof globalThis.fetch): OpenAITransport {
+export function createOpenAITransport(options: {
+  loadClient?: () => Promise<OpenAI>; fetch?: typeof globalThis.fetch;
+} = {}): OpenAITransport {
   return async (context, signal) => {
-    const client = new OpenAI({ apiKey, baseURL: "https://api.openai.com/v1",
-      timeout: OPENAI_TIMEOUT_MS, maxRetries: 0, ...(fetch ? { fetch } : {}) });
+    // Lazy import keeps template initialization/configuration failures inside the
+    // caller's safe fallback boundary, not application startup.
+    const managed = await (options.loadClient ?? loadManagedOpenAIClient)();
+    const client = managed.withOptions({
+      timeout: OPENAI_TIMEOUT_MS, maxRetries: 0, ...(options.fetch ? { fetch: options.fetch } : {}),
+    });
     const response = await client.responses.create({
       model: OPENAI_MODEL, instructions, input: JSON.stringify(context),
-      store: false, max_output_tokens: 24000, reasoning: { effort: "minimal" },
+      store: false, max_output_tokens: OPENAI_MAX_OUTPUT_TOKENS, reasoning: { effort: "minimal" },
       text: { format: { type: "json_schema", name: "collection_advice", strict: true, schema: openaiJsonSchema } },
     }, { signal });
     if (response.status !== "completed") throw new Error("Incomplete model response");
@@ -45,7 +55,7 @@ export function createOpenAITransport(apiKey: string, fetch?: typeof globalThis.
   };
 }
 export const officialOpenAITransport: OpenAITransport = (context, signal) =>
-  createOpenAITransport(process.env.OPENAI_API_KEY!)(context, signal);
+  createOpenAITransport()(context, signal);
 
 export function businessContext(state: DemoState, plan: CollectionPlan) {
   const risk = state.riskEvents.find(r => r.id === plan.riskEventId)!;
@@ -99,10 +109,11 @@ export async function generateAdvice(state: DemoState, plan: CollectionPlan, opt
   const fallback = (reasonCode: string): AdvisorResult => ({
     providerMode: "rules_fallback",
     generation: { requestedProvider, generatedAt: now(), durationMs: Date.now() - started,
+      ...(requestedProvider === "openai" ? { connectionMode: "replit_managed" as const } : {}),
       status: "fallback", reasonCode, model: requestedProvider === "openai" ? OPENAI_MODEL : "" },
   });
   if (requestedProvider !== "openai") return fallback(requestedProvider === "gemini" ? "legacy_provider_retired" : "rules_selected");
-  if (!(options.configured ?? openaiConfigured())) return fallback("missing_api_key");
+  if (!(options.configured ?? openaiConfigured())) return fallback("missing_managed_config");
   if (plan.tasks.length > 50) return fallback("context_limit");
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -118,6 +129,7 @@ export async function generateAdvice(state: DemoState, plan: CollectionPlan, opt
     catch { return fallback("invalid_response"); }
     return { providerMode: "openai", advice,
       generation: { requestedProvider, generatedAt: now(), durationMs: Date.now() - started,
+        connectionMode: "replit_managed",
         status: "success", reasonCode: "validated_response", model: OPENAI_MODEL } };
   } catch (error) {
     return fallback(controller.signal.aborted || error instanceof OpenAI.APIConnectionTimeoutError ? "timeout" : "api_error");

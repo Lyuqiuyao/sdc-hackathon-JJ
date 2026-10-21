@@ -311,6 +311,16 @@ export const AIGenerationStatus = {
   fallback: 'fallback',
 } as const;
 
+/**
+ * Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.
+ */
+export type AIGenerationConnectionMode = typeof AIGenerationConnectionMode[keyof typeof AIGenerationConnectionMode];
+
+
+export const AIGenerationConnectionMode = {
+  replit_managed: 'replit_managed',
+} as const;
+
 export interface AIGeneration {
   requestedProvider: AIGenerationRequestedProvider;
   generatedAt: string;
@@ -318,6 +328,8 @@ export interface AIGeneration {
   status: AIGenerationStatus;
   reasonCode: string;
   model: string;
+  /** Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections. */
+  connectionMode?: AIGenerationConnectionMode;
 }
 
 export type CollectionPlanStatus = typeof CollectionPlanStatus[keyof typeof CollectionPlanStatus];

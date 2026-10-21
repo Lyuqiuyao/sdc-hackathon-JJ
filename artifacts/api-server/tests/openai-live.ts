@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { seedState } from "../src/lib/receivables/seed";
 import { generate, applyAdvice, decide, execute } from "../src/lib/receivables/service";
-import { createOpenAITransport, generateAdvice, openaiConfigured, OPENAI_MODEL } from "../src/lib/receivables/ai-provider";
+import { generateAdvice, openaiConfigured, OPENAI_MODEL } from "../src/lib/receivables/ai-provider";
+import { createLegacyOpenAITransport as createOpenAITransport } from "../src/lib/receivables/legacy-openai";
+
+// Historical private-key diagnostic retained as source only. Never execute it.
+console.log(JSON.stringify({result:"NOT_RUN",reason:"Archived private-key diagnostic; use the explicitly authorized managed live entry instead."}));
+process.exit(2);
 
 // One real request using only an isolated synthetic fixture. No repository/DB.
 if (!openaiConfigured()) {

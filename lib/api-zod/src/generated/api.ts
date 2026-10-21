@@ -230,7 +230,8 @@ export const GetWorkspaceResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
-  "model": zod.string()
+  "model": zod.string(),
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(getWorkspaceResponsePlansItemWeightsLateFeeMin).max(getWorkspaceResponsePlansItemWeightsLateFeeMax),
@@ -527,7 +528,8 @@ export const GeneratePlanResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
-  "model": zod.string()
+  "model": zod.string(),
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(generatePlanResponseWeightsLateFeeMin).max(generatePlanResponseWeightsLateFeeMax),
@@ -636,7 +638,8 @@ export const EditPlanResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
-  "model": zod.string()
+  "model": zod.string(),
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(editPlanResponseWeightsLateFeeMin).max(editPlanResponseWeightsLateFeeMax),
@@ -734,7 +737,8 @@ export const DecidePlanResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
-  "model": zod.string()
+  "model": zod.string(),
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(decidePlanResponseWeightsLateFeeMin).max(decidePlanResponseWeightsLateFeeMax),
@@ -823,7 +827,8 @@ export const ExecutePlanResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
-  "model": zod.string()
+  "model": zod.string(),
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.')
 }).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(executePlanResponseWeightsLateFeeMin).max(executePlanResponseWeightsLateFeeMax),

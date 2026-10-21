@@ -41,7 +41,7 @@ test("missing key falls back without issuing any transport request",async()=>{
   const {state,plan}=setup();let calls=0;
   const result=await generateAdvice(state,plan,{configured:false,transport:async()=>{calls++;throw Error();}});
   assert.equal(calls,0);assert.equal(result.providerMode,"rules_fallback");
-  assert.equal(result.generation.reasonCode,"missing_api_key");assert.equal(result.generation.status,"fallback");
+  assert.equal(result.generation.reasonCode,"missing_managed_config");assert.equal(result.generation.status,"fallback");
 });
 test("explicit rules mode works even when a key is configured",async()=>{
   const {state,plan}=setup();state.settings.aiMode="rules";
@@ -55,6 +55,7 @@ test("successful structured output contains contextual explanation, alternatives
   }});
   assert.equal(calls,1);assert.equal(result.providerMode,"openai");assert.equal(result.generation.status,"success");
   assert.equal(result.generation.model,OPENAI_MODEL);assert.ok(result.generation.generatedAt);
+  assert.equal(result.generation.connectionMode,"replit_managed");
   for(const t of result.advice!.tasks){
     assert.equal(t.strategies.length,3);assert.match(t.noticeMs,/Tuan\/Puan/);
     if(t.esgEvidence==="unknown"){assert.equal(t.esgRating,"unknown");assert.match(t.esgConsiderations,/not evidence/);}
@@ -62,17 +63,17 @@ test("successful structured output contains contextual explanation, alternatives
 });
 test("official OpenAI SDK constructs strict Responses request (intercepted, NOT a live API test)",async()=>{
   const {state,plan}=setup();let calls=0;
-  const transport=createOpenAITransport("synthetic-test-value-not-a-real-key",async (input,init)=>{
-    calls++;assert.equal(String(input),"https://api.openai.com/v1/responses");
+  const transport=createOpenAITransport({fetch:async (input,init)=>{
+    calls++;assert.equal(String(input),"https://managed-openai.synthetic.invalid/proxy/v1/responses");
     const payload=JSON.parse(String(init?.body));
-    assert.equal(payload.model,OPENAI_MODEL);assert.equal(payload.store,false);
+    assert.equal(payload.model,OPENAI_MODEL);assert.equal(payload.store,false);assert.equal(payload.max_output_tokens,8192);
     assert.equal(payload.text.format.type,"json_schema");assert.equal(payload.text.format.strict,true);
     assert.equal(payload.text.format.schema.additionalProperties,false);
     assert.ok(payload.instructions);assert.ok(payload.input);
     return new Response(JSON.stringify({id:"resp_synthetic",object:"response",status:"completed",
       output:[{type:"message",role:"assistant",content:[{type:"output_text",text:JSON.stringify(response(state,plan)),annotations:[]}]}]}),
       {status:200,headers:{"Content-Type":"application/json"}});
-  });
+  }});
   const result=await generateAdvice(state,plan,{configured:true,transport});
   assert.equal(calls,1);assert.equal(result.providerMode,"openai");
 });
