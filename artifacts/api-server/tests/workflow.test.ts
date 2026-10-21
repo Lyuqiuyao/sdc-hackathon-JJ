@@ -166,10 +166,10 @@ test("settings/invoice/ESG mutation blocks stale approval or execution", () => {
 });
 test("rules fallback, bilingual notices and synthetic source are explicit", () => {
   const s=seedState(), ws=service.workspace(s);
-  assert.equal(ws.demo,true); assert.equal(ws.aiAvailable,false); assert.match(ws.source,/Synthetic/);
+  assert.equal(ws.demo,true); assert.equal(typeof ws.aiAvailable,"boolean"); assert.match(ws.source,/Synthetic/);
   assert.ok(ws.invoices.every(i=>i.source.includes("Synthetic")));
   for(const t of ws.plans[0]!.tasks) { assert.match(t.noticeEn,/Demo/); assert.match(t.noticeMs,/Demo/); }
-  assert.throws(()=>service.settings(s,{...s.settings,aiMode:"gemini"}),/not connected/);
+  assert.equal(service.settings(s,{...s.settings,aiMode:"gemini"}).aiMode,"gemini");
   assert.ok(service.generate(s,{}).tasks.length>0);
 });
 test("planning separates escalation from extension, supplies alternatives", () => {

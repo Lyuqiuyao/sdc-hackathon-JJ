@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { download, errMsg, fmtDate, fmtDateTime, fmtfix, rm, toCsv, useRefresh } from '@/lib/arus';
+import { ProviderDetails } from '@/components/provider-details';
 
 export default function ExecutionResults() {
   const { toast } = useToast();
@@ -31,8 +32,8 @@ export default function ExecutionResults() {
         };
         const report = () => {
           if (!plan) return;
-          const head = ['rank', 'invoice_number', 'customer', 'outstanding_MYR', 'due_date', 'priority_score', 'method', 'scheduled_at', 'plan_version', 'plan_status', 'task_status', 'execution_result', 'notice_status', 'notice_en', 'notice_ms'];
-          download(`arus-plan-v${plan.version}-report.csv`, toCsv([head, ...plan.tasks.map((t) => { const r = recs.find((x) => x.taskId === t.id); return [t.rank, t.invoiceNumber, t.customerName, fmtfix(t.outstandingCents), t.dueDate, t.score.toFixed(1), t.method, t.scheduledAt, plan.version, plan.status, t.status, r?.result ?? 'Not executed', r?.noticeStatus ?? '-', t.noticeEn, t.noticeMs]; })]));
+          const head = ['rank', 'invoice_number', 'customer', 'outstanding_MYR', 'due_date', 'priority_score', 'method', 'scheduled_at', 'plan_version', 'plan_status', 'task_status', 'execution_result', 'notice_status', 'notice_en', 'notice_ms', 'provider_mode', 'generation_status', 'generated_at', 'notice_en_source', 'notice_ms_source', 'data_source'];
+          download(`arus-plan-v${plan.version}-report.csv`, toCsv([head, ...plan.tasks.map((t) => { const r = recs.find((x) => x.taskId === t.id); return [t.rank, t.invoiceNumber, t.customerName, fmtfix(t.outstandingCents), t.dueDate, t.score.toFixed(1), t.method, t.scheduledAt, plan.version, plan.status, t.status, r?.result ?? 'Not executed', r?.noticeStatus ?? '-', t.noticeEn, t.noticeMs, plan.providerMode ?? 'rules_fallback', plan.aiGeneration?.status ?? 'legacy', plan.aiGeneration?.generatedAt ?? '', t.noticeEnSource ?? 'rules_fallback', t.noticeMsSource ?? 'rules_fallback', 'Synthetic Demo Data']; })]));
         };
         return (
           <div className="space-y-4">
@@ -50,6 +51,7 @@ export default function ExecutionResults() {
                     <Button onClick={() => setAsk(true)} disabled={plan.status !== 'Approved' || exec.isPending} data-testid="button-execute"><PlayCircle className="mr-1 h-4 w-4" />{exec.isPending ? 'Executing...' : 'Execute Approved Plan'}</Button>
                   </div>
                 </Panel>
+                <ProviderDetails plan={plan} />
                 <Panel title={`Final collection order · ${plan.tasks.length} tasks`} zh="最终催收顺序" bodyClass="p-0">
                   <div className="overflow-x-auto"><Table>
                     <TableHeader><TableRow><TableHead>#</TableHead><TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead className="text-right">Outstanding</TableHead><TableHead>Method</TableHead><TableHead>Scheduled</TableHead><TableHead className="text-right">Score</TableHead><TableHead>Approval</TableHead><TableHead>Simulated execution</TableHead></TableRow></TableHeader>

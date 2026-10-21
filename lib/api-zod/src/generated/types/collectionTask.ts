@@ -5,6 +5,9 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { AITaskAdvice } from './aITaskAdvice';
+import type { CollectionTaskNoticeEnSource } from './collectionTaskNoticeEnSource';
+import type { CollectionTaskNoticeMsSource } from './collectionTaskNoticeMsSource';
 
 export interface CollectionTask {
   id: string;
@@ -27,7 +30,10 @@ export interface CollectionTask {
   reason: string;
   uncertainty: string;
   esgNote: string;
+  aiAdvice?: AITaskAdvice;
   noticeEn: string;
   noticeMs: string;
   status: string;
+  noticeEnSource?: CollectionTaskNoticeEnSource;
+  noticeMsSource?: CollectionTaskNoticeMsSource;
 }

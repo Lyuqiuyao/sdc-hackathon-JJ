@@ -5,6 +5,8 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { AIGeneration } from './aIGeneration';
+import type { CollectionPlanProviderMode } from './collectionPlanProviderMode';
 import type { CollectionPlanStatus } from './collectionPlanStatus';
 import type { CollectionTask } from './collectionTask';
 import type { Weights } from './weights';
@@ -17,6 +19,9 @@ export interface CollectionPlan {
   createdAt: string;
   status: CollectionPlanStatus;
   mode: string;
+  providerMode?: CollectionPlanProviderMode;
+  aiRiskExplanation?: string;
+  aiGeneration?: AIGeneration;
   weights: Weights;
   tasks: CollectionTask[];
   notes: string;

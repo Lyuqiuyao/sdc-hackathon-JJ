@@ -222,6 +222,16 @@ export const GetWorkspaceResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
+  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "aiRiskExplanation": zod.string().optional(),
+  "aiGeneration": zod.object({
+  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "generatedAt": zod.string(),
+  "durationMs": zod.number().int(),
+  "status": zod.enum(['success', 'fallback']),
+  "reasonCode": zod.string(),
+  "model": zod.string()
+}).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(getWorkspaceResponsePlansItemWeightsLateFeeMin).max(getWorkspaceResponsePlansItemWeightsLateFeeMax),
   "urgency": zod.number().int().min(getWorkspaceResponsePlansItemWeightsUrgencyMin).max(getWorkspaceResponsePlansItemWeightsUrgencyMax),
@@ -249,9 +259,26 @@ export const GetWorkspaceResponse = zod.object({
   "reason": zod.string(),
   "uncertainty": zod.string(),
   "esgNote": zod.string(),
+  "aiAdvice": zod.object({
+  "reasoning": zod.string(),
+  "assumptions": zod.array(zod.string()),
+  "uncertainties": zod.array(zod.string()),
+  "esgEvidence": zod.enum(['verified', 'unknown']),
+  "esgRating": zod.enum(['A', 'B', 'C', 'unknown']),
+  "esgConsiderations": zod.string(),
+  "strategies": zod.array(zod.object({
+  "kind": zod.enum(['payment_full', 'installments', 'extension']),
+  "proposal": zod.string(),
+  "conditions": zod.string()
+})),
+  "noticeEn": zod.string(),
+  "noticeMs": zod.string()
+}).optional(),
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -492,6 +519,16 @@ export const GeneratePlanResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
+  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "aiRiskExplanation": zod.string().optional(),
+  "aiGeneration": zod.object({
+  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "generatedAt": zod.string(),
+  "durationMs": zod.number().int(),
+  "status": zod.enum(['success', 'fallback']),
+  "reasonCode": zod.string(),
+  "model": zod.string()
+}).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(generatePlanResponseWeightsLateFeeMin).max(generatePlanResponseWeightsLateFeeMax),
   "urgency": zod.number().int().min(generatePlanResponseWeightsUrgencyMin).max(generatePlanResponseWeightsUrgencyMax),
@@ -519,9 +556,26 @@ export const GeneratePlanResponse = zod.object({
   "reason": zod.string(),
   "uncertainty": zod.string(),
   "esgNote": zod.string(),
+  "aiAdvice": zod.object({
+  "reasoning": zod.string(),
+  "assumptions": zod.array(zod.string()),
+  "uncertainties": zod.array(zod.string()),
+  "esgEvidence": zod.enum(['verified', 'unknown']),
+  "esgRating": zod.enum(['A', 'B', 'C', 'unknown']),
+  "esgConsiderations": zod.string(),
+  "strategies": zod.array(zod.object({
+  "kind": zod.enum(['payment_full', 'installments', 'extension']),
+  "proposal": zod.string(),
+  "conditions": zod.string()
+})),
+  "noticeEn": zod.string(),
+  "noticeMs": zod.string()
+}).optional(),
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -574,6 +628,16 @@ export const EditPlanResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
+  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "aiRiskExplanation": zod.string().optional(),
+  "aiGeneration": zod.object({
+  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "generatedAt": zod.string(),
+  "durationMs": zod.number().int(),
+  "status": zod.enum(['success', 'fallback']),
+  "reasonCode": zod.string(),
+  "model": zod.string()
+}).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(editPlanResponseWeightsLateFeeMin).max(editPlanResponseWeightsLateFeeMax),
   "urgency": zod.number().int().min(editPlanResponseWeightsUrgencyMin).max(editPlanResponseWeightsUrgencyMax),
@@ -601,9 +665,26 @@ export const EditPlanResponse = zod.object({
   "reason": zod.string(),
   "uncertainty": zod.string(),
   "esgNote": zod.string(),
+  "aiAdvice": zod.object({
+  "reasoning": zod.string(),
+  "assumptions": zod.array(zod.string()),
+  "uncertainties": zod.array(zod.string()),
+  "esgEvidence": zod.enum(['verified', 'unknown']),
+  "esgRating": zod.enum(['A', 'B', 'C', 'unknown']),
+  "esgConsiderations": zod.string(),
+  "strategies": zod.array(zod.object({
+  "kind": zod.enum(['payment_full', 'installments', 'extension']),
+  "proposal": zod.string(),
+  "conditions": zod.string()
+})),
+  "noticeEn": zod.string(),
+  "noticeMs": zod.string()
+}).optional(),
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -645,6 +726,16 @@ export const DecidePlanResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
+  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "aiRiskExplanation": zod.string().optional(),
+  "aiGeneration": zod.object({
+  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "generatedAt": zod.string(),
+  "durationMs": zod.number().int(),
+  "status": zod.enum(['success', 'fallback']),
+  "reasonCode": zod.string(),
+  "model": zod.string()
+}).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(decidePlanResponseWeightsLateFeeMin).max(decidePlanResponseWeightsLateFeeMax),
   "urgency": zod.number().int().min(decidePlanResponseWeightsUrgencyMin).max(decidePlanResponseWeightsUrgencyMax),
@@ -672,9 +763,26 @@ export const DecidePlanResponse = zod.object({
   "reason": zod.string(),
   "uncertainty": zod.string(),
   "esgNote": zod.string(),
+  "aiAdvice": zod.object({
+  "reasoning": zod.string(),
+  "assumptions": zod.array(zod.string()),
+  "uncertainties": zod.array(zod.string()),
+  "esgEvidence": zod.enum(['verified', 'unknown']),
+  "esgRating": zod.enum(['A', 'B', 'C', 'unknown']),
+  "esgConsiderations": zod.string(),
+  "strategies": zod.array(zod.object({
+  "kind": zod.enum(['payment_full', 'installments', 'extension']),
+  "proposal": zod.string(),
+  "conditions": zod.string()
+})),
+  "noticeEn": zod.string(),
+  "noticeMs": zod.string()
+}).optional(),
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -707,6 +815,16 @@ export const ExecutePlanResponse = zod.object({
   "createdAt": zod.string(),
   "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
   "mode": zod.string(),
+  "providerMode": zod.enum(['gemini', 'rules_fallback']).optional(),
+  "aiRiskExplanation": zod.string().optional(),
+  "aiGeneration": zod.object({
+  "requestedProvider": zod.enum(['rules', 'gemini']),
+  "generatedAt": zod.string(),
+  "durationMs": zod.number().int(),
+  "status": zod.enum(['success', 'fallback']),
+  "reasonCode": zod.string(),
+  "model": zod.string()
+}).optional(),
   "weights": zod.object({
   "lateFee": zod.number().int().min(executePlanResponseWeightsLateFeeMin).max(executePlanResponseWeightsLateFeeMax),
   "urgency": zod.number().int().min(executePlanResponseWeightsUrgencyMin).max(executePlanResponseWeightsUrgencyMax),
@@ -734,9 +852,26 @@ export const ExecutePlanResponse = zod.object({
   "reason": zod.string(),
   "uncertainty": zod.string(),
   "esgNote": zod.string(),
+  "aiAdvice": zod.object({
+  "reasoning": zod.string(),
+  "assumptions": zod.array(zod.string()),
+  "uncertainties": zod.array(zod.string()),
+  "esgEvidence": zod.enum(['verified', 'unknown']),
+  "esgRating": zod.enum(['A', 'B', 'C', 'unknown']),
+  "esgConsiderations": zod.string(),
+  "strategies": zod.array(zod.object({
+  "kind": zod.enum(['payment_full', 'installments', 'extension']),
+  "proposal": zod.string(),
+  "conditions": zod.string()
+})),
+  "noticeEn": zod.string(),
+  "noticeMs": zod.string()
+}).optional(),
   "noticeEn": zod.string(),
   "noticeMs": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "noticeEnSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['gemini', 'rules_fallback', 'human']).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()

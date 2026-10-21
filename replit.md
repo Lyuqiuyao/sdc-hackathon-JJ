@@ -39,7 +39,8 @@
 - Demo entities are stored in one typed JSONB aggregate rather than ten normalized tables. This keeps version snapshots and audit entries atomic with workflow changes and allows straightforward migration to normalized repositories later. This is a competition MVP, not a multi-tenant accounting ledger.
 - Row locks serialize workflow mutations across browser tabs. An operation and its audit record commit together; failed operations roll back.
 - The demo role entry deliberately has no identity protection. All visitors share one synthetic workspace. It must not hold real customer data.
-- Gemini is a server-only provider extension point, deliberately disconnected in the MVP. Rules-engine notices are labelled templates.
+- Gemini uses the official Google Gen AI SDK with a server-only `GEMINI_API_KEY` (bring-your-own-key, not the Replit AI proxy). Deterministic calculation precedes advisory prose. Missing keys/errors/timeouts/invalid output retain `rules_fallback`. External I/O is outside the database row lock; an optimistic snapshot check prevents late output from changing edited, stale or approved plans.
+- Plan provider mode and per-language draft sources are explicit. No claim of live Gemini connectivity is valid until the real live test passes; see `docs/GEMINI_SETUP.md`.
 
 ## Product
 

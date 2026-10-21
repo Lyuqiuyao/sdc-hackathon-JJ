@@ -1,0 +1,68 @@
+# Task: Integrate Gemini into the Existing Receivables Collection Workflow
+
+Please integrate a real Gemini API into the existing SME Receivables Risk & AI Collection Scheduler. Do not rebuild the project or replace the existing rules engine.
+
+## 1. Preserve the current deterministic engine
+
+Keep the existing four-factor scoring algorithm, cash-flow risk calculations, collection ranking, approval workflow, version history, simulated execution, and audit logging.
+
+The rules engine must remain functional without a Gemini API key.
+
+## 2. Implement a real Gemini provider
+
+Inspect the existing `artifacts/api-server/src/lib/receivables/ai-provider.ts`, `planner.ts`, `communication.ts`, and `service.ts`.
+
+Replace the placeholder Gemini provider with a real server-side Gemini API integration using the official Google Gen AI SDK and a currently supported Gemini model.
+
+Read the API key from a server-side environment variable such as `GEMINI_API_KEY`. Never expose the key in frontend code, browser responses, logs, or committed source files.
+
+If the required SDK is not installed, install and configure it in the API server workspace only.
+
+## 3. Separate algorithm results from AI-generated content
+
+First calculate the risk event, four-factor scores, weights, collection ranks, outstanding amounts, due dates, and preliminary collection methods using the existing deterministic code.
+
+Then pass only the necessary business context and calculated results to Gemini to generate:
+
+- A contextual explanation of the risk drivers.
+- Multiple alternative negotiation strategies, including payment in full, installment negotiation, and short-term extension where appropriate.
+- Professional English and Bahasa Melayu collection messages.
+- ESG-related risk considerations grounded in available, verified information.
+- Assumptions, uncertainty, and reasons supporting each recommendation.
+
+Do not let Gemini modify invoice amounts, contractual terms, calculated risk levels, four-factor scores, ranking values, approval status, or execution status.
+
+Missing or unverified ESG information must remain unknown or neutral. Never invent ESG certifications or ratings.
+
+Validate Gemini responses against a defined schema. Handle malformed responses and API failures safely.
+
+## 4. Implement honest fallback behavior
+
+If the API key is missing, Gemini is unavailable, the request times out, or the response fails validation, use the existing rules-based planner and bilingual templates.
+
+Record the actual provider mode for every generated plan: `gemini` or `rules_fallback`. Display this mode in the UI so users can distinguish real model output from fallback templates.
+
+Do not label template-generated content as Gemini-generated.
+
+## 5. Preserve human approval and auditability
+
+Gemini may only generate recommendations. It must never approve plans, send actual emails, change payment records, or execute financial transactions.
+
+Keep the existing approval requirement and simulated-execution restrictions.
+
+Record provider mode, generation time, success/failure status, and relevant audit events without storing API keys or unnecessary sensitive customer data.
+
+## 6. Add verification tests
+
+Test:
+1. Missing API key activates the rules-based fallback.
+2. A configured API key results in an actual Gemini API request.
+3. Successful responses produce contextual risk explanations, multiple negotiation strategies, and English/Malay messages.
+4. Invalid responses and API timeouts safely activate fallback.
+5. Gemini cannot alter deterministic scoring or approve a plan.
+6. Plans still require human approval before simulated execution.
+7. Existing invoice data, settings, approval history, and audit functionality remain intact.
+
+Do not claim Gemini integration is complete merely because the provider class exists. Verify a real API request succeeds using a configured key, and report which tests were actually run. Never print or expose the API key.
+
+At the end, explain exactly where I should configure `GEMINI_API_KEY` in Replit Secrets and how I can verify that the UI is using real Gemini output.

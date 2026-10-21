@@ -7,13 +7,24 @@
  */
 
 export * from './actionResult';
+export * from './aIGeneration';
+export * from './aIGenerationRequestedProvider';
+export * from './aIGenerationStatus';
+export * from './aIStrategy';
+export * from './aIStrategyKind';
+export * from './aITaskAdvice';
+export * from './aITaskAdviceEsgEvidence';
+export * from './aITaskAdviceEsgRating';
 export * from './approvalInput';
 export * from './approvalInputDecision';
 export * from './approvalRecord';
 export * from './auditLog';
 export * from './collectionPlan';
+export * from './collectionPlanProviderMode';
 export * from './collectionPlanStatus';
 export * from './collectionTask';
+export * from './collectionTaskNoticeEnSource';
+export * from './collectionTaskNoticeMsSource';
 export * from './customer';
 export * from './customerImportance';
 export * from './dashboard';

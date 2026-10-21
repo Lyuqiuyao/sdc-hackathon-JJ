@@ -8,7 +8,7 @@ import { calculateRisk, customersNow, dashboard, invoicesNow, signature, validat
 import { buildPlan, METHODS } from "./planner";
 import { importCsv } from "./csv";
 import { seedState } from "./seed";
-import { rulesAdvisor } from "./ai-provider";
+import { rulesAdvisor, geminiConfigured, type AdvisorResult } from "./ai-provider";
 import { communication } from "./communication";
 
 export function audit(state: DemoState, type: string, content: string, related = "",
@@ -24,8 +24,10 @@ export function workspace(state: DemoState): Workspace {
   const invoices = invoicesNow(state);
   return {
     demo: true, today: today(), source: "Synthetic Demo Data · shared administrator sandbox",
-    aiAvailable: false,
-    aiMessage: "Gemini is not connected. This demo uses an explainable rules engine and editable EN/MS templates, not LLM output. The server-side provider interface is reserved for a future integration.",
+    aiAvailable: geminiConfigured(),
+    aiMessage: geminiConfigured()
+      ? "Server-side Gemini key is configured, not proof of connectivity. Select Gemini in Settings; only a plan marked gemini / success contains validated model output. Errors use rules_fallback."
+      : "GEMINI_API_KEY is missing. Gemini requests use rules_fallback bilingual templates. Configure the server secret and select Gemini to enable real model requests.",
     customers: customersNow(state, invoices), invoices,
     documents: state.documents.map(d => ({ ...d, status: d.validUntil < today() ? "Expired" : d.status })),
     riskEvents: [...state.riskEvents].reverse(), plans: [...state.plans].reverse(),
@@ -52,7 +54,6 @@ export function riskCheck(state: DemoState) {
 }
 
 export function generate(state: DemoState, input: PlanInput) {
-  if (state.settings.aiMode !== "rules") throw new BusinessError("Gemini is not connected. Switch to Rules-engine Demo.");
   let risk = input.riskEventId ? state.riskEvents.find(r => r.id === input.riskEventId) :
     state.riskEvents[state.riskEvents.length - 1] ?? recordRisk(state);
   if (!risk) throw new BusinessError("Risk event not found.", 404);
@@ -69,6 +70,41 @@ export function generate(state: DemoState, input: PlanInput) {
   audit(state, "Plan generated", "Generated explainable four-factor rules-engine plan and bilingual notification templates; human approval required.",
     plan.tasks.map(t => `${t.invoiceNumber} ${t.customerName}`).join(", "), "", JSON.stringify(plan), plan);
   return plan;
+}
+
+// Apply only explicitly allowed prose. Model output cannot replace any financial,
+// scoring, ranking, identity, approval or execution field.
+export function applyAdvice(state: DemoState, id: string, result: AdvisorResult, expectedSnapshot: string) {
+  const plan = findPlan(state, id);
+  if (plan.status !== "Pending" || humanAdjusted(state, plan) || JSON.stringify(plan) !== expectedSnapshot || plan.dataSignature !== signature(state)) {
+    audit(state, "AI generation discarded", "Draft was changed, decided or became stale during generation; no recommendation was applied.",
+      plan.id, "", JSON.stringify({ providerMode: result.providerMode, ...result.generation }), plan);
+    return plan;
+  }
+  plan.providerMode = result.providerMode;
+  plan.mode = result.providerMode;
+  plan.aiGeneration = result.generation;
+  if (result.providerMode === "gemini" && result.advice) {
+    plan.aiRiskExplanation = result.advice.riskExplanation;
+    const byId = new Map(result.advice.tasks.map(a => [a.taskId, a]));
+    for (const task of plan.tasks) {
+      const { taskId: _taskId, ...advice } = byId.get(task.id)!;
+      task.aiAdvice = advice;
+      task.noticeEn = advice.noticeEn;
+      task.noticeMs = advice.noticeMs;
+      task.noticeEnSource = "gemini";
+      task.noticeMsSource = "gemini";
+    }
+  }
+  audit(state, "AI generation", result.providerMode === "gemini"
+    ? "Validated Gemini recommendations applied to pending draft only. Deterministic results unchanged; human approval required."
+    : "Rules fallback retained. No content is labelled as Gemini-generated.",
+    plan.id, "", JSON.stringify({ providerMode: result.providerMode, ...result.generation }), plan);
+  return plan;
+}
+
+export function humanAdjusted(state: DemoState, plan: CollectionPlan) {
+  return state.auditLogs.some(a => a.type === "Manual adjustment" && a.planVersion === `${plan.id} v${plan.version}`);
 }
 
 function findPlan(state: DemoState, id: string) {
@@ -99,6 +135,8 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
         negotiation: advice.negotiation,
         noticeEn: changedMethod && edited.noticeEn === old.noticeEn ? advice.noticeEn : edited.noticeEn,
         noticeMs: changedMethod && edited.noticeMs === old.noticeMs ? advice.noticeMs : edited.noticeMs,
+        noticeEnSource: edited.noticeEn !== old.noticeEn ? "human" : changedMethod ? "rules_fallback" : old.noticeEnSource ?? "rules_fallback",
+        noticeMsSource: edited.noticeMs !== old.noticeMs ? "human" : changedMethod ? "rules_fallback" : old.noticeMsSource ?? "rules_fallback",
         reason: changedMethod ? `${old.reason}\nHuman method override: ${old.method} → ${edited.method}. Original algorithm scores retained; review both drafts before approval.` : old.reason,
         id: `TSK-${randomUUID().slice(0, 8)}`, rank: n + 1,
         scheduledAt: original.tasks[n]!.scheduledAt, status: "Draft" };
@@ -158,7 +196,7 @@ export function execute(state: DemoState, id: string) {
     const record = { id: `EXE-${randomUUID().slice(0, 8)}`, planId: plan.id, taskId: task.id,
       invoiceNumber: task.invoiceNumber, customerName: task.customerName, actor: "Demo Admin",
       executedAt: now(), result: "Demo simulation complete — no real message sent and no money collected.",
-      noticeStatus: "Simulated send · template only" };
+      noticeStatus: `Simulated send · EN: ${task.noticeEnSource ?? "rules_fallback"} / MS: ${task.noticeMsSource ?? "rules_fallback"} · no real dispatch` };
     state.executions.push(record);
     audit(state, "Simulated execution", `Simulated task ${task.rank}: ${task.method}. Notice marked simulated only; invoice payment is unchanged.`,
       `${task.invoiceNumber} ${task.customerName}`, "Approved task", JSON.stringify(record), plan);
@@ -171,9 +209,6 @@ export function execute(state: DemoState, id: string) {
 
 export function settings(state: DemoState, input: SystemSetting) {
   validateWeights(input.weights);
-  if (input.aiMode === "gemini") {
-    throw new BusinessError("Gemini is not connected in this demo. No valid server-side provider is enabled. Keep Rules-engine Demo to continue; no external AI request has been made.");
-  }
   const before = JSON.stringify(state.settings);
   state.settings = input;
   audit(state, "Settings change", "Updated cash assumptions, risk thresholds, weights or notification preference. Existing plans retain their snapshots; stale plans must be recalculated.",

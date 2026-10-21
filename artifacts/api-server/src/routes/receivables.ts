@@ -8,6 +8,7 @@ import {
 import { readState, changeState } from "../lib/receivables/repository";
 import { BusinessError } from "../lib/receivables/model";
 import * as service from "../lib/receivables/service";
+import { enrichPlan, enrichRiskDraft } from "../lib/receivables/ai-generation";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
@@ -22,11 +23,14 @@ router.post("/demo-login", async (_req, res): Promise<void> => {
   }));
 });
 router.post("/risk-checks", async (_req, res): Promise<void> => {
-  res.json(await changeState(state => RunRiskCheckResponse.parse(service.riskCheck(state))));
+  const event = await changeState(state => RunRiskCheckResponse.parse(service.riskCheck(state)));
+  await enrichRiskDraft(event.id);
+  res.json(event);
 });
 router.post("/plans", async (req, res): Promise<void> => {
   const input = GeneratePlanBody.parse(req.body);
-  res.json(await changeState(state => GeneratePlanResponse.parse(service.generate(state, input))));
+  const plan = await changeState(state => GeneratePlanResponse.parse(service.generate(state, input)));
+  res.json(GeneratePlanResponse.parse(await enrichPlan(plan.id)));
 });
 router.patch("/plans/:id", async (req, res): Promise<void> => {
   const { id } = EditPlanParams.parse(req.params), input = EditPlanBody.parse(req.body);
@@ -34,7 +38,8 @@ router.patch("/plans/:id", async (req, res): Promise<void> => {
 });
 router.post("/plans/:id/decision", async (req, res): Promise<void> => {
   const { id } = DecidePlanParams.parse(req.params), input = DecidePlanBody.parse(req.body);
-  res.json(await changeState(state => DecidePlanResponse.parse(service.decide(state, id, input))));
+  const plan = await changeState(state => DecidePlanResponse.parse(service.decide(state, id, input)));
+  res.json(DecidePlanResponse.parse(input.decision === "defer" ? await enrichPlan(plan.id) : plan));
 });
 router.post("/plans/:id/execute", async (req, res): Promise<void> => {
   const { id } = ExecutePlanParams.parse(req.params);

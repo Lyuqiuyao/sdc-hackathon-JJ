@@ -26,7 +26,9 @@ artifacts/
       compute.ts          动态状态、KPI、风险与图表数据
       planner.ts          四维评分、排序与建议方式
       communication.ts    三套协商备选与 EN/MS 模板
-      ai-provider.ts      服务端顾问接口及未连接 Gemini 扩展点
+      ai-provider.ts      官方 Gemini SDK、最小上下文、超时与回退
+      ai-schema.ts        结构化模型响应约束与校验
+      ai-generation.ts    锁外请求与有条件提交，防止迟到响应覆盖人工决定
       csv.ts              CSV 解析与逐行校验
       repository.ts       PostgreSQL 事务与行锁
       service.ts          版本、人工审批、模拟执行、审计
@@ -211,8 +213,8 @@ payment_status、industry、esg_rating。
 | 项目 | 当前状态 |
 |---|---|
 | 规则引擎、风险计算、CSV 校验、持久化、版本与审批门禁 | 真实运行的应用逻辑 |
-| 通知内容 | EN/MS 预设模板，可人工编辑；不是 LLM 输出 |
-| Gemini | 仅预留服务端顾问接口，尚未连接、未校验真实 API 凭据；选择该模式会明确报错，不会静默假装启用 |
+| 通知内容 | 规则模式为 EN/MS 模板；真实 Gemini 成功并校验后可填充模型草稿；逐语言标注 gemini / rules_fallback / human，均可人工编辑 |
+| Gemini | 已实现官方 SDK 直连及安全回退；需配置服务端 GEMINI_API_KEY 并选择 Gemini。当前真实联网验收待配置密钥，见 GEMINI_SETUP.md |
 | 执行、邮件、短信、付款 | 仅 Demo 模拟；不真实发送、不扣款、不转账、不改变已收金额 |
 | Demo 登录 | 无生产身份认证、权限隔离或多租户能力 |
 | ESG 文件 | 明确标记的模拟审核文本，不提供伪造官方证书、不具备真实认证效力 |

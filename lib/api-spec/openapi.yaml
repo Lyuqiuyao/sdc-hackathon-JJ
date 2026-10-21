@@ -281,9 +281,42 @@ components:
         reason: { type: string }
         uncertainty: { type: string }
         esgNote: { type: string }
+        aiAdvice: { $ref: "#/components/schemas/AITaskAdvice" }
         noticeEn: { type: string }
         noticeMs: { type: string }
         status: { type: string }
+        noticeEnSource: { type: string, enum: [gemini, rules_fallback, human] }
+        noticeMsSource: { type: string, enum: [gemini, rules_fallback, human] }
+    AIStrategy:
+      type: object
+      required: [kind, proposal, conditions]
+      properties:
+        kind: { type: string, enum: [payment_full, installments, extension] }
+        proposal: { type: string }
+        conditions: { type: string }
+    AITaskAdvice:
+      type: object
+      required: [reasoning, assumptions, uncertainties, esgEvidence, esgRating, esgConsiderations, strategies, noticeEn, noticeMs]
+      properties:
+        reasoning: { type: string }
+        assumptions: { type: array, items: { type: string } }
+        uncertainties: { type: array, items: { type: string } }
+        esgEvidence: { type: string, enum: [verified, unknown] }
+        esgRating: { type: string, enum: [A, B, C, unknown] }
+        esgConsiderations: { type: string }
+        strategies: { type: array, items: { $ref: "#/components/schemas/AIStrategy" } }
+        noticeEn: { type: string }
+        noticeMs: { type: string }
+    AIGeneration:
+      type: object
+      required: [requestedProvider, generatedAt, durationMs, status, reasonCode, model]
+      properties:
+        requestedProvider: { type: string, enum: [rules, gemini] }
+        generatedAt: { type: string }
+        durationMs: { type: integer }
+        status: { type: string, enum: [success, fallback] }
+        reasonCode: { type: string }
+        model: { type: string }
     CollectionPlan:
       type: object
       required: [id, familyId, version, riskEventId, createdAt, status, mode, weights, tasks, notes, dataSignature]
@@ -295,6 +328,9 @@ components:
         createdAt: { type: string }
         status: { type: string, enum: [Pending, Approved, Rejected, Deferred, Superseded, Executed] }
         mode: { type: string }
+        providerMode: { type: string, enum: [gemini, rules_fallback] }
+        aiRiskExplanation: { type: string }
+        aiGeneration: { $ref: "#/components/schemas/AIGeneration" }
         weights: { $ref: "#/components/schemas/Weights" }
         tasks: { type: array, items: { $ref: "#/components/schemas/CollectionTask" } }
         notes: { type: string }

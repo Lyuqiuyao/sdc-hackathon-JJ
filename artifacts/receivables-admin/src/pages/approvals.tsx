@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, CheckCircle2, Clock3, Save, XCircle } from 'lucide-
 import { useDecidePlan, useEditPlan, type CollectionPlan, type Workspace } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState, Field } from '@/components/kit';
 import { TaskDetail, TaskHead } from '@/components/plan';
+import { ProviderDetails } from '@/components/provider-details';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -61,7 +62,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
         </Panel>
         <Panel title="Scoring" zh="评分因素与权重" bodyClass="space-y-1 text-xs">
           <div>Late fee {plan.weights.lateFee}% · Urgency {plan.weights.urgency}% · Importance {plan.weights.importance}% · ESG {plan.weights.esg}%</div>
-          <div>Mode: {plan.mode}</div><div className="text-muted-foreground">Data signature <span className="font-mono">{plan.dataSignature.slice(0, 16)}</span></div>
+          <ProviderDetails plan={plan} /><div className="text-muted-foreground">Data signature <span className="font-mono">{plan.dataSignature.slice(0, 16)}</span></div>
           <div className="text-muted-foreground">Missing ESG data is scored neutral 50 and flagged per task.</div>
         </Panel>
         <Panel title="Notes" zh="审批备注"><Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editable} placeholder="Approval notes" data-testid="input-notes" /></Panel>

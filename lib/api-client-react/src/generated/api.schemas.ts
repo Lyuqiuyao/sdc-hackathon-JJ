@@ -195,6 +195,69 @@ export interface RiskEvent {
   dataSignature?: string;
 }
 
+export type CollectionTaskNoticeEnSource = typeof CollectionTaskNoticeEnSource[keyof typeof CollectionTaskNoticeEnSource];
+
+
+export const CollectionTaskNoticeEnSource = {
+  gemini: 'gemini',
+  rules_fallback: 'rules_fallback',
+  human: 'human',
+} as const;
+
+export type CollectionTaskNoticeMsSource = typeof CollectionTaskNoticeMsSource[keyof typeof CollectionTaskNoticeMsSource];
+
+
+export const CollectionTaskNoticeMsSource = {
+  gemini: 'gemini',
+  rules_fallback: 'rules_fallback',
+  human: 'human',
+} as const;
+
+export type AITaskAdviceEsgEvidence = typeof AITaskAdviceEsgEvidence[keyof typeof AITaskAdviceEsgEvidence];
+
+
+export const AITaskAdviceEsgEvidence = {
+  verified: 'verified',
+  unknown: 'unknown',
+} as const;
+
+export type AITaskAdviceEsgRating = typeof AITaskAdviceEsgRating[keyof typeof AITaskAdviceEsgRating];
+
+
+export const AITaskAdviceEsgRating = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  unknown: 'unknown',
+} as const;
+
+export type AIStrategyKind = typeof AIStrategyKind[keyof typeof AIStrategyKind];
+
+
+export const AIStrategyKind = {
+  payment_full: 'payment_full',
+  installments: 'installments',
+  extension: 'extension',
+} as const;
+
+export interface AIStrategy {
+  kind: AIStrategyKind;
+  proposal: string;
+  conditions: string;
+}
+
+export interface AITaskAdvice {
+  reasoning: string;
+  assumptions: string[];
+  uncertainties: string[];
+  esgEvidence: AITaskAdviceEsgEvidence;
+  esgRating: AITaskAdviceEsgRating;
+  esgConsiderations: string;
+  strategies: AIStrategy[];
+  noticeEn: string;
+  noticeMs: string;
+}
+
 export interface CollectionTask {
   id: string;
   invoiceId: string;
@@ -216,9 +279,37 @@ export interface CollectionTask {
   reason: string;
   uncertainty: string;
   esgNote: string;
+  aiAdvice?: AITaskAdvice;
   noticeEn: string;
   noticeMs: string;
   status: string;
+  noticeEnSource?: CollectionTaskNoticeEnSource;
+  noticeMsSource?: CollectionTaskNoticeMsSource;
+}
+
+export type AIGenerationRequestedProvider = typeof AIGenerationRequestedProvider[keyof typeof AIGenerationRequestedProvider];
+
+
+export const AIGenerationRequestedProvider = {
+  rules: 'rules',
+  gemini: 'gemini',
+} as const;
+
+export type AIGenerationStatus = typeof AIGenerationStatus[keyof typeof AIGenerationStatus];
+
+
+export const AIGenerationStatus = {
+  success: 'success',
+  fallback: 'fallback',
+} as const;
+
+export interface AIGeneration {
+  requestedProvider: AIGenerationRequestedProvider;
+  generatedAt: string;
+  durationMs: number;
+  status: AIGenerationStatus;
+  reasonCode: string;
+  model: string;
 }
 
 export type CollectionPlanStatus = typeof CollectionPlanStatus[keyof typeof CollectionPlanStatus];
@@ -233,6 +324,14 @@ export const CollectionPlanStatus = {
   Executed: 'Executed',
 } as const;
 
+export type CollectionPlanProviderMode = typeof CollectionPlanProviderMode[keyof typeof CollectionPlanProviderMode];
+
+
+export const CollectionPlanProviderMode = {
+  gemini: 'gemini',
+  rules_fallback: 'rules_fallback',
+} as const;
+
 export interface CollectionPlan {
   id: string;
   familyId: string;
@@ -241,6 +340,9 @@ export interface CollectionPlan {
   createdAt: string;
   status: CollectionPlanStatus;
   mode: string;
+  providerMode?: CollectionPlanProviderMode;
+  aiRiskExplanation?: string;
+  aiGeneration?: AIGeneration;
   weights: Weights;
   tasks: CollectionTask[];
   notes: string;

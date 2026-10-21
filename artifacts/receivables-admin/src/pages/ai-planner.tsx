@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { useGeneratePlan, type Weights, type Workspace } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState, Field } from '@/components/kit';
 import { TaskDetail, TaskHead } from '@/components/plan';
+import { ProviderDetails } from '@/components/provider-details';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -51,7 +52,7 @@ export default function AiPlanner() {
     };
     return (
       <div className="space-y-4">
-        <Alert><AlertTitle>AI mode: explainable rules engine</AlertTitle><AlertDescription>{ws.aiMessage} Notices are editable templates, not LLM output. Weights are demo defaults, not validated business parameters.</AlertDescription></Alert>
+        <Alert><AlertTitle>Recommendations: {ws.settings.aiMode === 'gemini' ? 'Gemini with safe fallback' : 'Explainable rules engine'}</AlertTitle><AlertDescription>{ws.aiMessage} Scoring always remains deterministic; weights are demo defaults, not validated business parameters.</AlertDescription></Alert>
         {err && <Alert variant="destructive" data-testid="alert-plan-error"><AlertDescription>{err}</AlertDescription></Alert>}
         <div className="grid gap-4 lg:grid-cols-3">
           <Panel title="Scoring weights" zh="四维权重 (合计须为 100%)" className="lg:col-span-1">
@@ -92,7 +93,8 @@ export default function AiPlanner() {
           {plan && <Button asChild size="sm" variant="outline"><Link href={`/approvals?plan=${encodeURIComponent(plan.id)}`} data-testid="link-approvals">Go to approval</Link></Button>}</>}>
           {!plan ? <EmptyState title="No plan generated yet" hint="Choose a risk event and generate a plan." /> : (
             <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><Tag>{plan.status}</Tag><span>Mode: {plan.mode}</span><span>Weights {plan.weights.lateFee}/{plan.weights.urgency}/{plan.weights.importance}/{plan.weights.esg}</span></div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><Tag>{plan.status}</Tag><span>Weights {plan.weights.lateFee}/{plan.weights.urgency}/{plan.weights.importance}/{plan.weights.esg}</span></div>
+              <ProviderDetails plan={plan} />
               {plan.tasks.length === 0 && <EmptyState title="No open invoices to schedule" />}
               {plan.tasks.map((t) => (
                 <div key={t.id} className="rounded-md border" data-testid={`task-${t.id}`}>
