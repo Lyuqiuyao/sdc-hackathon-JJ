@@ -3,6 +3,7 @@ import type { AdviceSnapshot, CollectionPlan } from "@workspace/api-zod";
 import { BusinessError, DEMO_WORKSPACE_ID, type DemoState } from "./model";
 import type { AdvisorResult } from "./ai-provider";
 import { communication } from "./communication";
+import { sanitizeDiagnostics } from "./ai-diagnostics";
 
 // No raw model response/exception retention. These known credential forms are
 // also redacted from otherwise allowlisted human and validated prose.
@@ -67,7 +68,7 @@ export function appendPlanSnapshot(state: DemoState, plan: CollectionPlan, input
       planAtEvent: { status: plan.status, weights: plan.weights, tasks: plan.tasks,
         aiRiskExplanation: plan.aiRiskExplanation, providerMode: plan.providerMode, aiGeneration: plan.aiGeneration },
       approval: input.approvalId ? state.approvals.filter(a => a.id === input.approvalId).map(a => ({
-        id: a.id, planId: a.planId, version: a.version, decision: a.decision, createdAt: a.createdAt,
+        id: a.id, planId: a.planId, version: a.version, decision: a.decision, createdAt: a.createdAt, actor: a.actor,
       }))[0] : null,
     } : {}),
   };
@@ -81,6 +82,13 @@ export function appendPlanSnapshot(state: DemoState, plan: CollectionPlan, input
     status: input.status, reasonCode: /^[a-z_]{1,80}$/.test(input.reasonCode) ? input.reasonCode : "unclassified",
     contentPolicy: plan.aiGeneration?.contentPolicy ?? "rules_template",
     validation: input.validation ?? "not_run",
+    rawResponseRetained: false,
+    ...(input.result?.generation.model && input.result.generation.connectionMode === "replit_managed" ? {
+      model: input.result.generation.model, modelOrigin: "request_config" as const,
+    } : {}),
+    ...(input.result?.generation.diagnostics ? {
+      diagnostics: sanitizeDiagnostics(input.result.generation.diagnostics, plan),
+    } : {}),
     ...(previous ? { previousSnapshotId: previous.id } : {}),
     ...(input.previousPlanId ? { previousPlanId: input.previousPlanId } : {}),
     ...(input.approvalId ? { approvalId: input.approvalId } : {}),

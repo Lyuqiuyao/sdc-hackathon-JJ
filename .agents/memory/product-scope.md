@@ -17,3 +17,9 @@ Do not ask the user for real customer financial records; use explicitly labelled
 
 **How to apply:** 缺失、尚未核实的 ESG 证据不能触发负面信用结论；说明其不确定性，且不要为补全审计而虚构真实认证审核行为。
 
+当前阶段保留明确标注的共享 Demo Admin，暂不新增正式鉴权。
+
+**Why:** 用户在管理员单端与审计方案确认中明确选择该范围。
+
+**How to apply:** 不把演示入口或工作区 ID 一致性检查描述为正式身份认证、授权或租户隔离；正式鉴权需单独明确范围。
+

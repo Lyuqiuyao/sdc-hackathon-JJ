@@ -52,7 +52,7 @@ export function createPlanEnricher(repository: AdviceRepository, advice = genera
         if (!owns || lease.expiresAtMs <= time) {
           if (owns) { lease.status = "timed_out"; lease.reasonCode = "lease_expired"; }
           appendPlanSnapshot(current, candidate, { status: "discarded", reasonCode: owns ? "lease_expired" : "lease_lost",
-            attemptId: claim.lease.attemptId, provider: result.providerMode, metadataOnly: true, createdAtMs: time });
+            attemptId: claim.lease.attemptId, provider: result.providerMode, metadataOnly: true, result, createdAtMs: time });
           return candidate;
         }
         const applied = applyAdvice(current, id, result, claim.expected);
@@ -66,7 +66,7 @@ export function createPlanEnricher(repository: AdviceRepository, advice = genera
           source: !accepted ? "metadata_only" : result.providerMode === "openai" ? "validated_projection" : "rules_template",
           validation: result.providerMode === "openai" ? "passed"
             : ["invalid_response", "unsafe_content"].includes(result.generation.reasonCode) ? "failed" : "not_run",
-          metadataOnly: !accepted, result: accepted ? result : undefined, createdAtMs: time,
+          metadataOnly: !accepted, result, createdAtMs: time,
         });
         return applied;
       });

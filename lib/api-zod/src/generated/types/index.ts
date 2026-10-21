@@ -7,7 +7,11 @@
  */
 
 export * from './actionResult';
+export * from './adviceDiagnostic';
+export * from './adviceDiagnosticOutcome';
+export * from './adviceDiagnosticStage';
 export * from './adviceSnapshot';
+export * from './adviceSnapshotModelOrigin';
 export * from './adviceSnapshotProvider';
 export * from './adviceSnapshotSource';
 export * from './adviceSnapshotStatus';

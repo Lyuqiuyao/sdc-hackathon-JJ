@@ -320,6 +320,15 @@ components:
         strategies: { type: array, items: { $ref: "#/components/schemas/AIStrategy" } }
         noticeEn: { type: string }
         noticeMs: { type: string }
+    AdviceDiagnostic:
+      type: object
+      required: [stage, path, outcome, reasonCode]
+      properties:
+        stage: { type: string, enum: [preflight, transport, json, schema, business, safety, projection] }
+        path: { type: string, description: "Server-allowlisted field path, never model-supplied keys or values." }
+        outcome: { type: string, enum: [passed, rejected, replaced, not_run] }
+        reasonCode: { type: string }
+        taskId: { type: string }
     AdviceSnapshot:
       type: object
       required: [id, workspaceId, planId, riskEventId, planVersion, attemptId, createdAt, provider, source, status, reasonCode, contentPolicy, validation, contentJson]
@@ -337,6 +346,12 @@ components:
         reasonCode: { type: string }
         contentPolicy: { type: string }
         validation: { type: string, enum: [passed, failed, not_run] }
+        model: { type: string }
+        modelOrigin: { type: string, enum: [request_config] }
+        rawResponseRetained: { type: boolean }
+        diagnostics:
+          type: array
+          items: { $ref: "#/components/schemas/AdviceDiagnostic" }
         previousSnapshotId: { type: string }
         previousPlanId: { type: string }
         approvalId: { type: string }
@@ -354,6 +369,9 @@ components:
         reasonCode: { type: string }
         attemptId: { type: string }
         model: { type: string }
+        diagnostics:
+          type: array
+          items: { $ref: "#/components/schemas/AdviceDiagnostic" }
         connectionMode:
           type: string
           enum: [replit_managed]

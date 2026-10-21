@@ -5,6 +5,7 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { AdviceDiagnostic } from './adviceDiagnostic';
 import type { AIGenerationConnectionMode } from './aIGenerationConnectionMode';
 import type { AIGenerationContentPolicy } from './aIGenerationContentPolicy';
 import type { AIGenerationRequestedProvider } from './aIGenerationRequestedProvider';
@@ -18,6 +19,7 @@ export interface AIGeneration {
   reasonCode: string;
   attemptId?: string;
   model: string;
+  diagnostics?: AdviceDiagnostic[];
   /** Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections. */
   connectionMode?: AIGenerationConnectionMode;
   /** New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records. */

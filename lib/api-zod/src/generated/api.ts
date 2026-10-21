@@ -232,6 +232,13 @@ export const GetWorkspaceResponse = zod.object({
   "reasonCode": zod.string(),
   "attemptId": zod.string().optional(),
   "model": zod.string(),
+  "diagnostics": zod.array(zod.object({
+  "stage": zod.enum(['preflight', 'transport', 'json', 'schema', 'business', 'safety', 'projection']),
+  "path": zod.string().describe('Server-allowlisted field path, never model-supplied keys or values.'),
+  "outcome": zod.enum(['passed', 'rejected', 'replaced', 'not_run']),
+  "reasonCode": zod.string(),
+  "taskId": zod.string().optional()
+})).optional(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
@@ -532,6 +539,13 @@ export const GeneratePlanResponse = zod.object({
   "reasonCode": zod.string(),
   "attemptId": zod.string().optional(),
   "model": zod.string(),
+  "diagnostics": zod.array(zod.object({
+  "stage": zod.enum(['preflight', 'transport', 'json', 'schema', 'business', 'safety', 'projection']),
+  "path": zod.string().describe('Server-allowlisted field path, never model-supplied keys or values.'),
+  "outcome": zod.enum(['passed', 'rejected', 'replaced', 'not_run']),
+  "reasonCode": zod.string(),
+  "taskId": zod.string().optional()
+})).optional(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
@@ -644,6 +658,13 @@ export const EditPlanResponse = zod.object({
   "reasonCode": zod.string(),
   "attemptId": zod.string().optional(),
   "model": zod.string(),
+  "diagnostics": zod.array(zod.object({
+  "stage": zod.enum(['preflight', 'transport', 'json', 'schema', 'business', 'safety', 'projection']),
+  "path": zod.string().describe('Server-allowlisted field path, never model-supplied keys or values.'),
+  "outcome": zod.enum(['passed', 'rejected', 'replaced', 'not_run']),
+  "reasonCode": zod.string(),
+  "taskId": zod.string().optional()
+})).optional(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
@@ -718,6 +739,16 @@ export const GetPlanAdviceSnapshotsResponseItem = zod.object({
   "reasonCode": zod.string(),
   "contentPolicy": zod.string(),
   "validation": zod.enum(['passed', 'failed', 'not_run']),
+  "model": zod.string().optional(),
+  "modelOrigin": zod.enum(['request_config']).optional(),
+  "rawResponseRetained": zod.boolean().optional(),
+  "diagnostics": zod.array(zod.object({
+  "stage": zod.enum(['preflight', 'transport', 'json', 'schema', 'business', 'safety', 'projection']),
+  "path": zod.string().describe('Server-allowlisted field path, never model-supplied keys or values.'),
+  "outcome": zod.enum(['passed', 'rejected', 'replaced', 'not_run']),
+  "reasonCode": zod.string(),
+  "taskId": zod.string().optional()
+})).optional(),
   "previousSnapshotId": zod.string().optional(),
   "previousPlanId": zod.string().optional(),
   "approvalId": zod.string().optional(),
@@ -771,6 +802,13 @@ export const DecidePlanResponse = zod.object({
   "reasonCode": zod.string(),
   "attemptId": zod.string().optional(),
   "model": zod.string(),
+  "diagnostics": zod.array(zod.object({
+  "stage": zod.enum(['preflight', 'transport', 'json', 'schema', 'business', 'safety', 'projection']),
+  "path": zod.string().describe('Server-allowlisted field path, never model-supplied keys or values.'),
+  "outcome": zod.enum(['passed', 'rejected', 'replaced', 'not_run']),
+  "reasonCode": zod.string(),
+  "taskId": zod.string().optional()
+})).optional(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),
@@ -863,6 +901,13 @@ export const ExecutePlanResponse = zod.object({
   "reasonCode": zod.string(),
   "attemptId": zod.string().optional(),
   "model": zod.string(),
+  "diagnostics": zod.array(zod.object({
+  "stage": zod.enum(['preflight', 'transport', 'json', 'schema', 'business', 'safety', 'projection']),
+  "path": zod.string().describe('Server-allowlisted field path, never model-supplied keys or values.'),
+  "outcome": zod.enum(['passed', 'rejected', 'replaced', 'not_run']),
+  "reasonCode": zod.string(),
+  "taskId": zod.string().optional()
+})).optional(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
 }).optional(),

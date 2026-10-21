@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { fork, type ChildProcess } from "node:child_process";
+import { createServer, request } from "node:http";
 import { once } from "node:events";
 import { pool, db, demoWorkspaces } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -10,6 +11,7 @@ import { createPlanEnricher } from "../src/lib/receivables/ai-enrichment";
 import { generate } from "../src/lib/receivables/service";
 import { claimGeneration } from "../src/lib/receivables/ai-coordination";
 import { syntheticAdvice } from "./synthetic-advice";
+import { appendPlanSnapshot } from "../src/lib/receivables/advice-snapshots";
 
 // The harness replaces the database URL in the CHILD ONLY and creates this
 // private Unix socket. No fallback to the workspace's database is permitted.
@@ -94,4 +96,35 @@ test("database PK and workspace association protect separate coordination aggreg
   const repo=createWorkspaceRepository(secondDb,"isolated-association");
   await assert.rejects(repo.changeState(s=>{s.workspaceId="wrong-workspace";}),/association mismatch/);
   assert.notEqual((await repo.readState()).workspaceId,"wrong-workspace");
+});
+test("isolated Express GET contract exposes snapshots and safe missing-plan responses; no business writes",async()=>{
+  const repo=createWorkspaceRepository(db);
+  const plan=await repo.changeState(s=>{
+    s.settings.aiMode="rules";
+    const p=generate(s,{});
+    appendPlanSnapshot(s,p,{status:"fallback",reasonCode:"rules_selected",provider:"rules_fallback"});
+    return p;
+  });
+  const before=await repo.readState();
+  const app=(await import("../src/app")).default;
+  const server=createServer(app);
+  server.listen(0,"127.0.0.1");await once(server,"listening");
+  const address=server.address();
+  assert.ok(address&&typeof address!=="string");
+  const get=(path:string)=>new Promise<{status:number;body:string}>((resolve,reject)=>{
+    const req=request({hostname:"127.0.0.1",port:address.port,method:"GET",path},res=>{
+      let body="";res.setEncoding("utf8");res.on("data",chunk=>{body+=chunk;});
+      res.on("end",()=>resolve({status:res.statusCode!,body}));
+    });req.on("error",reject);req.end();
+  });
+  try {
+    const snapshots=await get(`/api/plans/${plan.id}/advice-snapshots`);
+    assert.equal(snapshots.status,200);
+    const rows=JSON.parse(snapshots.body);
+    assert.ok(rows.some((s:any)=>s.planId===plan.id&&s.rawResponseRetained===false));
+    assert.equal((await get("/api/plans/missing-synthetic-plan/advice-snapshots")).status,404);
+    assert.equal((await get("/api/workspace")).status,200);
+    assert.equal((await get("/api/certifier")).status,404);
+    assert.deepEqual(await repo.readState(),before);
+  } finally {await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });

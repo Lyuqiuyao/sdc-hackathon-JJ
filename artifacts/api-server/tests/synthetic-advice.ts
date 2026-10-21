@@ -2,12 +2,10 @@ import { generateAdvice } from "../src/lib/receivables/ai-provider";
 import type { CollectionPlan } from "@workspace/api-zod";
 import type { DemoState } from "../src/lib/receivables/model";
 
-export function syntheticAdvice(state: DemoState, plan: CollectionPlan, beforeTransport = async () => {}) {
+export function syntheticResponse(context: object) {
   const prose = "Synthetic conditional proposal; human review and separate consent are required.";
-  return generateAdvice(state, plan, { configured: true, transport: async context => {
-    await beforeTransport();
     const input = context as { tasks: {taskId:string;esg:{evidence:string;rating:string}}[] };
-    return JSON.stringify({
+    return {
       riskExplanation: prose,
       tasks: input.tasks.map(t => ({
         taskId: t.taskId, reasoning: prose, assumptions: [prose], uncertainties: [prose],
@@ -16,6 +14,11 @@ export function syntheticAdvice(state: DemoState, plan: CollectionPlan, beforeTr
         noticeEn: "Synthetic Demo draft — no message sent. Dear Accounts Payable, please discuss this invoice with finance.",
         noticeMs: "Draf demo sintetik — tiada mesej dihantar. Tuan/Puan, sila berbincang dengan pihak kewangan.",
       })),
-    });
+    };
+}
+export function syntheticAdvice(state: DemoState, plan: CollectionPlan, beforeTransport = async () => {}) {
+  return generateAdvice(state, plan, { configured: true, transport: async context => {
+    await beforeTransport();
+    return JSON.stringify(syntheticResponse(context));
   } });
 }

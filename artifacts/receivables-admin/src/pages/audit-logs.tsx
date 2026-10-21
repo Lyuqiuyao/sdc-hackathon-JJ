@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { KV } from '@/components/kit';
 import { fmtDateTime } from '@/lib/arus';
+import { PlanSnapshotsPanel } from '@/components/advice-snapshots';
+import { deriveAiOutcome } from '@/lib/advice-snapshot';
 import type { AuditLog } from '@workspace/api-client-react';
 
 export default function AuditLogs() {
@@ -49,15 +51,16 @@ export default function AuditLogs() {
                     <TableRow key={l.id} className="cursor-pointer" onClick={() => setSel(l)} data-testid={`row-log-${l.id}`}>
                       <TableCell className="font-mono text-[11px]">{l.id.slice(-8)}</TableCell><TableCell className="whitespace-nowrap text-xs">{fmtDateTime(l.createdAt)}</TableCell>
                       <TableCell><Tag tone="blue">{l.type}</Tag></TableCell><TableCell className="text-xs">{l.actor}</TableCell><TableCell className="max-w-[160px] truncate text-xs">{l.related || '-'}</TableCell>
-                      <TableCell className="max-w-[300px] truncate text-xs">{l.content}</TableCell><TableCell className="text-xs">{l.planVersion || '-'}</TableCell><TableCell><Tag>{l.result}</Tag></TableCell>
+                      <TableCell className="max-w-[300px] truncate text-xs">{l.content}</TableCell><TableCell className="text-xs">{l.planVersion || '-'}</TableCell><TableCell><Tag>{l.result}</Tag>{(() => { const a = deriveAiOutcome(l); return a ? <div className="mt-1" data-testid={`badge-ai-outcome-${l.id}`}><Tag tone={a.tone}>{a.label}</Tag></div> : null; })()}</TableCell>
                     </TableRow>))}</TableBody>
                 </Table></div>)}
             </Panel>
+            <PlanSnapshotsPanel plans={ws.plans} approvals={ws.approvals} />
             <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
               <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
                 {sel && <>
                   <DialogHeader><DialogTitle>{sel.type}</DialogTitle><DialogDescription>Read-only log entry {sel.id}</DialogDescription></DialogHeader>
-                  <dl data-testid="detail-log"><KV k="Time" v={fmtDateTime(sel.createdAt)} /><KV k="Actor" v={sel.actor} /><KV k="Related" v={sel.related || '-'} /><KV k="Content" v={sel.content} /><KV k="Plan version" v={sel.planVersion || '-'} /><KV k="Result" v={sel.result} /></dl>
+                  <dl data-testid="detail-log"><KV k="Time" v={fmtDateTime(sel.createdAt)} /><KV k="Actor" v={sel.actor} /><KV k="Related" v={sel.related || '-'} /><KV k="Content" v={sel.content} /><KV k="Plan version" v={sel.planVersion || '-'} /><KV k="Result (log action only)" v={sel.result} />{(() => { const a = deriveAiOutcome(sel); return a ? <KV k="AI outcome" v={<span data-testid="detail-ai-outcome">{a.label}{a.detail ? ` (${a.detail})` : ''}</span>} /> : null; })()}</dl>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div><div className="mb-1 text-xs font-semibold">Before</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px]">{sel.before || '-'}</pre></div>
                     <div><div className="mb-1 text-xs font-semibold">After</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px]">{sel.after || '-'}</pre></div>

@@ -294,6 +294,38 @@ export interface CollectionTask {
   noticeMsSource?: CollectionTaskNoticeMsSource;
 }
 
+export type AdviceDiagnosticStage = typeof AdviceDiagnosticStage[keyof typeof AdviceDiagnosticStage];
+
+
+export const AdviceDiagnosticStage = {
+  preflight: 'preflight',
+  transport: 'transport',
+  json: 'json',
+  schema: 'schema',
+  business: 'business',
+  safety: 'safety',
+  projection: 'projection',
+} as const;
+
+export type AdviceDiagnosticOutcome = typeof AdviceDiagnosticOutcome[keyof typeof AdviceDiagnosticOutcome];
+
+
+export const AdviceDiagnosticOutcome = {
+  passed: 'passed',
+  rejected: 'rejected',
+  replaced: 'replaced',
+  not_run: 'not_run',
+} as const;
+
+export interface AdviceDiagnostic {
+  stage: AdviceDiagnosticStage;
+  /** Server-allowlisted field path, never model-supplied keys or values. */
+  path: string;
+  outcome: AdviceDiagnosticOutcome;
+  reasonCode: string;
+  taskId?: string;
+}
+
 export type AdviceSnapshotProvider = typeof AdviceSnapshotProvider[keyof typeof AdviceSnapshotProvider];
 
 
@@ -338,6 +370,13 @@ export const AdviceSnapshotValidation = {
   not_run: 'not_run',
 } as const;
 
+export type AdviceSnapshotModelOrigin = typeof AdviceSnapshotModelOrigin[keyof typeof AdviceSnapshotModelOrigin];
+
+
+export const AdviceSnapshotModelOrigin = {
+  request_config: 'request_config',
+} as const;
+
 export interface AdviceSnapshot {
   id: string;
   workspaceId: string;
@@ -352,6 +391,10 @@ export interface AdviceSnapshot {
   reasonCode: string;
   contentPolicy: string;
   validation: AdviceSnapshotValidation;
+  model?: string;
+  modelOrigin?: AdviceSnapshotModelOrigin;
+  rawResponseRetained?: boolean;
+  diagnostics?: AdviceDiagnostic[];
   previousSnapshotId?: string;
   previousPlanId?: string;
   approvalId?: string;
@@ -404,6 +447,7 @@ export interface AIGeneration {
   reasonCode: string;
   attemptId?: string;
   model: string;
+  diagnostics?: AdviceDiagnostic[];
   /** Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections. */
   connectionMode?: AIGenerationConnectionMode;
   /** New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records. */

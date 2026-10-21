@@ -5,6 +5,8 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { AdviceDiagnostic } from './adviceDiagnostic';
+import type { AdviceSnapshotModelOrigin } from './adviceSnapshotModelOrigin';
 import type { AdviceSnapshotProvider } from './adviceSnapshotProvider';
 import type { AdviceSnapshotSource } from './adviceSnapshotSource';
 import type { AdviceSnapshotStatus } from './adviceSnapshotStatus';
@@ -24,6 +26,10 @@ export interface AdviceSnapshot {
   reasonCode: string;
   contentPolicy: string;
   validation: AdviceSnapshotValidation;
+  model?: string;
+  modelOrigin?: AdviceSnapshotModelOrigin;
+  rawResponseRetained?: boolean;
+  diagnostics?: AdviceDiagnostic[];
   previousSnapshotId?: string;
   previousPlanId?: string;
   approvalId?: string;

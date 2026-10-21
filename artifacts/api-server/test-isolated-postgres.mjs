@@ -21,7 +21,7 @@ try {
     banner:{js:"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);"}});
   const guard=new URL("./tests/no-network.mjs",import.meta.url).href;
   const result=spawnSync(process.execPath,["--import",guard,"--test",join(dir,"isolated-postgres.test.mjs")],{
-    stdio:"inherit",timeout:90000,env:{...systemEnv,
+    stdio:"inherit",timeout:90000,env:{...systemEnv,NODE_ENV:"production",LOG_LEVEL:"silent",
       DATABASE_URL:`postgresql://sdc_test@localhost/postgres?host=${encodeURIComponent(socket)}&port=55439`,
       SDC_ISOLATED_DB:"temporary-unix-socket-only",SDC_ISOLATED_SOCKET_DIR:socket,SDC_NETWORK_GUARD:guard,
       AI_INTEGRATIONS_OPENAI_BASE_URL:"https://managed-openai.synthetic.invalid/proxy/v1",
