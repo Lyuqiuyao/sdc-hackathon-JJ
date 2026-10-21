@@ -3,7 +3,7 @@ import { type DemoState, addDays, today, now } from "./model";
 import { calculateRisk } from "./compute";
 import { buildPlan } from "./planner";
 
-export function seedState(): DemoState {
+export function seedState(options: { scoringVersion?: "legacy_v1" | "split_v2" } = {}): DemoState {
   const names = [
     ["Meranti Packaging Sdn Bhd", "Manufacturing", "High"],
     ["Nusa Food Industries", "Food & beverage", "High"],
@@ -18,7 +18,10 @@ export function seedState(): DemoState {
   ];
   const customers: Customer[] = names.map(([name, industry, importance], n) => ({
     id: `CUS-${String(n + 1).padStart(3, "0")}`, name: name!, industry: industry!,
-    importance: importance as Customer["importance"], esgRating: "Uncertified",
+    importance: importance as Customer["importance"],
+    esgRating: options.scoringVersion === "legacy_v1" ? "Uncertified" : ["A", "B", "unknown", "unknown", "C", "unknown", "unknown", "B", "unknown", "unknown"][n]!,
+    profileVersion: 0, profileSource: "Synthetic Demo Data - not independently verified",
+    profileSummary: `Synthetic ${industry.toLowerCase()} company profile. Collection willingness and submitted information require human review.`,
     outstandingCents: 0, overdueCents: 0, earliestDue: "", risk: "Low",
     paymentHistory: n % 3 === 0 ? "Synthetic history: two previous invoices paid on time; one payment delayed 12 days." :
       n % 3 === 1 ? "Synthetic history: payments typically received 5–15 days after due date." :
@@ -59,7 +62,8 @@ export function seedState(): DemoState {
     settings: { currency: "MYR", cashCents: 4250000, minimumCashCents: 15000000, expectedExpenseCents: 6500000,
       horizonDays: 7, mediumBufferPercent: 20, collectionRatePercent: 60, overdueThresholdCents: 20000000,
       largeInvoiceCents: 5000000, concentrationCount: 5,
-      weights: { lateFee: 30, urgency: 35, importance: 25, esg: 10 }, language: "en", aiMode: "rules" },
+      weights: { lateFee: 30, urgency: 35, importance: 25, esg: 10 },
+      scoringVersion: options.scoringVersion ?? "split_v2", language: "en", aiMode: "rules" },
   };
   const risk = calculateRisk(state, "RSK-DEMO-INITIAL");
   state.riskEvents.push(risk);

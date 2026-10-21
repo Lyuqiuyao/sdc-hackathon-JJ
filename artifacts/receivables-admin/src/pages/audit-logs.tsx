@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { KV } from '@/components/kit';
-import { fmtDateTime } from '@/lib/arus';
+import { fmtDateTime, safeHistorical } from '@/lib/arus';
 import { PlanSnapshotsPanel } from '@/components/advice-snapshots';
 import { deriveAiOutcome } from '@/lib/advice-snapshot';
 import type { AuditLog } from '@workspace/api-client-react';
@@ -20,7 +20,7 @@ export default function AuditLogs() {
   const [inv, setInv] = useState('');
   const [sel, setSel] = useState<AuditLog | null>(null);
   return (
-    <Page title="Audit Logs" zh="审计中心" description="Append-only record of every action. Logs cannot be edited or deleted here.">
+    <Page title="Audit Logs" description="Append-only record of every action. Logs cannot be edited or deleted here.">
       {(ws) => {
         const types = Array.from(new Set(ws.auditLogs.map((l) => l.type))).sort();
         const rows = [...ws.auditLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).filter((l) => {
@@ -51,7 +51,7 @@ export default function AuditLogs() {
                     <TableRow key={l.id} className="cursor-pointer" onClick={() => setSel(l)} data-testid={`row-log-${l.id}`}>
                       <TableCell className="font-mono text-[11px]">{l.id.slice(-8)}</TableCell><TableCell className="whitespace-nowrap text-xs">{fmtDateTime(l.createdAt)}</TableCell>
                       <TableCell><Tag tone="blue">{l.type}</Tag></TableCell><TableCell className="text-xs">{l.actor}</TableCell><TableCell className="max-w-[160px] truncate text-xs">{l.related || '-'}</TableCell>
-                      <TableCell className="max-w-[300px] truncate text-xs">{l.content}</TableCell><TableCell className="text-xs">{l.planVersion || '-'}</TableCell><TableCell><Tag>{l.result}</Tag>{(() => { const a = deriveAiOutcome(l); return a ? <div className="mt-1" data-testid={`badge-ai-outcome-${l.id}`}><Tag tone={a.tone}>{a.label}</Tag></div> : null; })()}</TableCell>
+                      <TableCell className="max-w-[300px] truncate text-xs">{safeHistorical(l.content)}</TableCell><TableCell className="text-xs">{l.planVersion || '-'}</TableCell><TableCell><Tag>{l.result}</Tag>{(() => { const a = deriveAiOutcome(l); return a ? <div className="mt-1" data-testid={`badge-ai-outcome-${l.id}`}><Tag tone={a.tone}>{a.label}</Tag></div> : null; })()}</TableCell>
                     </TableRow>))}</TableBody>
                 </Table></div>)}
             </Panel>
@@ -60,10 +60,10 @@ export default function AuditLogs() {
               <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
                 {sel && <>
                   <DialogHeader><DialogTitle>{sel.type}</DialogTitle><DialogDescription>Read-only log entry {sel.id}</DialogDescription></DialogHeader>
-                  <dl data-testid="detail-log"><KV k="Time" v={fmtDateTime(sel.createdAt)} /><KV k="Actor" v={sel.actor} /><KV k="Related" v={sel.related || '-'} /><KV k="Content" v={sel.content} /><KV k="Plan version" v={sel.planVersion || '-'} /><KV k="Result (log action only)" v={sel.result} />{(() => { const a = deriveAiOutcome(sel); return a ? <KV k="AI outcome" v={<span data-testid="detail-ai-outcome">{a.label}{a.detail ? ` (${a.detail})` : ''}</span>} /> : null; })()}</dl>
+                  <dl data-testid="detail-log"><KV k="Time" v={fmtDateTime(sel.createdAt)} /><KV k="Actor" v={sel.actor} /><KV k="Related" v={sel.related || '-'} /><KV k="Content" v={safeHistorical(sel.content)} /><KV k="Plan version" v={sel.planVersion || '-'} /><KV k="Result (log action only)" v={sel.result} />{(() => { const a = deriveAiOutcome(sel); return a ? <KV k="AI outcome" v={<span data-testid="detail-ai-outcome">{a.label}{a.detail ? ` (${a.detail})` : ''}</span>} /> : null; })()}</dl>
                   <div className="grid gap-3 md:grid-cols-2">
-                    <div><div className="mb-1 text-xs font-semibold">Before</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px]">{sel.before || '-'}</pre></div>
-                    <div><div className="mb-1 text-xs font-semibold">After</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px]">{sel.after || '-'}</pre></div>
+                    <div><div className="mb-1 text-xs font-semibold">Before</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px]">{safeHistorical(sel.before) || '-'}</pre></div>
+                    <div><div className="mb-1 text-xs font-semibold">After</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px]">{safeHistorical(sel.after) || '-'}</pre></div>
                   </div>
                 </>}
               </DialogContent>

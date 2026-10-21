@@ -6,6 +6,38 @@ info:
 servers:
   - url: /api
 paths:
+  /customers/{id}/profile:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    put:
+      operationId: saveCompanyProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CompanyProfileInput" }
+      responses:
+        "200":
+          description: Updated synthetic company information; not independently verified
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+  /customers/{id}/sedg:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: submitSedg
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SedgInput" }
+      responses:
+        "200":
+          description: Append-only unverified synthetic SEDG declaration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SedgSubmission" }
   /healthz:
     get:
       operationId: healthCheck
@@ -191,6 +223,94 @@ components:
         earliestDue: { type: string }
         risk: { type: string }
         paymentHistory: { type: string }
+        profileSummary: { type: string }
+        profileVersion: { type: integer }
+        profileSource: { type: string }
+    CompanyProfileInput:
+      type: object
+      required: [industry, paymentHistory, profileSummary, existingEsgRating, expectedVersion, syntheticConfirmed]
+      properties:
+        industry: { type: string, minLength: 1, maxLength: 200 }
+        paymentHistory: { type: string, minLength: 1, maxLength: 2000 }
+        profileSummary: { type: string, minLength: 1, maxLength: 3000 }
+        existingEsgRating: { type: string, enum: [A, B, C, unknown] }
+        expectedVersion: { type: integer, minimum: 0 }
+        syntheticConfirmed: { type: boolean }
+    SedgInput:
+      type: object
+      required: [environmental, social, governance, sourceReference, syntheticConfirmed]
+      properties:
+        environmental: { type: string, minLength: 1, maxLength: 2000 }
+        social: { type: string, minLength: 1, maxLength: 2000 }
+        governance: { type: string, minLength: 1, maxLength: 2000 }
+        sourceReference: { type: string, minLength: 1, maxLength: 300 }
+        syntheticConfirmed: { type: boolean }
+    SedgSubmission:
+      type: object
+      required: [id, customerId, environmental, social, governance, sourceReference, source, status, createdAt, actor]
+      properties:
+        id: { type: string }
+        customerId: { type: string }
+        environmental: { type: string }
+        social: { type: string }
+        governance: { type: string }
+        sourceReference: { type: string }
+        source: { type: string }
+        status: { type: string, enum: [Submitted - unverified] }
+        createdAt: { type: string }
+        actor: { type: string }
+    CustomerReviewInput:
+      type: object
+      required: [customerId, decision, reason]
+      properties:
+        customerId: { type: string }
+        decision: { type: string, enum: [collect_now, negotiable_extension] }
+        reason: { type: string, minLength: 1, maxLength: 2000 }
+    CustomerReview:
+      type: object
+      required: [customerId, decision, reason, actor, createdAt, profileVersion]
+      properties:
+        customerId: { type: string }
+        decision: { type: string, enum: [collect_now, negotiable_extension] }
+        reason: { type: string }
+        actor: { type: string }
+        createdAt: { type: string }
+        profileVersion: { type: integer }
+        sedgSubmissionId: { type: string }
+    ScoringSnapshot:
+      type: object
+      required: [version, overdueCapDays, amountCapCents, twoDimensional, threeDimensional, esgMapping]
+      properties:
+        version: { type: string, enum: [split_v2] }
+        overdueCapDays: { type: integer }
+        amountCapCents: { type: integer }
+        twoDimensional:
+          type: object
+          required: [overdue, amount]
+          properties:
+            overdue: { type: integer }
+            amount: { type: integer }
+        threeDimensional:
+          type: object
+          required: [overdue, amount, esg]
+          properties:
+            overdue: { type: integer }
+            amount: { type: integer }
+            esg: { type: integer }
+        esgMapping:
+          type: object
+          required: [A, B, C]
+          properties:
+            A: { type: integer }
+            B: { type: integer }
+            C: { type: integer }
+    ManualMerge:
+      type: object
+      required: [actor, reason, createdAt]
+      properties:
+        actor: { type: string }
+        reason: { type: string }
+        createdAt: { type: string }
     Invoice:
       type: object
       required: [id, number, customerId, customerName, invoiceDate, dueDate, totalCents, paidCents, outstandingCents, currency, lateFeeBps, status, daysOverdue, importance, esgRating, source, importedAt, estimatedFields]
@@ -252,6 +372,7 @@ components:
         largeInvoiceCents: { type: integer, minimum: 1, maximum: 100000000000 }
         concentrationCount: { type: integer, minimum: 1, maximum: 1000 }
         weights: { $ref: "#/components/schemas/Weights" }
+        scoringVersion: { type: string, enum: [legacy_v1, split_v2] }
         language: { type: string, enum: [en, ms] }
         aiMode: { type: string, enum: [rules, openai, gemini], description: "gemini is read-only legacy compatibility; choose rules or openai for new requests." }
     RiskEvent:
@@ -286,7 +407,12 @@ components:
         lateFeeScore: { type: number }
         urgencyScore: { type: number }
         importanceScore: { type: number }
-        esgScore: { type: number }
+        esgScore: { type: [number, "null"] }
+        queue: { type: string, enum: [two_dimensional, three_dimensional] }
+        queueRank: { type: integer }
+        overdueScore: { type: number }
+        amountScore: { type: number }
+        assignedEsgRating: { type: string, enum: [A, B, C, unknown] }
         score: { type: number }
         method: { type: string }
         scheduledAt: { type: string }
@@ -395,6 +521,9 @@ components:
         aiRiskExplanation: { type: string }
         aiGeneration: { $ref: "#/components/schemas/AIGeneration" }
         weights: { $ref: "#/components/schemas/Weights" }
+        scoringSnapshot: { $ref: "#/components/schemas/ScoringSnapshot" }
+        manualMerge: { $ref: "#/components/schemas/ManualMerge" }
+        customerReviews: { type: array, items: { $ref: "#/components/schemas/CustomerReview" } }
         tasks: { type: array, items: { $ref: "#/components/schemas/CollectionTask" } }
         notes: { type: string }
         dataSignature: { type: string }
@@ -424,6 +553,11 @@ components:
         executedAt: { type: string }
         result: { type: string }
         noticeStatus: { type: string }
+        channel: { type: string, enum: [Simulated Email] }
+        recipient: { type: string }
+        noticeEn: { type: string }
+        noticeMs: { type: string }
+        planVersion: { type: integer }
     AuditLog:
       type: object
       required: [id, type, createdAt, actor, related, content, before, after, planVersion, result]
@@ -483,6 +617,7 @@ components:
         customers: { type: array, items: { $ref: "#/components/schemas/Customer" } }
         invoices: { type: array, items: { $ref: "#/components/schemas/Invoice" } }
         documents: { type: array, items: { $ref: "#/components/schemas/ESGDocument" } }
+        sedgSubmissions: { type: array, items: { $ref: "#/components/schemas/SedgSubmission" } }
         riskEvents: { type: array, items: { $ref: "#/components/schemas/RiskEvent" } }
         plans: { type: array, items: { $ref: "#/components/schemas/CollectionPlan" } }
         approvals: { type: array, items: { $ref: "#/components/schemas/ApprovalRecord" } }
@@ -509,6 +644,9 @@ components:
       properties:
         tasks: { type: array, items: { $ref: "#/components/schemas/TaskEdit" } }
         notes: { type: string, maxLength: 5000 }
+        expectedVersion: { type: integer, minimum: 1 }
+        customerReview: { $ref: "#/components/schemas/CustomerReviewInput" }
+        mergeReason: { type: string, minLength: 1, maxLength: 2000 }
     ApprovalInput:
       type: object
       required: [decision, notes]

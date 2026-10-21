@@ -8,6 +8,82 @@
 import * as zod from 'zod';
 
 
+export const SaveCompanyProfileParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const saveCompanyProfileBodyIndustryMax = 200;
+
+export const saveCompanyProfileBodyPaymentHistoryMax = 2000;
+
+export const saveCompanyProfileBodyProfileSummaryMax = 3000;
+
+export const saveCompanyProfileBodyExpectedVersionMin = 0;
+
+
+
+export const SaveCompanyProfileBody = zod.object({
+  "industry": zod.string().min(1).max(saveCompanyProfileBodyIndustryMax),
+  "paymentHistory": zod.string().min(1).max(saveCompanyProfileBodyPaymentHistoryMax),
+  "profileSummary": zod.string().min(1).max(saveCompanyProfileBodyProfileSummaryMax),
+  "existingEsgRating": zod.enum(['A', 'B', 'C', 'unknown']),
+  "expectedVersion": zod.number().int().min(saveCompanyProfileBodyExpectedVersionMin),
+  "syntheticConfirmed": zod.boolean()
+})
+
+export const SaveCompanyProfileResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "industry": zod.string(),
+  "importance": zod.enum(['High', 'Medium', 'Low']),
+  "esgRating": zod.string(),
+  "outstandingCents": zod.number().int(),
+  "overdueCents": zod.number().int(),
+  "earliestDue": zod.string(),
+  "risk": zod.string(),
+  "paymentHistory": zod.string(),
+  "profileSummary": zod.string().optional(),
+  "profileVersion": zod.number().int().optional(),
+  "profileSource": zod.string().optional()
+})
+
+
+export const SubmitSedgParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const submitSedgBodyEnvironmentalMax = 2000;
+
+export const submitSedgBodySocialMax = 2000;
+
+export const submitSedgBodyGovernanceMax = 2000;
+
+export const submitSedgBodySourceReferenceMax = 300;
+
+
+
+export const SubmitSedgBody = zod.object({
+  "environmental": zod.string().min(1).max(submitSedgBodyEnvironmentalMax),
+  "social": zod.string().min(1).max(submitSedgBodySocialMax),
+  "governance": zod.string().min(1).max(submitSedgBodyGovernanceMax),
+  "sourceReference": zod.string().min(1).max(submitSedgBodySourceReferenceMax),
+  "syntheticConfirmed": zod.boolean()
+})
+
+export const SubmitSedgResponse = zod.object({
+  "id": zod.string(),
+  "customerId": zod.string(),
+  "environmental": zod.string(),
+  "social": zod.string(),
+  "governance": zod.string(),
+  "sourceReference": zod.string(),
+  "source": zod.string(),
+  "status": zod.enum(['Submitted - unverified']),
+  "createdAt": zod.string(),
+  "actor": zod.string()
+})
+
+
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
@@ -145,7 +221,10 @@ export const GetWorkspaceResponse = zod.object({
   "overdueCents": zod.number().int(),
   "earliestDue": zod.string(),
   "risk": zod.string(),
-  "paymentHistory": zod.string()
+  "paymentHistory": zod.string(),
+  "profileSummary": zod.string().optional(),
+  "profileVersion": zod.number().int().optional(),
+  "profileSource": zod.string().optional()
 })),
   "invoices": zod.array(zod.object({
   "id": zod.string(),
@@ -181,6 +260,18 @@ export const GetWorkspaceResponse = zod.object({
   "rating": zod.string(),
   "source": zod.string()
 })),
+  "sedgSubmissions": zod.array(zod.object({
+  "id": zod.string(),
+  "customerId": zod.string(),
+  "environmental": zod.string(),
+  "social": zod.string(),
+  "governance": zod.string(),
+  "sourceReference": zod.string(),
+  "source": zod.string(),
+  "status": zod.enum(['Submitted - unverified']),
+  "createdAt": zod.string(),
+  "actor": zod.string()
+})).optional(),
   "riskEvents": zod.array(zod.object({
   "id": zod.string(),
   "createdAt": zod.string(),
@@ -209,6 +300,7 @@ export const GetWorkspaceResponse = zod.object({
   "importance": zod.number().int().min(getWorkspaceResponseRiskEventsItemSettingsSnapshotWeightsImportanceMin).max(getWorkspaceResponseRiskEventsItemSettingsSnapshotWeightsImportanceMax),
   "esg": zod.number().int().min(getWorkspaceResponseRiskEventsItemSettingsSnapshotWeightsEsgMin).max(getWorkspaceResponseRiskEventsItemSettingsSnapshotWeightsEsgMax)
 }),
+  "scoringVersion": zod.enum(['legacy_v1', 'split_v2']).optional(),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 }),
@@ -248,6 +340,39 @@ export const GetWorkspaceResponse = zod.object({
   "importance": zod.number().int().min(getWorkspaceResponsePlansItemWeightsImportanceMin).max(getWorkspaceResponsePlansItemWeightsImportanceMax),
   "esg": zod.number().int().min(getWorkspaceResponsePlansItemWeightsEsgMin).max(getWorkspaceResponsePlansItemWeightsEsgMax)
 }),
+  "scoringSnapshot": zod.object({
+  "version": zod.enum(['split_v2']),
+  "overdueCapDays": zod.number().int(),
+  "amountCapCents": zod.number().int(),
+  "twoDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int()
+}),
+  "threeDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int(),
+  "esg": zod.number().int()
+}),
+  "esgMapping": zod.object({
+  "A": zod.number().int(),
+  "B": zod.number().int(),
+  "C": zod.number().int()
+})
+}).optional(),
+  "manualMerge": zod.object({
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.string()
+}).optional(),
+  "customerReviews": zod.array(zod.object({
+  "customerId": zod.string(),
+  "decision": zod.enum(['collect_now', 'negotiable_extension']),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "createdAt": zod.string(),
+  "profileVersion": zod.number().int(),
+  "sedgSubmissionId": zod.string().optional()
+})).optional(),
   "tasks": zod.array(zod.object({
   "id": zod.string(),
   "invoiceId": zod.string(),
@@ -261,7 +386,12 @@ export const GetWorkspaceResponse = zod.object({
   "lateFeeScore": zod.number(),
   "urgencyScore": zod.number(),
   "importanceScore": zod.number(),
-  "esgScore": zod.number(),
+  "esgScore": zod.number().nullable(),
+  "queue": zod.enum(['two_dimensional', 'three_dimensional']).optional(),
+  "queueRank": zod.number().int().optional(),
+  "overdueScore": zod.number().optional(),
+  "amountScore": zod.number().optional(),
+  "assignedEsgRating": zod.enum(['A', 'B', 'C', 'unknown']).optional(),
   "score": zod.number(),
   "method": zod.string(),
   "scheduledAt": zod.string(),
@@ -313,7 +443,12 @@ export const GetWorkspaceResponse = zod.object({
   "actor": zod.string(),
   "executedAt": zod.string(),
   "result": zod.string(),
-  "noticeStatus": zod.string()
+  "noticeStatus": zod.string(),
+  "channel": zod.enum(['Simulated Email']).optional(),
+  "recipient": zod.string().optional(),
+  "noticeEn": zod.string().optional(),
+  "noticeMs": zod.string().optional(),
+  "planVersion": zod.number().int().optional()
 })),
   "auditLogs": zod.array(zod.object({
   "id": zod.string(),
@@ -344,6 +479,7 @@ export const GetWorkspaceResponse = zod.object({
   "importance": zod.number().int().min(getWorkspaceResponseSettingsWeightsImportanceMin).max(getWorkspaceResponseSettingsWeightsImportanceMax),
   "esg": zod.number().int().min(getWorkspaceResponseSettingsWeightsEsgMin).max(getWorkspaceResponseSettingsWeightsEsgMax)
 }),
+  "scoringVersion": zod.enum(['legacy_v1', 'split_v2']).optional(),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 }),
@@ -398,6 +534,7 @@ export const GetWorkspaceResponse = zod.object({
   "importance": zod.number().int().min(getWorkspaceResponseDashboardRiskSettingsSnapshotWeightsImportanceMin).max(getWorkspaceResponseDashboardRiskSettingsSnapshotWeightsImportanceMax),
   "esg": zod.number().int().min(getWorkspaceResponseDashboardRiskSettingsSnapshotWeightsEsgMin).max(getWorkspaceResponseDashboardRiskSettingsSnapshotWeightsEsgMax)
 }),
+  "scoringVersion": zod.enum(['legacy_v1', 'split_v2']).optional(),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 }),
@@ -476,6 +613,7 @@ export const RunRiskCheckResponse = zod.object({
   "importance": zod.number().int().min(runRiskCheckResponseSettingsSnapshotWeightsImportanceMin).max(runRiskCheckResponseSettingsSnapshotWeightsImportanceMax),
   "esg": zod.number().int().min(runRiskCheckResponseSettingsSnapshotWeightsEsgMin).max(runRiskCheckResponseSettingsSnapshotWeightsEsgMax)
 }),
+  "scoringVersion": zod.enum(['legacy_v1', 'split_v2']).optional(),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 }),
@@ -555,6 +693,39 @@ export const GeneratePlanResponse = zod.object({
   "importance": zod.number().int().min(generatePlanResponseWeightsImportanceMin).max(generatePlanResponseWeightsImportanceMax),
   "esg": zod.number().int().min(generatePlanResponseWeightsEsgMin).max(generatePlanResponseWeightsEsgMax)
 }),
+  "scoringSnapshot": zod.object({
+  "version": zod.enum(['split_v2']),
+  "overdueCapDays": zod.number().int(),
+  "amountCapCents": zod.number().int(),
+  "twoDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int()
+}),
+  "threeDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int(),
+  "esg": zod.number().int()
+}),
+  "esgMapping": zod.object({
+  "A": zod.number().int(),
+  "B": zod.number().int(),
+  "C": zod.number().int()
+})
+}).optional(),
+  "manualMerge": zod.object({
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.string()
+}).optional(),
+  "customerReviews": zod.array(zod.object({
+  "customerId": zod.string(),
+  "decision": zod.enum(['collect_now', 'negotiable_extension']),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "createdAt": zod.string(),
+  "profileVersion": zod.number().int(),
+  "sedgSubmissionId": zod.string().optional()
+})).optional(),
   "tasks": zod.array(zod.object({
   "id": zod.string(),
   "invoiceId": zod.string(),
@@ -568,7 +739,12 @@ export const GeneratePlanResponse = zod.object({
   "lateFeeScore": zod.number(),
   "urgencyScore": zod.number(),
   "importanceScore": zod.number(),
-  "esgScore": zod.number(),
+  "esgScore": zod.number().nullable(),
+  "queue": zod.enum(['two_dimensional', 'three_dimensional']).optional(),
+  "queueRank": zod.number().int().optional(),
+  "overdueScore": zod.number().optional(),
+  "amountScore": zod.number().optional(),
+  "assignedEsgRating": zod.enum(['A', 'B', 'C', 'unknown']).optional(),
   "score": zod.number(),
   "method": zod.string(),
   "scheduledAt": zod.string(),
@@ -615,6 +791,11 @@ export const editPlanBodyTasksItemNoticeMsMax = 10000;
 export const editPlanBodyNotesMax = 5000;
 
 
+export const editPlanBodyCustomerReviewReasonMax = 2000;
+
+export const editPlanBodyMergeReasonMax = 2000;
+
+
 
 export const EditPlanBody = zod.object({
   "tasks": zod.array(zod.object({
@@ -623,7 +804,14 @@ export const EditPlanBody = zod.object({
   "noticeEn": zod.string().min(1).max(editPlanBodyTasksItemNoticeEnMax),
   "noticeMs": zod.string().min(1).max(editPlanBodyTasksItemNoticeMsMax)
 })),
-  "notes": zod.string().max(editPlanBodyNotesMax)
+  "notes": zod.string().max(editPlanBodyNotesMax),
+  "expectedVersion": zod.number().int().min(1).optional(),
+  "customerReview": zod.object({
+  "customerId": zod.string(),
+  "decision": zod.enum(['collect_now', 'negotiable_extension']),
+  "reason": zod.string().min(1).max(editPlanBodyCustomerReviewReasonMax)
+}).optional(),
+  "mergeReason": zod.string().min(1).max(editPlanBodyMergeReasonMax).optional()
 })
 
 export const editPlanResponseWeightsLateFeeMin = 0;
@@ -674,6 +862,39 @@ export const EditPlanResponse = zod.object({
   "importance": zod.number().int().min(editPlanResponseWeightsImportanceMin).max(editPlanResponseWeightsImportanceMax),
   "esg": zod.number().int().min(editPlanResponseWeightsEsgMin).max(editPlanResponseWeightsEsgMax)
 }),
+  "scoringSnapshot": zod.object({
+  "version": zod.enum(['split_v2']),
+  "overdueCapDays": zod.number().int(),
+  "amountCapCents": zod.number().int(),
+  "twoDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int()
+}),
+  "threeDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int(),
+  "esg": zod.number().int()
+}),
+  "esgMapping": zod.object({
+  "A": zod.number().int(),
+  "B": zod.number().int(),
+  "C": zod.number().int()
+})
+}).optional(),
+  "manualMerge": zod.object({
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.string()
+}).optional(),
+  "customerReviews": zod.array(zod.object({
+  "customerId": zod.string(),
+  "decision": zod.enum(['collect_now', 'negotiable_extension']),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "createdAt": zod.string(),
+  "profileVersion": zod.number().int(),
+  "sedgSubmissionId": zod.string().optional()
+})).optional(),
   "tasks": zod.array(zod.object({
   "id": zod.string(),
   "invoiceId": zod.string(),
@@ -687,7 +908,12 @@ export const EditPlanResponse = zod.object({
   "lateFeeScore": zod.number(),
   "urgencyScore": zod.number(),
   "importanceScore": zod.number(),
-  "esgScore": zod.number(),
+  "esgScore": zod.number().nullable(),
+  "queue": zod.enum(['two_dimensional', 'three_dimensional']).optional(),
+  "queueRank": zod.number().int().optional(),
+  "overdueScore": zod.number().optional(),
+  "amountScore": zod.number().optional(),
+  "assignedEsgRating": zod.enum(['A', 'B', 'C', 'unknown']).optional(),
   "score": zod.number(),
   "method": zod.string(),
   "scheduledAt": zod.string(),
@@ -818,6 +1044,39 @@ export const DecidePlanResponse = zod.object({
   "importance": zod.number().int().min(decidePlanResponseWeightsImportanceMin).max(decidePlanResponseWeightsImportanceMax),
   "esg": zod.number().int().min(decidePlanResponseWeightsEsgMin).max(decidePlanResponseWeightsEsgMax)
 }),
+  "scoringSnapshot": zod.object({
+  "version": zod.enum(['split_v2']),
+  "overdueCapDays": zod.number().int(),
+  "amountCapCents": zod.number().int(),
+  "twoDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int()
+}),
+  "threeDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int(),
+  "esg": zod.number().int()
+}),
+  "esgMapping": zod.object({
+  "A": zod.number().int(),
+  "B": zod.number().int(),
+  "C": zod.number().int()
+})
+}).optional(),
+  "manualMerge": zod.object({
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.string()
+}).optional(),
+  "customerReviews": zod.array(zod.object({
+  "customerId": zod.string(),
+  "decision": zod.enum(['collect_now', 'negotiable_extension']),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "createdAt": zod.string(),
+  "profileVersion": zod.number().int(),
+  "sedgSubmissionId": zod.string().optional()
+})).optional(),
   "tasks": zod.array(zod.object({
   "id": zod.string(),
   "invoiceId": zod.string(),
@@ -831,7 +1090,12 @@ export const DecidePlanResponse = zod.object({
   "lateFeeScore": zod.number(),
   "urgencyScore": zod.number(),
   "importanceScore": zod.number(),
-  "esgScore": zod.number(),
+  "esgScore": zod.number().nullable(),
+  "queue": zod.enum(['two_dimensional', 'three_dimensional']).optional(),
+  "queueRank": zod.number().int().optional(),
+  "overdueScore": zod.number().optional(),
+  "amountScore": zod.number().optional(),
+  "assignedEsgRating": zod.enum(['A', 'B', 'C', 'unknown']).optional(),
   "score": zod.number(),
   "method": zod.string(),
   "scheduledAt": zod.string(),
@@ -917,6 +1181,39 @@ export const ExecutePlanResponse = zod.object({
   "importance": zod.number().int().min(executePlanResponseWeightsImportanceMin).max(executePlanResponseWeightsImportanceMax),
   "esg": zod.number().int().min(executePlanResponseWeightsEsgMin).max(executePlanResponseWeightsEsgMax)
 }),
+  "scoringSnapshot": zod.object({
+  "version": zod.enum(['split_v2']),
+  "overdueCapDays": zod.number().int(),
+  "amountCapCents": zod.number().int(),
+  "twoDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int()
+}),
+  "threeDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int(),
+  "esg": zod.number().int()
+}),
+  "esgMapping": zod.object({
+  "A": zod.number().int(),
+  "B": zod.number().int(),
+  "C": zod.number().int()
+})
+}).optional(),
+  "manualMerge": zod.object({
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.string()
+}).optional(),
+  "customerReviews": zod.array(zod.object({
+  "customerId": zod.string(),
+  "decision": zod.enum(['collect_now', 'negotiable_extension']),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "createdAt": zod.string(),
+  "profileVersion": zod.number().int(),
+  "sedgSubmissionId": zod.string().optional()
+})).optional(),
   "tasks": zod.array(zod.object({
   "id": zod.string(),
   "invoiceId": zod.string(),
@@ -930,7 +1227,12 @@ export const ExecutePlanResponse = zod.object({
   "lateFeeScore": zod.number(),
   "urgencyScore": zod.number(),
   "importanceScore": zod.number(),
-  "esgScore": zod.number(),
+  "esgScore": zod.number().nullable(),
+  "queue": zod.enum(['two_dimensional', 'three_dimensional']).optional(),
+  "queueRank": zod.number().int().optional(),
+  "overdueScore": zod.number().optional(),
+  "amountScore": zod.number().optional(),
+  "assignedEsgRating": zod.enum(['A', 'B', 'C', 'unknown']).optional(),
   "score": zod.number(),
   "method": zod.string(),
   "scheduledAt": zod.string(),
@@ -1017,6 +1319,7 @@ export const SaveSettingsBody = zod.object({
   "importance": zod.number().int().min(saveSettingsBodyWeightsImportanceMin).max(saveSettingsBodyWeightsImportanceMax),
   "esg": zod.number().int().min(saveSettingsBodyWeightsEsgMin).max(saveSettingsBodyWeightsEsgMax)
 }),
+  "scoringVersion": zod.enum(['legacy_v1', 'split_v2']).optional(),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 })
@@ -1074,6 +1377,7 @@ export const SaveSettingsResponse = zod.object({
   "importance": zod.number().int().min(saveSettingsResponseWeightsImportanceMin).max(saveSettingsResponseWeightsImportanceMax),
   "esg": zod.number().int().min(saveSettingsResponseWeightsEsgMin).max(saveSettingsResponseWeightsEsgMax)
 }),
+  "scoringVersion": zod.enum(['legacy_v1', 'split_v2']).optional(),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'openai', 'gemini']).describe('gemini is read-only legacy compatibility; choose rules or openai for new requests.')
 })

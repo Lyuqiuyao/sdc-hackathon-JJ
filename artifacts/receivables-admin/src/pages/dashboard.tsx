@@ -14,8 +14,8 @@ const STATUS_COLOR: Record<string, string> = {
   Partial: 'hsl(24 92% 54%)', Paid: 'hsl(152 55% 36%)', Cancelled: 'hsl(214 12% 65%)',
 };
 
-function Kpi({ href, icon, label, zh, value, sub, accent, id }: {
-  href: string; icon: ReactNode; label: string; zh: string; value: string; sub: string; accent?: string; id: string;
+function Kpi({ href, icon, label, value, sub, accent, id }: {
+  href: string; icon: ReactNode; label: string; value: string; sub: string; accent?: string; id: string;
 }) {
   return (
     <Link href={href} data-testid={`kpi-${id}`} className="group block rounded-lg border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
@@ -23,7 +23,7 @@ function Kpi({ href, icon, label, zh, value, sub, accent, id }: {
         <span className={cn('rounded-md p-1.5', accent ?? 'bg-accent text-accent-foreground')}>{icon}</span>
         <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
       </div>
-      <div className="mt-3 text-[11px] font-medium text-muted-foreground">{label} · {zh}</div>
+      <div className="mt-3 text-[11px] font-medium text-muted-foreground">{label}</div>
       <div className="mt-0.5 font-mono text-xl font-semibold tracking-tight" data-testid={`value-${id}`}>{value}</div>
       <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{sub}</div>
     </Link>
@@ -33,7 +33,7 @@ function Kpi({ href, icon, label, zh, value, sub, accent, id }: {
 export default function Dashboard() {
   const [range, setRange] = useState<7 | 30>(30);
   return (
-    <Page title="Dashboard" zh="工作台" description="Live receivables and cash-flow position from current data">
+    <Page title="Dashboard" description="Live receivables and cash-flow position from current data">
       {(ws) => {
         const d = ws.dashboard;
         const r = d.risk;
@@ -51,16 +51,16 @@ export default function Dashboard() {
               <span>{ws.source}</span>
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-              <Kpi id="cash" href="/settings" icon={<Wallet className="h-4 w-4" />} label="Available cash" zh="可用现金" value={rm(d.cashCents)} sub="Editable in Settings" />
-              <Kpi id="outstanding-count" href="/receivables" icon={<FileStack className="h-4 w-4" />} label="Open invoices" zh="待收账单数" value={String(d.outstandingCount)} sub="Excl. paid and cancelled" />
-              <Kpi id="outstanding-total" href="/receivables" icon={<Banknote className="h-4 w-4" />} label="Outstanding" zh="待收总额" value={rm(d.outstandingCents)} sub={`Paid to date ${rm(d.paidCents)}`} />
-              <Kpi id="overdue-count" href="/receivables" accent="bg-red-100 text-red-700" icon={<AlertTriangle className="h-4 w-4" />} label="Overdue" zh="已逾期" value={String(d.overdueCount)} sub={rm(d.overdueCents)} />
-              <Kpi id="due7-count" href="/receivables" accent="bg-orange-100 text-orange-700" icon={<CalendarClock className="h-4 w-4" />} label="Due in 7 days" zh="7天内到期" value={String(d.due7Count)} sub={rm(d.due7Cents)} />
-              <Kpi id="risk" href="/risk-triggers" accent={riskCls} icon={<Gauge className="h-4 w-4" />} label="Cash-flow risk" zh="现金流风险" value={r.level} sub={`Gap ${rm(r.gapCents)}`} />
+              <Kpi id="cash" href="/settings" icon={<Wallet className="h-4 w-4" />} label="Available cash" value={rm(d.cashCents)} sub="Editable in Settings" />
+              <Kpi id="outstanding-count" href="/receivables" icon={<FileStack className="h-4 w-4" />} label="Open invoices" value={String(d.outstandingCount)} sub="Excl. paid and cancelled" />
+              <Kpi id="outstanding-total" href="/receivables" icon={<Banknote className="h-4 w-4" />} label="Outstanding" value={rm(d.outstandingCents)} sub={`Paid to date ${rm(d.paidCents)}`} />
+              <Kpi id="overdue-count" href="/receivables" accent="bg-red-100 text-red-700" icon={<AlertTriangle className="h-4 w-4" />} label="Overdue" value={String(d.overdueCount)} sub={rm(d.overdueCents)} />
+              <Kpi id="due7-count" href="/receivables" accent="bg-orange-100 text-orange-700" icon={<CalendarClock className="h-4 w-4" />} label="Due in 7 days" value={String(d.due7Count)} sub={rm(d.due7Cents)} />
+              <Kpi id="risk" href="/risk-triggers" accent={riskCls} icon={<Gauge className="h-4 w-4" />} label="Cash-flow risk" value={r.level} sub={`Gap ${rm(r.gapCents)}`} />
             </div>
 
             <div className="grid gap-4 xl:grid-cols-5">
-              <Panel title="Receivables overview" zh="应收账款概览" className="xl:col-span-2" actions={<Button asChild size="sm" variant="outline"><Link href="/receivables" data-testid="link-view-receivables">View invoices</Link></Button>}>
+              <Panel title="Receivables overview" className="xl:col-span-2" actions={<Button asChild size="sm" variant="outline"><Link href="/receivables" data-testid="link-view-receivables">View invoices</Link></Button>}>
                 {groups.length === 0 ? <EmptyState title="No invoices yet" hint="Upload a CSV in Receivables." /> : (
                   <div className="grid items-center gap-2 sm:grid-cols-2">
                     <div className="h-48">
@@ -86,7 +86,7 @@ export default function Dashboard() {
                 )}
               </Panel>
 
-              <Panel title="Cash-flow risk" zh="现金流风险总览" className="xl:col-span-3" actions={
+              <Panel title="Cash-flow risk" className="xl:col-span-3" actions={
                 <div className="flex rounded-md border p-0.5 text-xs">
                   {([7, 30] as const).map((n) => (
                     <button key={n} onClick={() => setRange(n)} data-testid={`button-range-${n}`} className={cn('rounded px-2 py-1', range === n ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>{n}d</button>
@@ -125,7 +125,7 @@ export default function Dashboard() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <Panel title="To-do" zh="待办审批" bodyClass="space-y-2">
+              <Panel title="To-do" bodyClass="space-y-2">
                 {[
                   { href: '/approvals', n: pending.length, t: 'AI collection plans awaiting approval', s: 'Nothing is executed until a human approves.', tone: 'orange' as const, id: 'approvals' },
                   { href: '/risk-triggers', n: r.level === 'Low' ? 0 : 1, t: `Cash-flow risk alert (${r.level})`, s: r.reasons[0] ?? 'No active alert', tone: r.level === 'High' ? ('red' as const) : ('orange' as const), id: 'risk' },
@@ -137,7 +137,7 @@ export default function Dashboard() {
                   </Link>
                 ))}
               </Panel>
-              <Panel title="Recent activity" zh="最近活动" actions={<Button asChild size="sm" variant="ghost"><Link href="/audit-logs">All logs</Link></Button>}>
+              <Panel title="Recent activity" actions={<Button asChild size="sm" variant="ghost"><Link href="/audit-logs">All logs</Link></Button>}>
                 {recent.length === 0 ? <EmptyState title="No activity yet" hint="Run a risk check to begin." /> : (
                   <ul className="divide-y" data-testid="list-recent-activity">
                     {recent.map((a) => (

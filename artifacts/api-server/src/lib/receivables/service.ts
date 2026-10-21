@@ -11,6 +11,7 @@ import { seedState } from "./seed";
 import { rulesAdvisor, openaiConfigured, type AdvisorResult } from "./ai-provider";
 import { communication } from "./communication";
 import { appendPlanSnapshot } from "./advice-snapshots";
+import { assertEnglishInput } from "./language";
 
 export function audit(state: DemoState, type: string, content: string, related = "",
   before = "", after = "", plan?: CollectionPlan) {
@@ -29,7 +30,7 @@ export function workspace(state: DemoState): Workspace {
     aiMessage: openaiConfigured()
       ? "OpenAI (Replit managed) configuration is present, not proof of connectivity. Runtime usage is billed through Replit credits. Only openai / success with replit_managed contains validated managed output. Errors use rules_fallback; no private-key fallback."
       : "OpenAI (Replit managed) configuration is unavailable. Rules and bilingual templates remain usable. Enable the official Replit OpenAI integration; a private OPENAI_API_KEY is not used as a fallback.",
-    customers: customersNow(state, invoices), invoices,
+    customers: customersNow(state, invoices), invoices, sedgSubmissions: state.sedgSubmissions ?? [],
     documents: state.documents.map(d => ({ ...d, status: d.validUntil < today() ? "Expired" : d.status })),
     riskEvents: [...state.riskEvents].reverse(), plans: [...state.plans].reverse(),
     approvals: [...state.approvals].reverse(), executions: [...state.executions].reverse(),
@@ -55,6 +56,8 @@ export function riskCheck(state: DemoState) {
 }
 
 export function generate(state: DemoState, input: PlanInput) {
+  if (state.settings.scoringVersion !== "legacy_v1" && input.weights)
+    throw new BusinessError("Split scoring uses fixed approved weights. Legacy weight overrides are not accepted.");
   let risk = input.riskEventId ? state.riskEvents.find(r => r.id === input.riskEventId) :
     state.riskEvents[state.riskEvents.length - 1] ?? recordRisk(state);
   if (!risk) throw new BusinessError("Risk event not found.", 404);
@@ -64,11 +67,14 @@ export function generate(state: DemoState, input: PlanInput) {
   // Legacy and stale event snapshots must not masquerade as current attribution.
   if (risk.dataSignature !== dataSignature) risk = recordRisk(state);
   const existing = state.plans.find(p => p.riskEventId === risk.id && p.status === "Pending" &&
-    p.dataSignature === dataSignature && JSON.stringify(p.weights) === JSON.stringify(weights));
+    p.dataSignature === dataSignature && JSON.stringify(p.weights) === JSON.stringify(weights) &&
+    Boolean(p.scoringSnapshot) === (state.settings.scoringVersion !== "legacy_v1"));
   if (existing) return existing;
   const plan = rulesAdvisor.createDraft(state, risk.id, weights);
   state.plans.push(plan);
-  audit(state, "Plan generated", "Generated explainable four-factor rules-engine plan and bilingual notification templates; human approval required.",
+  audit(state, "Plan generated", plan.scoringSnapshot
+    ? "Generated separate deterministic 2D/3D invoice queues. Customer review and a human-confirmed merge are required; no automatic cross-queue score comparison."
+    : "Generated explainable legacy four-factor rules-engine plan and bilingual notification templates; human approval required.",
     plan.tasks.map(t => `${t.invoiceNumber} ${t.customerName}`).join(", "), "", JSON.stringify(plan), plan);
   appendPlanSnapshot(state, plan, { status: "fallback", reasonCode: "rules_draft", provider: "rules_fallback" });
   return plan;
@@ -116,8 +122,20 @@ function findPlan(state: DemoState, id: string) {
 }
 
 export function edit(state: DemoState, id: string, input: PlanEdit) {
+  assertEnglishInput(input);
   const original = findPlan(state, id);
   if (!["Pending", "Approved"].includes(original.status)) throw new BusinessError("This version is immutable. Select a current pending or approved version.", 409);
+  if (input.expectedVersion !== undefined && input.expectedVersion !== original.version)
+    throw new BusinessError("Plan version changed. Reload before editing.", 409);
+  if (input.customerReview || input.mergeReason) assertFresh(state, original);
+  const review = input.customerReview;
+  if (original.scoringSnapshot && !(input.notes.trim() || review?.reason.trim() || input.mergeReason?.trim()))
+    throw new BusinessError("Provide a reason for this new human-edited plan version.");
+  if (review && (!original.scoringSnapshot || !original.tasks.some(t => t.customerId === review.customerId) ||
+    !review.reason.trim() || !["collect_now", "negotiable_extension"].includes(review.decision)))
+    throw new BusinessError("A customer review needs an associated customer, valid action and reason.");
+  if (input.mergeReason !== undefined && (!original.scoringSnapshot || !input.mergeReason.trim()))
+    throw new BusinessError("Provide a reason for the human-confirmed final order.");
   const taskIds = new Set(original.tasks.map(t => t.id));
   if (input.tasks.length !== taskIds.size || new Set(input.tasks.map(t => t.id)).size !== taskIds.size ||
     input.tasks.some(t => !taskIds.has(t.id))) throw new BusinessError("Task edits must contain each original task exactly once.");
@@ -128,8 +146,24 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
     ...structuredClone(original), id: newId, createdAt: now(), status: "Pending",
     version: Math.max(...state.plans.filter(p => p.familyId === original.familyId).map(p => p.version)) + 1,
     notes: input.notes,
+    ...(original.scoringSnapshot ? {
+      manualMerge: input.mergeReason ? { actor: "Demo Admin", reason: input.mergeReason.trim(), createdAt: now() } : undefined,
+      customerReviews: [
+        ...(original.customerReviews ?? []).filter(r => (!review || r.customerId !== review.customerId) &&
+          !input.tasks.some(t => {
+            const old = original.tasks.find(task => task.id === t.id);
+            return old?.customerId === r.customerId && old.method !== t.method;
+          })),
+        ...(review ? [{ ...review, reason: review.reason.trim(), actor: "Demo Admin", createdAt: now(),
+          profileVersion: state.customers.find(c => c.id === review.customerId)!.profileVersion ?? 0,
+          sedgSubmissionId: [...(state.sedgSubmissions ?? [])].reverse().find(s => s.customerId === review.customerId)?.id }] : []),
+      ],
+    } : {}),
     tasks: input.tasks.map((edited, n) => {
       const old = original.tasks.find(t => t.id === edited.id)!;
+      if (review?.customerId === old.customerId) edited = { ...edited,
+        method: review.decision === "negotiable_extension" ? "Extension negotiation" :
+          old.daysOverdue > 0 ? "Overdue collection" : "Due date reminder" };
       // Keep recommended time slots ordered when human priority order changes.
       const changedMethod = old.method !== edited.method;
       const advice = changedMethod ? communication(old, edited.method) : old;
@@ -144,6 +178,7 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
         scheduledAt: original.tasks[n]!.scheduledAt, status: "Draft" };
     }),
   };
+  if (plan.scoringSnapshot && input.mergeReason) assertCustomerReviews(state, plan);
   original.status = "Superseded";
   state.plans.push(plan);
   audit(state, "Manual adjustment", "Human reordered tasks and/or edited methods and bilingual drafts. New version needs approval.",
@@ -151,7 +186,30 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
   appendPlanSnapshot(state, plan, { status: "edited", reasonCode: "human_edit",
     provider: "human", source: "human", previousPlanId: original.id,
     attemptId: original.aiGeneration?.attemptId });
+  if (review) audit(state, "Customer collection review", "Human planning review only, not ESG certification. Action and reason recorded in the new plan version.",
+    review.customerId, "", JSON.stringify(plan.customerReviews), plan);
+  if (input.mergeReason) audit(state, "Human queue merge", "Human confirmed the final execution order; original queue ranks and deterministic scores are unchanged.",
+    plan.id, "", JSON.stringify({ merge: plan.manualMerge, order: plan.tasks.map(t => ({ invoiceId: t.invoiceId, queueRank: t.queueRank, rank: t.rank })) }), plan);
   return plan;
+}
+
+export function assertCustomerReviews(state: DemoState, plan: CollectionPlan) {
+  if (!plan.scoringSnapshot) return;
+  const ids = new Set(plan.tasks.filter(t => t.queue === "two_dimensional").map(t => t.customerId));
+  for (const id of ids) {
+    const reviews = (plan.customerReviews ?? []).filter(r => r.customerId === id);
+    const customer = state.customers.find(c => c.id === id);
+    const latest = [...(state.sedgSubmissions ?? [])].reverse().find(s => s.customerId === id);
+    if (reviews.length !== 1 || !customer || !reviews[0]!.reason.trim() ||
+      reviews[0]!.profileVersion !== (customer.profileVersion ?? 0) || reviews[0]!.sedgSubmissionId !== latest?.id)
+      throw new BusinessError("Complete current customer reviews for all 2D customers before merging or approving.", 409);
+  }
+}
+function assertPlanningReview(state: DemoState, plan: CollectionPlan) {
+  if (!plan.scoringSnapshot) return;
+  assertCustomerReviews(state, plan);
+  if (!plan.manualMerge?.reason.trim() || plan.manualMerge.actor !== "Demo Admin")
+    throw new BusinessError("Human confirmation of the final merged order is required.", 409);
 }
 
 function assertFresh(state: DemoState, plan: CollectionPlan) {
@@ -162,9 +220,10 @@ function assertFresh(state: DemoState, plan: CollectionPlan) {
 }
 
 export function decide(state: DemoState, id: string, input: ApprovalInput) {
+  assertEnglishInput(input);
   const plan = findPlan(state, id);
   if (plan.status !== "Pending") throw new BusinessError("Only pending plans can be approved, deferred or rejected.", 409);
-  if (input.decision === "approve") assertFresh(state, plan);
+  if (input.decision === "approve") { assertFresh(state, plan); assertPlanningReview(state, plan); }
   const before = JSON.stringify(plan);
   plan.status = input.decision === "approve" ? "Approved" : input.decision === "reject" ? "Rejected" : "Deferred";
   plan.notes = input.notes;
@@ -197,17 +256,20 @@ export function decide(state: DemoState, id: string, input: ApprovalInput) {
 export function execute(state: DemoState, id: string) {
   const plan = findPlan(state, id);
   if (plan.status === "Executed") return plan;
-  if (plan.status !== "Approved" || !state.approvals.some(a => a.planId === plan.id && a.decision === "approve")) {
+  if (plan.status !== "Approved" || !state.approvals.some(a => a.planId === plan.id && a.version === plan.version && a.decision === "approve")) {
     throw new BusinessError("Execution blocked: this exact plan version has not been approved by an administrator.", 409);
   }
   assertFresh(state, plan);
+  assertPlanningReview(state, plan);
   const before = JSON.stringify(plan);
   for (const task of plan.tasks) {
     task.status = "Simulated complete";
     const record = { id: `EXE-${randomUUID().slice(0, 8)}`, planId: plan.id, taskId: task.id,
       invoiceNumber: task.invoiceNumber, customerName: task.customerName, actor: "Demo Admin",
       executedAt: now(), result: "Demo simulation complete — no real message sent and no money collected.",
-      noticeStatus: `Simulated send · EN: ${task.noticeEnSource ?? "rules_fallback"} / MS: ${task.noticeMsSource ?? "rules_fallback"} · no real dispatch` };
+      noticeStatus: `Simulated send · EN: ${task.noticeEnSource ?? "rules_fallback"} / MS: ${task.noticeMsSource ?? "rules_fallback"} · no real dispatch`,
+      channel: "Simulated Email" as const, recipient: `${task.customerId.replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase()}@example.invalid`,
+      noticeEn: task.noticeEn, noticeMs: task.noticeMs, planVersion: plan.version };
     state.executions.push(record);
     audit(state, "Simulated execution", `Simulated task ${task.rank}: ${task.method}. Notice marked simulated only; invoice payment is unchanged.`,
       `${task.invoiceNumber} ${task.customerName}`, "Approved task", JSON.stringify(record), plan);
@@ -219,6 +281,8 @@ export function execute(state: DemoState, id: string) {
 }
 
 export function settings(state: DemoState, input: SystemSetting) {
+  if (state.settings.scoringVersion !== "legacy_v1" && input.scoringVersion === "legacy_v1")
+    throw new BusinessError("Legacy scoring is available for historical records only.");
   if (input.aiMode === "gemini") throw new BusinessError("Gemini is retired. Select OpenAI or Rules engine.");
   validateWeights(input.weights);
   const before = JSON.stringify(state.settings);
@@ -229,6 +293,7 @@ export function settings(state: DemoState, input: SystemSetting) {
 }
 
 export function importData(state: DemoState, input: ImportInput) {
+  assertEnglishInput(input);
   const beforeCount = state.invoices.length;
   const result = importCsv(state, input);
   if (result.imported > 0) audit(state, "Data import", `${input.filename}: User synthetic-data attestation received, provenance unverified. ${result.message} ${result.warnings.join(" ")}`,

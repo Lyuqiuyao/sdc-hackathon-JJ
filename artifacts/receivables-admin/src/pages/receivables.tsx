@@ -56,7 +56,7 @@ export default function Receivables() {
 
   return (
     <Page
-      title="Receivables" zh="应收账款管理" description="Search, filter, import and export invoices"
+      title="Receivables" description="Search, filter, import and export invoices"
       actions={
         <>
           <Button variant="outline" size="sm" onClick={() => download('arus-invoice-template.csv', toCsv(TEMPLATE))} data-testid="button-template"><FileDown className="mr-1 h-4 w-4" />Template</Button>

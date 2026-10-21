@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Invoice, Customer, RiskEvent, Weights, Dashboard } from "@workspace/api-zod";
+import type { Invoice, Customer, RiskEvent, Weights, Dashboard, CollectionPlan } from "@workspace/api-zod";
 import { type DemoState, today, dayDiff, addDays, ratio, sumCents, collectible, myr, now, BusinessError } from "./model";
 
 export function validEsg(state: DemoState, customerId: string) {
@@ -7,6 +7,14 @@ export function validEsg(state: DemoState, customerId: string) {
     .filter(d => d.customerId === customerId && d.status === "Approved" &&
       d.validUntil >= today() && ["A", "B", "C"].includes(d.rating))
     .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))[0];
+}
+
+export function adviceEsg(state: DemoState, plan: CollectionPlan, customerId: string) {
+  const document = validEsg(state, customerId);
+  const assigned = state.customers.find(c => c.id === customerId)?.esgRating;
+  const rating = plan.scoringSnapshot ?
+    assigned === "A" || assigned === "B" || assigned === "C" ? assigned : "unknown" : document?.rating ?? "unknown";
+  return { rating, evidence: document && document.rating === rating ? "verified" : "unknown" };
 }
 
 export function invoicesNow(state: DemoState): Invoice[] {
@@ -20,7 +28,9 @@ export function invoicesNow(state: DemoState): Invoice[] {
     return { ...i, outstandingCents, status, daysOverdue: Math.max(0, days),
       customerName: customer?.name ?? "Unknown",
       importance: customer?.importance ?? "Medium",
-      esgRating: validEsg(state, i.customerId)?.rating ?? (pending ? "Pending" : "Uncertified") };
+      esgRating: state.settings.scoringVersion === "legacy_v1" ?
+        validEsg(state, i.customerId)?.rating ?? (pending ? "Pending" : "Uncertified") :
+        (["A", "B", "C"].includes(customer?.esgRating ?? "") ? customer!.esgRating : "unknown") };
   });
 }
 
@@ -28,8 +38,9 @@ export function customersNow(state: DemoState, invoices: Invoice[]): Customer[] 
   return state.customers.map(c => {
     const rows = invoices.filter(i => i.customerId === c.id && collectible(i));
     const overdue = rows.filter(i => i.daysOverdue > 0);
-    return { ...c, esgRating: validEsg(state, c.id)?.rating ??
-      (state.documents.some(d => d.customerId === c.id && d.status === "Pending" && d.validUntil >= today()) ? "Pending" : "Uncertified"),
+    return { ...c, esgRating: state.settings.scoringVersion === "legacy_v1" ? validEsg(state, c.id)?.rating ??
+      (state.documents.some(d => d.customerId === c.id && d.status === "Pending" && d.validUntil >= today()) ? "Pending" : "Uncertified") :
+      (["A", "B", "C"].includes(c.esgRating) ? c.esgRating : "unknown"),
       outstandingCents: sumCents(rows), overdueCents: sumCents(overdue),
       earliestDue: rows.map(i => i.dueDate).sort()[0] ?? "",
       risk: overdue.some(i => i.daysOverdue > 30 || i.outstandingCents >= state.settings.largeInvoiceCents)
@@ -75,10 +86,15 @@ export function validateWeights(w: Weights) {
   }
 }
 
+export function canonicalJson(value: unknown) {
+  return JSON.stringify(value, (_key, child) => child && typeof child === "object" && !Array.isArray(child)
+    ? Object.fromEntries(Object.keys(child).sort().map(key => [key, child[key]])) : child);
+}
 export function signature(state: DemoState) {
-  return createHash("sha256").update(JSON.stringify({
+  return createHash("sha256").update(canonicalJson({
     date: today(), invoices: invoicesNow(state), customers: state.customers,
     documents: state.documents, settings: state.settings,
+    ...(state.sedgSubmissions?.length ? { sedgSubmissions: state.sedgSubmissions } : {}),
   })).digest("hex");
 }
 

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { seedState } from "../src/lib/receivables/seed";
+import { seedState } from "./legacy-fixture";
 import { generate, edit, decide } from "../src/lib/receivables/service";
 import { createPlanEnricher } from "../src/lib/receivables/ai-enrichment";
 import { claimGeneration, generationKey } from "../src/lib/receivables/ai-coordination";

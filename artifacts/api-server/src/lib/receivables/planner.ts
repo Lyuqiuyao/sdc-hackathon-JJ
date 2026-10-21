@@ -3,6 +3,7 @@ import type { CollectionPlan, CollectionTask, Weights } from "@workspace/api-zod
 import { type DemoState, collectible, ratio, today, addDays, myr, now, BusinessError } from "./model";
 import { invoicesNow, signature, validEsg, validateWeights } from "./compute";
 import { communication } from "./communication";
+import { buildSplitPlan } from "./scoring";
 
 export const METHODS = [
   "Friendly reminder", "Due date reminder", "Overdue collection",
@@ -11,6 +12,7 @@ export const METHODS = [
 const round = (n: number) => Math.round(n * 100) / 100;
 
 export function buildPlan(state: DemoState, riskEventId: string, weights: Weights, previous?: CollectionPlan, deferred = false): CollectionPlan {
+  if (state.settings.scoringVersion !== "legacy_v1") return buildSplitPlan(state, riskEventId, previous, deferred);
   validateWeights(weights);
   const invoices = invoicesNow(state).filter(collectible);
   if (!invoices.length) throw new BusinessError("There are no collectible invoices.");

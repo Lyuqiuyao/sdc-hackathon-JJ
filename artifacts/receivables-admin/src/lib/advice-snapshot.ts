@@ -1,4 +1,5 @@
 import type { AdviceSnapshot, AuditLog } from '@workspace/api-client-react';
+import { safeHistorical } from '@/lib/arus';
 
 export type Rec = Record<string, unknown>;
 export const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -8,7 +9,7 @@ export type ParsedContent = { ok: true; data: Rec } | { ok: false };
 export function parseSnapshotContent(json: unknown): ParsedContent {
   if (typeof json !== 'string') return { ok: false };
   try {
-    const v: unknown = JSON.parse(json);
+    const v: unknown = JSON.parse(safeHistorical(json));
     return isRec(v) ? { ok: true, data: v } : { ok: false };
   } catch { return { ok: false }; }
 }

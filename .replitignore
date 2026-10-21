@@ -3,3 +3,5 @@
 
 # No need to store the pnpm store twice.
 .local
+artifacts/receivables-admin/public/__generated_checks__/
+artifacts/receivables-admin/dist/public/__generated_checks__/

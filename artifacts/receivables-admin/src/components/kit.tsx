@@ -93,9 +93,9 @@ export function LoadingGrid() {
 }
 
 export function Page({
-  title, zh, description, actions, children,
+  title, description, actions, children,
 }: {
-  title: string; zh: string; description: string; actions?: ReactNode;
+  title: string; description: string; actions?: ReactNode;
   children: (ws: Workspace) => ReactNode;
 }) {
   usePageMeta(title, description);
@@ -105,7 +105,7 @@ export function Page({
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl" data-testid="text-page-title">{title}</h1>
-          <p className="text-sm text-muted-foreground">{zh} · {description}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>

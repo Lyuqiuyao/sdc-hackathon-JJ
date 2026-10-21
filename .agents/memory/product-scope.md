@@ -31,11 +31,11 @@ The administrator website must be English-only. Customer communication drafts mu
 
 **How to apply:** Keep the language policy project-specific. Retain historical records; use English interface labels without rewriting original audit history merely for localization.
 
-The final MVP replaces four-dimensional collection ranking with deterministic two-dimensional ranking (overdue days, outstanding amount) for customers without an assigned ESG rating and three-dimensional ranking (the same two dimensions plus the assigned ESG rating) for customers with one. The exact formulas, weights, rating mapping, normalization and ordering require business confirmation before algorithm changes. Missing ESG must not cause a penalty.
+The final MVP replaces four-dimensional collection ranking with deterministic two-dimensional ranking (overdue days, outstanding amount) for customers without an assigned ESG rating and three-dimensional ranking (the same two dimensions plus the assigned ESG rating) for customers with one. Missing ESG must not cause a penalty. The user confirmed the proposed illustrative weights, normalization and rating mapping, invoice-level tasks, customer-level review, and separate deterministic queues followed by a human-confirmed merge.
 
-**Why:** The user explicitly changed the ranking requirements and prohibited assuming weights. This supersedes the previous requirement to retain four-dimensional ranking, but not the independent cash-flow/risk rules or historical scoring snapshots.
+**Why:** The user explicitly changed the ranking requirements, prohibited assuming weights, then approved the proposed demo parameters. This supersedes retaining four-dimensional ranking for new plans, but not independent cash-flow/risk rules or historical scoring snapshots. Approval is not empirical credit-model validation.
 
-**How to apply:** Preserve historical versions and separate ranking from risk warnings. AI may explain and suggest communication only; it cannot change financial facts, weights, scores, rank or approval. Do not assume an unconfirmed proposal is accepted.
+**How to apply:** Preserve historical versions and separate ranking from risk warnings. AI may explain and suggest communication only; it cannot change financial facts, weights, scores, rank or approval. Further parameter or automatic cross-queue ordering changes need explicit business confirmation; do not silently tune the approved demo.
 
 Provide administrator-only synthetic SEDG submission/import, company information folders and human collection review. SEDG review is not certification or verification of a company, file or ESG rating. NLP extraction from Excel/WhatsApp is deferred. Email execution must remain simulated, displaying recipient, final body, status, time and audit provenance.
 

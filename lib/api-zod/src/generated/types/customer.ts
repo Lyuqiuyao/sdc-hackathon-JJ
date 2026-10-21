@@ -18,4 +18,7 @@ export interface Customer {
   earliestDue: string;
   risk: string;
   paymentHistory: string;
+  profileSummary?: string;
+  profileVersion?: number;
+  profileSource?: string;
 }

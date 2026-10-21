@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { seedState } from "../src/lib/receivables/seed";
+import { seedState } from "./legacy-fixture";
 import { businessContext, createOpenAITransport, generateAdvice, openaiConfigured,
   loadManagedOpenAIClient, OPENAI_TIMEOUT_MS } from "../src/lib/receivables/ai-provider";
 import { applyAdvice, workspace, generate } from "../src/lib/receivables/service";

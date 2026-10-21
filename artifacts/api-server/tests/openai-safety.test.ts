@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { generate } from "../src/lib/receivables/service";
-import { seedState } from "../src/lib/receivables/seed";
+import { seedState } from "./legacy-fixture";
 import { generateAdvice, createOpenAITransport } from "../src/lib/receivables/ai-provider";
 import { openaiJsonSchema, responseJsonSchema, responseSchema } from "../src/lib/receivables/ai-schema";
 import { workspace } from "../src/lib/receivables/service";

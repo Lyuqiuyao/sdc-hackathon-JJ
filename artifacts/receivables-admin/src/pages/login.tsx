@@ -28,11 +28,10 @@ export default function Login() {
           <span className="text-2xl font-semibold tracking-wide">Arus</span>
         </div>
         <div>
-          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-orange-400">Arus · 现金流</p>
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-orange-400">Arus ·</p>
           <h1 className="max-w-md text-4xl font-semibold leading-tight">Know which invoice to chase first, and why.</h1>
           <p className="mt-4 max-w-md text-sm text-sidebar-foreground">
             SME receivables risk monitoring and an explainable four-factor collection scheduler. Every plan waits for a human approval.
-            <span className="block text-sidebar-foreground/60">中小微企业应收账款风险预警与 ESG 加权智能催收排程</span>
           </p>
         </div>
         <svg viewBox="0 0 400 80" className="w-full max-w-md opacity-60" aria-hidden>
@@ -44,7 +43,7 @@ export default function Login() {
         <div className="w-full max-w-sm space-y-5">
           <div>
             <h2 className="text-2xl font-semibold">Merchant Finance Admin</h2>
-            <p className="text-sm text-muted-foreground">管理员端 · Demo entry</p>
+            <p className="text-sm text-muted-foreground">Administrator entry · Demo</p>
           </div>
           <Alert>
             <ShieldAlert className="h-4 w-4" />
@@ -55,7 +54,7 @@ export default function Login() {
           </Alert>
           {err && <Alert variant="destructive" data-testid="alert-login-error"><AlertDescription>{err}</AlertDescription></Alert>}
           <Button className="w-full" size="lg" onClick={enter} disabled={login.isPending} data-testid="button-demo-login">
-            {login.isPending ? 'Entering...' : 'Enter as Demo Admin · 进入管理员工作台'}
+            {login.isPending ? 'Entering...' : 'Enter as Demo Admin'}
           </Button>
         </div>
       </div>

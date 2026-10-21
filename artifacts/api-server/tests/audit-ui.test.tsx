@@ -5,7 +5,7 @@ import { createElement } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AdviceSnapshotDetails, PlanSnapshotsPanel } from "../../receivables-admin/src/components/advice-snapshots";
 import { deriveAiOutcome, rawRetention, parseSnapshotContent, findApproval, snapshotList } from "../../receivables-admin/src/lib/advice-snapshot";
-import { seedState } from "../src/lib/receivables/seed";
+import { seedState } from "./legacy-fixture";
 import { generate } from "../src/lib/receivables/service";
 import { appendPlanSnapshot } from "../src/lib/receivables/advice-snapshots";
 import type { AdviceSnapshot } from "@workspace/api-zod";

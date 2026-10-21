@@ -1,6 +1,7 @@
 import type { CollectionPlan } from "@workspace/api-zod";
-import { signature } from "./compute";
+import { signature, canonicalJson } from "./compute";
 import { today, type DemoState } from "./model";
+import { SCORING, assignedRating, splitScores } from "./scoring";
 
 export class AdviceBoundaryError extends Error {
   constructor(public readonly reasonCode: string) { super(reasonCode); }
@@ -47,11 +48,21 @@ export function assertAdviceInput(state: DemoState, plan: CollectionPlan) {
       !validDate(invoice.invoiceDate) || !validDate(invoice.dueDate) ||
       invoice.invoiceDate > invoice.dueDate || task.dueDate !== invoice.dueDate ||
       !Number.isInteger(task.rank) || task.rank !== plan.tasks.indexOf(task) + 1 ||
-      ![task.score, task.lateFeeScore, task.urgencyScore, task.importanceScore, task.esgScore]
-        .every(score => Number.isFinite(score) && score >= 0 && score <= 100) ||
+      ![task.score, task.lateFeeScore, task.urgencyScore, task.importanceScore,
+        ...(task.esgScore === null && plan.scoringSnapshot && task.queue === "two_dimensional" ? [] : [task.esgScore])]
+        .every(score => typeof score === "number" && Number.isFinite(score) && score >= 0 && score <= 100) ||
       task.daysOverdue !== Math.max(0, Math.round((Date.parse(today()) - Date.parse(invoice.dueDate)) / 86400000)) ||
       !["High", "Medium", "Low"].includes(customer.importance))
       fail("invalid_business_data");
+    if (plan.scoringSnapshot) {
+      const rating = assignedRating(state, task.customerId), scores = splitScores(task.daysOverdue, task.outstandingCents, rating);
+      const snapshot = plan.scoringSnapshot;
+      if (canonicalJson(snapshot) !== canonicalJson(SCORING) || task.assignedEsgRating !== rating ||
+        task.queue !== (rating === "unknown" ? "two_dimensional" : "three_dimensional") ||
+        Object.entries(scores).some(([key, value]) => task[key as keyof typeof scores] !== value) ||
+        task.queueRank !== plan.tasks.filter(t => t.queue === task.queue).indexOf(task) + 1)
+        fail("invalid_business_data");
+    }
   }
   try {
     const current = signature(state);

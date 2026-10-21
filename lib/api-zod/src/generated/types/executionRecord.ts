@@ -5,6 +5,7 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { ExecutionRecordChannel } from './executionRecordChannel';
 
 export interface ExecutionRecord {
   id: string;
@@ -16,4 +17,9 @@ export interface ExecutionRecord {
   executedAt: string;
   result: string;
   noticeStatus: string;
+  channel?: ExecutionRecordChannel;
+  recipient?: string;
+  noticeEn?: string;
+  noticeMs?: string;
+  planVersion?: number;
 }

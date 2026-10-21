@@ -23,7 +23,7 @@ export default function EsgDocuments() {
     try { setDoc(await view.mutateAsync({ id })); await refresh(); } catch (e) { setErr(errMsg(e)); } finally { setBusy(''); }
   };
   return (
-    <Page title="ESG Documents" zh="ESG 凭证查看" description="Read-only view of certificate records and reviewer conclusions">
+    <Page title="ESG Documents" description="Read-only view of certificate records and reviewer conclusions">
       {(ws) => {
         const rows = ws.documents.filter((d) => (status === 'all' || d.status === status) && (!q.trim() || (d.customerName + d.type + d.number).toLowerCase().includes(q.trim().toLowerCase())));
         return (

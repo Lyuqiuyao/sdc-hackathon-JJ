@@ -8,6 +8,7 @@
 import type { SystemSettingAiMode } from './systemSettingAiMode';
 import type { SystemSettingCurrency } from './systemSettingCurrency';
 import type { SystemSettingLanguage } from './systemSettingLanguage';
+import type { SystemSettingScoringVersion } from './systemSettingScoringVersion';
 import type { Weights } from './weights';
 
 export interface SystemSetting {
@@ -58,6 +59,7 @@ export interface SystemSetting {
      */
   concentrationCount: number;
   weights: Weights;
+  scoringVersion?: SystemSettingScoringVersion;
   language: SystemSettingLanguage;
   /** gemini is read-only legacy compatibility; choose rules or openai for new requests. */
   aiMode: SystemSettingAiMode;

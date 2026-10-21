@@ -28,8 +28,8 @@ export default function RiskTriggers() {
   };
 
   return (
-    <Page title="Risk Triggers" zh="风险触发中心" description="Explainable cash-flow rules, repeatable checks and event history"
-      actions={<Button onClick={doRun} disabled={run.isPending} data-testid="button-run-risk-check"><Play className="mr-1 h-4 w-4" />{run.isPending ? 'Checking...' : 'Run Risk Check / 模拟触发风险检测'}</Button>}>
+    <Page title="Risk Triggers" description="Explainable cash-flow rules, repeatable checks and event history"
+      actions={<Button onClick={doRun} disabled={run.isPending} data-testid="button-run-risk-check"><Play className="mr-1 h-4 w-4" />{run.isPending ? 'Checking...' : 'Run Risk Check'}</Button>}>
       {(ws) => {
         const s = ws.settings;
         const r = latest ?? ws.dashboard.risk;
@@ -50,7 +50,7 @@ export default function RiskTriggers() {
           <div className="space-y-4">
             {err && <Alert variant="destructive" data-testid="alert-risk-error"><AlertTitle>Action failed</AlertTitle><AlertDescription>{err}</AlertDescription></Alert>}
             <div className="grid gap-4 xl:grid-cols-5">
-              <Panel title={latest ? 'Latest check result' : 'Current live risk'} zh="检测结果" className="xl:col-span-2" data-testid="panel-risk-result">
+              <Panel title={latest ? 'Latest check result' : 'Current live risk'} className="xl:col-span-2" data-testid="panel-risk-result">
                 <div className="flex items-center gap-3"><Tag className="px-3 py-1 text-sm">{r.level}</Tag><span className="text-xs text-muted-foreground">{'createdAt' in r ? fmtDateTime(r.createdAt) : ''}</span></div>
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   {[['Due in horizon', r.dueCents], ['Overdue', r.overdueCents], ['Expected collection', r.expectedCollectionCents], ['Projected cash', r.projectedCashCents], ['Gap vs minimum', r.gapCents]].map(([k, v]) => (
@@ -63,7 +63,7 @@ export default function RiskTriggers() {
                   <Button asChild variant="outline"><Link href="/ai-planner">Open planner</Link></Button>
                 </div>
               </Panel>
-              <Panel title="Rules and live test" zh="规则可解释 · 可测试" className="xl:col-span-3" bodyClass="space-y-2">
+              <Panel title="Rules and live test" className="xl:col-span-3" bodyClass="space-y-2">
                 <p className="text-xs text-muted-foreground">Live values recalculate on workspace reads; there is no background scheduled check. Run Risk Check records an event and starts a pending draft for Medium/High risk. Approval and execution remain separate.</p>
                 <p className="text-xs text-muted-foreground">Thresholds come from Settings. Each rule is evaluated now against current data; the server remains the authority when you run a check.</p>
                 {rules.map((x) => (
@@ -75,7 +75,7 @@ export default function RiskTriggers() {
                 <Button asChild size="sm" variant="ghost"><Link href="/settings">Edit thresholds</Link></Button>
               </Panel>
             </div>
-            <Panel title={`Event history (${events.length})`} zh="风险事件历史" bodyClass="p-0">
+            <Panel title={`Event history (${events.length})`} bodyClass="p-0">
               {events.length === 0 ? <div className="p-4"><EmptyState title="No risk events yet" hint="Run a risk check to record the first event." /></div> : (
                 <div className="overflow-x-auto"><Table>
                   <TableHeader><TableRow><TableHead>Time</TableHead><TableHead>Level</TableHead><TableHead className="text-right">Due</TableHead><TableHead className="text-right">Overdue</TableHead><TableHead className="text-right">Projected cash</TableHead><TableHead className="text-right">Gap</TableHead><TableHead>Plans</TableHead><TableHead /></TableRow></TableHeader>

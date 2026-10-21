@@ -65,7 +65,8 @@ export function appendPlanSnapshot(state: DemoState, plan: CollectionPlan, input
       humanVersion: input.status === "edited" ? {
         planId: plan.id, version: plan.version, previousPlanId: input.previousPlanId, finalNotices,
       } : null,
-      planAtEvent: { status: plan.status, weights: plan.weights, tasks: plan.tasks,
+      planAtEvent: { status: plan.status, weights: plan.weights, scoringSnapshot: plan.scoringSnapshot,
+        customerReviews: plan.customerReviews, manualMerge: plan.manualMerge, tasks: plan.tasks,
         aiRiskExplanation: plan.aiRiskExplanation, providerMode: plan.providerMode, aiGeneration: plan.aiGeneration },
       approval: input.approvalId ? state.approvals.filter(a => a.id === input.approvalId).map(a => ({
         id: a.id, planId: a.planId, version: a.version, decision: a.decision, createdAt: a.createdAt, actor: a.actor,

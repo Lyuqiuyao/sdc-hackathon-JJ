@@ -96,13 +96,10 @@ export const METHODS = [
   'Priority human follow-up',
 ];
 
-export const METHOD_ZH: Record<string, string> = {
-  'Friendly reminder': '友好付款提醒',
-  'Due date reminder': '到期提醒',
-  'Overdue collection': '逾期催收',
-  'Installment negotiation': '分期付款协商',
-  'Extension negotiation': '延期付款协商',
-  'Priority human follow-up': '人工重点跟进',
-};
 
 export const fmtfix = (c: number) => (c / 100).toFixed(2);
+
+const HAN_RUN = /[\u3400-\u9fff\uf900-\ufaff]+/g;
+/** Display-only fallback: hides non-English characters in raw historical text without touching stored data. */
+export const safeHistorical = (s?: string | null): string =>
+  s ? s.replace(HAN_RUN, '[non-English text hidden]') : '';

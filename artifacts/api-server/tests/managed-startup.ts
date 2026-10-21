@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { seedState } from "../src/lib/receivables/seed";
+import { seedState } from "./legacy-fixture";
 import { generateAdvice, openaiConfigured } from "../src/lib/receivables/ai-provider";
 import { workspace, generate } from "../src/lib/receivables/service";
 

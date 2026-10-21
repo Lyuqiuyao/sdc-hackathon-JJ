@@ -20,3 +20,9 @@ description: 租约不能保证供应商计费 exactly-once；共享演示不留
 **Why:** 用户要求优先使用字段级结构诊断，未经确认不得启用完整原文持久化。
 
 **How to apply:** 即使日后新增身份或存储能力，也先单独提出访问、保留期限、敏感内容和删除策略。
+
+Content fingerprints and structural comparisons crossing PostgreSQL JSONB must be independent of object-key order.
+
+**Why:** A logically unchanged configuration can have different key order after JSONB persistence; order-sensitive checks can silently reject legitimate model work before transport.
+
+**How to apply:** Use canonical content comparison across persistence boundaries. Never rewrite historical fingerprints or weaken stale-plan gates to conceal a representation mismatch; old active plans may require explicit recalculation and approval.

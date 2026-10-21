@@ -6,8 +6,10 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AITaskAdvice } from './aITaskAdvice';
+import type { CollectionTaskAssignedEsgRating } from './collectionTaskAssignedEsgRating';
 import type { CollectionTaskNoticeEnSource } from './collectionTaskNoticeEnSource';
 import type { CollectionTaskNoticeMsSource } from './collectionTaskNoticeMsSource';
+import type { CollectionTaskQueue } from './collectionTaskQueue';
 
 export interface CollectionTask {
   id: string;
@@ -22,7 +24,13 @@ export interface CollectionTask {
   lateFeeScore: number;
   urgencyScore: number;
   importanceScore: number;
-  esgScore: number;
+  /** @nullable */
+  esgScore: number | null;
+  queue?: CollectionTaskQueue;
+  queueRank?: number;
+  overdueScore?: number;
+  amountScore?: number;
+  assignedEsgRating?: CollectionTaskAssignedEsgRating;
   score: number;
   method: string;
   scheduledAt: string;

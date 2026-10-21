@@ -14,6 +14,7 @@ import type { ESGDocument } from './eSGDocument';
 import type { ExecutionRecord } from './executionRecord';
 import type { Invoice } from './invoice';
 import type { RiskEvent } from './riskEvent';
+import type { SedgSubmission } from './sedgSubmission';
 import type { SystemSetting } from './systemSetting';
 
 export interface Workspace {
@@ -25,6 +26,7 @@ export interface Workspace {
   customers: Customer[];
   invoices: Invoice[];
   documents: ESGDocument[];
+  sedgSubmissions?: SedgSubmission[];
   riskEvents: RiskEvent[];
   plans: CollectionPlan[];
   approvals: ApprovalRecord[];

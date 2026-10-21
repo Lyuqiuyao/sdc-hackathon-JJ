@@ -12,16 +12,16 @@ import { cn } from '@/lib/utils';
 import { fmtDate, useWs } from '@/lib/arus';
 
 const NAV = [
-  { href: '/', en: 'Dashboard', zh: '工作台', icon: LayoutDashboard },
-  { href: '/receivables', en: 'Receivables', zh: '应收账款管理', icon: ReceiptText },
-  { href: '/customers', en: 'Customers', zh: '客户管理', icon: Users },
-  { href: '/esg-documents', en: 'ESG Documents', zh: 'ESG 凭证查看', icon: ShieldCheck },
-  { href: '/risk-triggers', en: 'Risk Triggers', zh: '风险触发中心', icon: ShieldAlert },
-  { href: '/ai-planner', en: 'AI Collection Planner', zh: 'AI 催收决策', icon: Sparkles },
-  { href: '/approvals', en: 'Approval Center', zh: '人工审批中心', icon: UserCheck },
-  { href: '/execution-results', en: 'Execution Results', zh: '执行结果', icon: PlayCircle },
-  { href: '/audit-logs', en: 'Audit Logs', zh: '审计中心', icon: ScrollText },
-  { href: '/settings', en: 'Settings', zh: '系统设置', icon: Settings },
+  { href: '/', en: 'Dashboard', icon: LayoutDashboard },
+  { href: '/receivables', en: 'Receivables', icon: ReceiptText },
+  { href: '/customers', en: 'Customers', icon: Users },
+  { href: '/esg-documents', en: 'ESG Documents', icon: ShieldCheck },
+  { href: '/risk-triggers', en: 'Risk Triggers', icon: ShieldAlert },
+  { href: '/ai-planner', en: 'AI Collection Planner', icon: Sparkles },
+  { href: '/approvals', en: 'Approval Center', icon: UserCheck },
+  { href: '/execution-results', en: 'Execution Results', icon: PlayCircle },
+  { href: '/audit-logs', en: 'Audit Logs', icon: ScrollText },
+  { href: '/settings', en: 'Settings', icon: Settings },
 ];
 
 function Brand() {
@@ -32,7 +32,7 @@ function Brand() {
       </div>
       <div className="leading-tight">
         <div className="text-lg font-semibold tracking-wide text-white">Arus</div>
-        <div className="text-[10px] uppercase tracking-widest text-sidebar-foreground/60">Cash flow · 现金流</div>
+        <div className="text-[10px] uppercase tracking-widest text-sidebar-foreground/60">Cash flow ·</div>
       </div>
     </Link>
   );
@@ -62,7 +62,6 @@ function SideNav({ onNav }: { onNav?: () => void }) {
               <n.icon className="h-4 w-4 shrink-0" />
               <span className="leading-tight">
                 <span className="block">{n.en}</span>
-                <span className="block text-[10px] text-sidebar-foreground/55">{n.zh}</span>
               </span>
             </Link>
           );
@@ -115,7 +114,7 @@ function Notifications() {
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="border-b px-3 py-2 text-sm font-semibold">Pending overview · 待处理事项</div>
+        <div className="border-b px-3 py-2 text-sm font-semibold">Pending overview ·</div>
         {items.length === 0 ? (
           <p className="p-4 text-xs text-muted-foreground">Workspace not loaded yet.</p>
         ) : (

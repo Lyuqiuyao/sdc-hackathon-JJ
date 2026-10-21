@@ -33,6 +33,160 @@ export interface Customer {
   earliestDue: string;
   risk: string;
   paymentHistory: string;
+  profileSummary?: string;
+  profileVersion?: number;
+  profileSource?: string;
+}
+
+export type CompanyProfileInputExistingEsgRating = typeof CompanyProfileInputExistingEsgRating[keyof typeof CompanyProfileInputExistingEsgRating];
+
+
+export const CompanyProfileInputExistingEsgRating = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  unknown: 'unknown',
+} as const;
+
+export interface CompanyProfileInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  industry: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  paymentHistory: string;
+  /**
+     * @minLength 1
+     * @maxLength 3000
+     */
+  profileSummary: string;
+  existingEsgRating: CompanyProfileInputExistingEsgRating;
+  /** @minimum 0 */
+  expectedVersion: number;
+  syntheticConfirmed: boolean;
+}
+
+export interface SedgInput {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  environmental: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  social: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  governance: string;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  sourceReference: string;
+  syntheticConfirmed: boolean;
+}
+
+export type SedgSubmissionStatus = typeof SedgSubmissionStatus[keyof typeof SedgSubmissionStatus];
+
+
+export const SedgSubmissionStatus = {
+  'Submitted_-_unverified': 'Submitted - unverified',
+} as const;
+
+export interface SedgSubmission {
+  id: string;
+  customerId: string;
+  environmental: string;
+  social: string;
+  governance: string;
+  sourceReference: string;
+  source: string;
+  status: SedgSubmissionStatus;
+  createdAt: string;
+  actor: string;
+}
+
+export type CustomerReviewInputDecision = typeof CustomerReviewInputDecision[keyof typeof CustomerReviewInputDecision];
+
+
+export const CustomerReviewInputDecision = {
+  collect_now: 'collect_now',
+  negotiable_extension: 'negotiable_extension',
+} as const;
+
+export interface CustomerReviewInput {
+  customerId: string;
+  decision: CustomerReviewInputDecision;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  reason: string;
+}
+
+export type CustomerReviewDecision = typeof CustomerReviewDecision[keyof typeof CustomerReviewDecision];
+
+
+export const CustomerReviewDecision = {
+  collect_now: 'collect_now',
+  negotiable_extension: 'negotiable_extension',
+} as const;
+
+export interface CustomerReview {
+  customerId: string;
+  decision: CustomerReviewDecision;
+  reason: string;
+  actor: string;
+  createdAt: string;
+  profileVersion: number;
+  sedgSubmissionId?: string;
+}
+
+export type ScoringSnapshotVersion = typeof ScoringSnapshotVersion[keyof typeof ScoringSnapshotVersion];
+
+
+export const ScoringSnapshotVersion = {
+  split_v2: 'split_v2',
+} as const;
+
+export type ScoringSnapshotTwoDimensional = {
+  overdue: number;
+  amount: number;
+};
+
+export type ScoringSnapshotThreeDimensional = {
+  overdue: number;
+  amount: number;
+  esg: number;
+};
+
+export type ScoringSnapshotEsgMapping = {
+  A: number;
+  B: number;
+  C: number;
+};
+
+export interface ScoringSnapshot {
+  version: ScoringSnapshotVersion;
+  overdueCapDays: number;
+  amountCapCents: number;
+  twoDimensional: ScoringSnapshotTwoDimensional;
+  threeDimensional: ScoringSnapshotThreeDimensional;
+  esgMapping: ScoringSnapshotEsgMapping;
+}
+
+export interface ManualMerge {
+  actor: string;
+  reason: string;
+  createdAt: string;
 }
 
 export interface Invoice {
@@ -100,6 +254,14 @@ export type SystemSettingCurrency = typeof SystemSettingCurrency[keyof typeof Sy
 
 export const SystemSettingCurrency = {
   MYR: 'MYR',
+} as const;
+
+export type SystemSettingScoringVersion = typeof SystemSettingScoringVersion[keyof typeof SystemSettingScoringVersion];
+
+
+export const SystemSettingScoringVersion = {
+  legacy_v1: 'legacy_v1',
+  split_v2: 'split_v2',
 } as const;
 
 export type SystemSettingLanguage = typeof SystemSettingLanguage[keyof typeof SystemSettingLanguage];
@@ -170,6 +332,7 @@ export interface SystemSetting {
      */
   concentrationCount: number;
   weights: Weights;
+  scoringVersion?: SystemSettingScoringVersion;
   language: SystemSettingLanguage;
   /** gemini is read-only legacy compatibility; choose rules or openai for new requests. */
   aiMode: SystemSettingAiMode;
@@ -199,6 +362,24 @@ export interface RiskEvent {
   /** Source data fingerprint; absent on legacy demo events, which must be refreshed before planning. */
   dataSignature?: string;
 }
+
+export type CollectionTaskQueue = typeof CollectionTaskQueue[keyof typeof CollectionTaskQueue];
+
+
+export const CollectionTaskQueue = {
+  two_dimensional: 'two_dimensional',
+  three_dimensional: 'three_dimensional',
+} as const;
+
+export type CollectionTaskAssignedEsgRating = typeof CollectionTaskAssignedEsgRating[keyof typeof CollectionTaskAssignedEsgRating];
+
+
+export const CollectionTaskAssignedEsgRating = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  unknown: 'unknown',
+} as const;
 
 export type CollectionTaskNoticeEnSource = typeof CollectionTaskNoticeEnSource[keyof typeof CollectionTaskNoticeEnSource];
 
@@ -278,7 +459,13 @@ export interface CollectionTask {
   lateFeeScore: number;
   urgencyScore: number;
   importanceScore: number;
-  esgScore: number;
+  /** @nullable */
+  esgScore: number | null;
+  queue?: CollectionTaskQueue;
+  queueRank?: number;
+  overdueScore?: number;
+  amountScore?: number;
+  assignedEsgRating?: CollectionTaskAssignedEsgRating;
   score: number;
   method: string;
   scheduledAt: string;
@@ -487,6 +674,9 @@ export interface CollectionPlan {
   aiRiskExplanation?: string;
   aiGeneration?: AIGeneration;
   weights: Weights;
+  scoringSnapshot?: ScoringSnapshot;
+  manualMerge?: ManualMerge;
+  customerReviews?: CustomerReview[];
   tasks: CollectionTask[];
   notes: string;
   dataSignature: string;
@@ -504,6 +694,13 @@ export interface ApprovalRecord {
   finalSnapshot: string;
 }
 
+export type ExecutionRecordChannel = typeof ExecutionRecordChannel[keyof typeof ExecutionRecordChannel];
+
+
+export const ExecutionRecordChannel = {
+  Simulated_Email: 'Simulated Email',
+} as const;
+
 export interface ExecutionRecord {
   id: string;
   planId: string;
@@ -514,6 +711,11 @@ export interface ExecutionRecord {
   executedAt: string;
   result: string;
   noticeStatus: string;
+  channel?: ExecutionRecordChannel;
+  recipient?: string;
+  noticeEn?: string;
+  noticeMs?: string;
+  planVersion?: number;
 }
 
 export interface AuditLog {
@@ -568,6 +770,7 @@ export interface Workspace {
   customers: Customer[];
   invoices: Invoice[];
   documents: ESGDocument[];
+  sedgSubmissions?: SedgSubmission[];
   riskEvents: RiskEvent[];
   plans: CollectionPlan[];
   approvals: ApprovalRecord[];
@@ -605,6 +808,14 @@ export interface PlanEdit {
   tasks: TaskEdit[];
   /** @maxLength 5000 */
   notes: string;
+  /** @minimum 1 */
+  expectedVersion?: number;
+  customerReview?: CustomerReviewInput;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  mergeReason?: string;
 }
 
 export type ApprovalInputDecision = typeof ApprovalInputDecision[keyof typeof ApprovalInputDecision];

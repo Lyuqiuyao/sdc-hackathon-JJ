@@ -11,9 +11,20 @@ import * as service from "../lib/receivables/service";
 import { enrichPlan, enrichRiskDraft } from "../lib/receivables/ai-generation";
 import { listAdviceSnapshots } from "../lib/receivables/advice-snapshots";
 import { GetPlanAdviceSnapshotsParams, GetPlanAdviceSnapshotsResponse } from "@workspace/api-zod";
+import { SaveCompanyProfileParams, SaveCompanyProfileBody, SaveCompanyProfileResponse,
+  SubmitSedgParams, SubmitSedgBody, SubmitSedgResponse } from "@workspace/api-zod";
+import { saveProfile, submitSedg } from "../lib/receivables/company";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
+router.put("/customers/:id/profile", async (req, res): Promise<void> => {
+  const { id } = SaveCompanyProfileParams.parse(req.params), input = SaveCompanyProfileBody.parse(req.body);
+  res.json(await changeState(state => SaveCompanyProfileResponse.parse(saveProfile(state, id, input))));
+});
+router.post("/customers/:id/sedg", async (req, res): Promise<void> => {
+  const { id } = SubmitSedgParams.parse(req.params), input = SubmitSedgBody.parse(req.body);
+  res.json(await changeState(state => SubmitSedgResponse.parse(submitSedg(state, id, input))));
+});
 
 router.get("/workspace", async (_req, res): Promise<void> => {
   res.json(GetWorkspaceResponse.parse(service.workspace(await readState())));
@@ -71,7 +82,7 @@ router.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof BusinessError) {
     res.status(error.status).json({ error: error.message });
   } else if (error.name === "ZodError") {
-    res.status(400).json({ error: `Validation failed: ${error.message}` });
+    res.status(400).json({ error: "Validation failed. Check required fields, value types and allowed lengths." });
   } else {
     req.log.error({ err: error }, "Receivables operation failed");
     res.status(500).json({ error: "Operation failed. No incomplete business change was committed. Check server logs." });

@@ -9,6 +9,9 @@ import type { AIGeneration } from './aIGeneration';
 import type { CollectionPlanProviderMode } from './collectionPlanProviderMode';
 import type { CollectionPlanStatus } from './collectionPlanStatus';
 import type { CollectionTask } from './collectionTask';
+import type { CustomerReview } from './customerReview';
+import type { ManualMerge } from './manualMerge';
+import type { ScoringSnapshot } from './scoringSnapshot';
 import type { Weights } from './weights';
 
 export interface CollectionPlan {
@@ -23,6 +26,9 @@ export interface CollectionPlan {
   aiRiskExplanation?: string;
   aiGeneration?: AIGeneration;
   weights: Weights;
+  scoringSnapshot?: ScoringSnapshot;
+  manualMerge?: ManualMerge;
+  customerReviews?: CustomerReview[];
   tasks: CollectionTask[];
   notes: string;
   dataSignature: string;

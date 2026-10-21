@@ -47,3 +47,4 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+artifacts/receivables-admin/public/__generated_checks__/

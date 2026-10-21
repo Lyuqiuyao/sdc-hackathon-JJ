@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { download, errMsg, fmtDate, fmtDateTime, fmtfix, rm, toCsv, useRefresh } from '@/lib/arus';
 import { ProviderDetails } from '@/components/provider-details';
+import { ScoringSummary } from '@/components/plan';
 
 export default function ExecutionResults() {
   const { toast } = useToast();
@@ -20,7 +21,7 @@ export default function ExecutionResults() {
   const [ask, setAsk] = useState(false);
   const [err, setErr] = useState('');
   return (
-    <Page title="Execution Results" zh="执行结果" description="Simulated execution of approved plans only">
+    <Page title="Execution Results" description="Simulated execution of approved plans only">
       {(ws) => {
         const plans = ws.plans.filter((p) => ['Approved', 'Executed'].includes(p.status)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         const plan = plans.find((p) => p.id === sel) ?? plans[0];
@@ -30,6 +31,14 @@ export default function ExecutionResults() {
           if (!plan) return; setAsk(false); setErr('');
           try { await exec.mutateAsync({ id: plan.id }); await refresh(); toast({ title: 'Simulated execution recorded', description: 'No real notices were sent and no payments changed.' }); } catch (e) { setErr(errMsg(e)); }
         };
+        const v2Blockers: string[] = [];
+        if (plan?.scoringSnapshot) {
+          const need = new Set(plan.tasks.filter((t) => t.queue === 'two_dimensional' || t.assignedEsgRating === 'unknown').map((t) => t.customerId));
+          const done = new Set((plan.customerReviews ?? []).map((r) => r.customerId));
+          const missing = [...need].filter((id) => !done.has(id)).length;
+          if (missing) v2Blockers.push(`${missing} customer review(s) pending`);
+          if (!plan.manualMerge) v2Blockers.push('final merged order not confirmed');
+        }
         const report = () => {
           if (!plan) return;
           const head = ['rank', 'invoice_number', 'customer', 'outstanding_MYR', 'due_date', 'priority_score', 'method', 'scheduled_at', 'plan_version', 'plan_status', 'task_status', 'execution_result', 'notice_status', 'notice_en', 'notice_ms', 'provider_mode', 'generation_status', 'generated_at', 'notice_en_source', 'notice_ms_source', 'data_source'];
@@ -48,11 +57,13 @@ export default function ExecutionResults() {
                   {approval && <span className="text-xs text-muted-foreground">Approved by {approval.actor} at {fmtDateTime(approval.createdAt)}</span>}
                   <div className="ml-auto flex gap-2">
                     <Button variant="outline" onClick={report} data-testid="button-export-report"><Download className="mr-1 h-4 w-4" />Export Report</Button>
-                    <Button onClick={() => setAsk(true)} disabled={plan.status !== 'Approved' || exec.isPending} data-testid="button-execute"><PlayCircle className="mr-1 h-4 w-4" />{exec.isPending ? 'Executing...' : 'Execute Approved Plan'}</Button>
+                    <Button onClick={() => setAsk(true)} disabled={plan.status !== 'Approved' || exec.isPending || v2Blockers.length > 0} data-testid="button-execute"><PlayCircle className="mr-1 h-4 w-4" />{exec.isPending ? 'Executing...' : 'Execute Approved Plan'}</Button>
                   </div>
                 </Panel>
+                {v2Blockers.length > 0 && <Alert data-testid="alert-exec-blocked"><AlertDescription>Execution blocked: {v2Blockers.join('; ')}. Complete these in the Approval Center.</AlertDescription></Alert>}
+                <Panel title="Scoring method" bodyClass="text-xs"><ScoringSummary plan={plan} />{plan.manualMerge && <p className="mt-2" data-testid="text-exec-merge">Final order confirmed by {plan.manualMerge.actor} at {fmtDateTime(plan.manualMerge.createdAt)}: {plan.manualMerge.reason}</p>}</Panel>
                 <ProviderDetails plan={plan} />
-                <Panel title={`Final collection order · ${plan.tasks.length} tasks`} zh="最终催收顺序" bodyClass="p-0">
+                <Panel title={`Final collection order · ${plan.tasks.length} tasks`} bodyClass="p-0">
                   <div className="overflow-x-auto"><Table>
                     <TableHeader><TableRow><TableHead>#</TableHead><TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead className="text-right">Outstanding</TableHead><TableHead>Method</TableHead><TableHead>Scheduled</TableHead><TableHead className="text-right">Score</TableHead><TableHead>Approval</TableHead><TableHead>Simulated execution</TableHead></TableRow></TableHeader>
                     <TableBody>{plan.tasks.map((t) => { const r = recs.find((x) => x.taskId === t.id); return (
@@ -64,13 +75,22 @@ export default function ExecutionResults() {
                       </TableRow>); })}</TableBody>
                   </Table></div>
                 </Panel>
-                <Panel title="Task notices" zh="通知文案 (草稿)" bodyClass="space-y-2">
+                <Panel title="Task notices" bodyClass="space-y-2">
                   {plan.tasks.map((t) => <details key={t.id} className="rounded-md border p-2 text-sm"><summary className="cursor-pointer">{t.rank}. {t.invoiceNumber} · {t.customerName}</summary><div className="mt-2 grid gap-2 md:grid-cols-2"><pre className="whitespace-pre-wrap rounded bg-muted/60 p-2 font-sans text-xs">{t.noticeEn}</pre><pre className="whitespace-pre-wrap rounded bg-muted/60 p-2 font-sans text-xs">{t.noticeMs}</pre></div></details>)}
                 </Panel>
-                <Panel title={`Execution records (${ws.executions.length})`} zh="执行记录" bodyClass="p-0">
+                <Panel title={`Execution records (${ws.executions.length})`} bodyClass="p-0">
                   {ws.executions.length === 0 ? <div className="p-4"><EmptyState title="Nothing executed yet" /></div> : (
-                    <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Executed</TableHead><TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead>Actor</TableHead><TableHead>Result</TableHead><TableHead>Notice</TableHead></TableRow></TableHeader>
-                      <TableBody>{[...ws.executions].sort((a, b) => b.executedAt.localeCompare(a.executedAt)).map((e) => <TableRow key={e.id}><TableCell className="whitespace-nowrap text-xs">{fmtDate(e.executedAt)} {fmtDateTime(e.executedAt).slice(-5)}</TableCell><TableCell className="font-mono text-xs">{e.invoiceNumber}</TableCell><TableCell>{e.customerName}</TableCell><TableCell>{e.actor}</TableCell><TableCell className="text-xs">{e.result}</TableCell><TableCell className="text-xs">{e.noticeStatus}</TableCell></TableRow>)}</TableBody></Table></div>)}
+                    <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Executed</TableHead><TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead>Channel</TableHead><TableHead>Simulated recipient</TableHead><TableHead>Plan</TableHead><TableHead>Actor</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                      <TableBody>{[...ws.executions].sort((a, b) => b.executedAt.localeCompare(a.executedAt)).map((e) => {
+                        const ap = ws.approvals.filter((a) => a.planId === e.planId && a.decision.toLowerCase().startsWith('approv')).slice(-1)[0];
+                        return (
+                          <TableRow key={e.id} data-testid={`row-execution-${e.id}`}><TableCell className="whitespace-nowrap text-xs">{fmtDateTime(e.executedAt)}</TableCell><TableCell className="font-mono text-xs">{e.invoiceNumber}</TableCell><TableCell>{e.customerName}</TableCell>
+                            <TableCell className="text-xs">{e.channel ?? 'Not recorded'}</TableCell><TableCell className="font-mono text-xs">{e.recipient ?? 'Not recorded'}</TableCell><TableCell className="text-xs">{e.planVersion !== undefined ? `v${e.planVersion}` : 'Not recorded'}</TableCell>
+                            <TableCell>{e.actor}</TableCell>
+                            <TableCell className="text-xs"><div>{e.result}</div><div className="text-muted-foreground">{e.noticeStatus}</div>{ap && <div className="text-muted-foreground">Approval: {ap.actor}, {fmtDateTime(ap.createdAt)}</div>}
+                              <details className="mt-1"><summary className="cursor-pointer text-primary">Simulated message</summary>
+                                {e.noticeEn || e.noticeMs ? <div className="mt-1 grid min-w-[280px] gap-2 md:grid-cols-2"><div><div className="font-semibold">English</div><pre className="whitespace-pre-wrap rounded bg-muted/60 p-2 font-sans">{e.noticeEn ?? 'Not recorded'}</pre></div><div><div className="font-semibold">Bahasa Melayu</div><pre className="whitespace-pre-wrap rounded bg-muted/60 p-2 font-sans">{e.noticeMs ?? 'Not recorded'}</pre></div></div> : <p className="mt-1 text-muted-foreground">Message body not recorded (legacy record).</p>}
+                                <p className="mt-1 text-muted-foreground">Simulation only. Nothing was delivered to a real mailbox.</p></details></TableCell></TableRow>); })}</TableBody></Table></div>)}
                 </Panel>
               </>)}
             <AlertDialog open={ask} onOpenChange={setAsk}>

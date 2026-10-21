@@ -69,7 +69,7 @@ export function AdviceSnapshotDetails({ snapshot, approvals }: { snapshot: Advic
       <Block title="Validated model summary" v={d.validatedModelSummary} testid="block-model-summary" />
       <Block title="Effective advice" v={snapshot.source === 'validated_projection' && snapshot.validation === 'passed' && snapshot.status === 'applied' ? d.effectiveAdvice : null} testid="block-effective-advice" />
       <Block title="Controlled templates" v={d.controlledTemplates} testid="block-controlled-templates" />
-      <div><div className="mb-1 font-semibold">Final bilingual notices 最终通知</div>
+      <div><div className="mb-1 font-semibold">Final bilingual notices</div>
         <Notices tasks={arr(d.finalNotices).length ? arr(d.finalNotices) : arr(plan?.tasks)} /></div>
       <Block title="Human version" v={d.humanVersion} testid="block-human-version" />
     </>}
@@ -86,7 +86,7 @@ export function PlanSnapshotsPanel({ plans, approvals }: { plans: CollectionPlan
   const list = parsedList ?? [];
   useEffect(() => { setSnapId(''); }, [planId]);
   const selected = list.find((s) => s.id === snapId) ?? list[0];
-  return <Panel title="AI advice snapshots 建议快照" bodyClass="space-y-3">
+  return <Panel title="AI advice snapshots" bodyClass="space-y-3">
     <div data-testid="snapshot-panel" className="space-y-3">
       <Select value={planId} onValueChange={setPlanId}>
         <SelectTrigger data-testid="select-snapshot-plan"><SelectValue placeholder="Select plan version" /></SelectTrigger>

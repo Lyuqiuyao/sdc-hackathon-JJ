@@ -1,6 +1,6 @@
 import type { CollectionPlan } from "@workspace/api-zod";
 import type { AdviceResponse } from "./ai-schema";
-import { validEsg } from "./compute";
+import { adviceEsg } from "./compute";
 import { communication } from "./communication";
 import { type DemoState } from "./model";
 import { AdviceBoundaryError } from "./ai-preflight";
@@ -25,7 +25,7 @@ export function protectAdviceContent(result: AdviceResponse, state: DemoState, p
   // With unknown ESG anywhere, a model-authored global explanation could make
   // an indirect negative inference without using a recognizable ESG keyword.
   // Render authoritative risk reasons instead of claiming regex can prove it safe.
-  if (plan.tasks.some(t => !validEsg(state, t.customerId))) {
+  if (plan.tasks.some(t => adviceEsg(state, plan, t.customerId).evidence === "unknown")) {
     const risk = state.riskEvents.find(r => r.id === plan.riskEventId) ?? reject();
     result.riskExplanation = `Synthetic deterministic cash-flow risk: ${risk.level}. ${risk.reasons.join(" ")} Unknown ESG is neutral and does not establish credit or bad-debt risk.`;
     diagnose?.("riskExplanation", "replaced", "unknown_esg_global_projection");
@@ -44,12 +44,15 @@ export function protectAdviceContent(result: AdviceResponse, state: DemoState, p
     for (const [field, text] of texts) checkInternal(text, task.rank, diagnose, field, task.id);
     // ESG prose is never authoritative, even for known ratings. Only the local
     // reviewed record is rendered; unknown has exactly the same neutral policy.
-    const doc = validEsg(state, task.customerId);
-    advice.esgConsiderations = doc
-      ? `Synthetic reviewed ESG rating ${doc.rating}; use only as an auxiliary scheduling factor. No credit or default inference is established by this record.`
-      : "Unknown/unverified ESG evidence; neutral treatment. Missing ESG is not evidence of low ESG, fraud, or bad-debt risk.";
+    const esg = adviceEsg(state, plan, task.customerId);
+    const hasEvidence = esg.evidence === "verified";
+    advice.esgConsiderations = hasEvidence
+      ? `Synthetic reviewed ESG rating ${esg.rating}; use only as an auxiliary scheduling factor. No credit or default inference is established by this record.`
+      : plan.scoringSnapshot && esg.rating !== "unknown"
+        ? `Existing synthetic customer rating ${esg.rating}; evidence unverified. SEDG is not certification. No credit or default inference is established.`
+        : "Unknown/unverified ESG evidence; neutral treatment. Missing ESG is not evidence of low ESG, fraud, or bad-debt risk.";
     diagnose?.(`${path}.esgConsiderations`, "replaced", "reviewed_evidence_template", task.id);
-    if (!doc) {
+    if (!hasEvidence) {
       // All task prose, not just the ESG field, is controlled for unknown ESG.
       // This is a safety projection, not a newly inferred ESG rating.
       advice.reasoning = "The supplied deterministic financial scores and current collection method govern this draft. Unknown ESG receives neutral treatment and does not establish credit risk.";

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { seedState } from "../src/lib/receivables/seed";
+import { seedState } from "./legacy-fixture";
 import { calculateRisk, invoicesNow, signature } from "../src/lib/receivables/compute";
 import { buildPlan } from "../src/lib/receivables/planner";
 import { addDays, today } from "../src/lib/receivables/model";

@@ -24,6 +24,8 @@ import type {
   AdviceSnapshot,
   ApprovalInput,
   CollectionPlan,
+  CompanyProfileInput,
+  Customer,
   DocumentView,
   HealthStatus,
   ImportInput,
@@ -32,6 +34,8 @@ import type {
   PlanInput,
   ResetInput,
   RiskEvent,
+  SedgInput,
+  SedgSubmission,
   SystemSetting,
   Workspace
 } from './api.schemas';
@@ -62,6 +66,172 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getSaveCompanyProfileUrl = (id: string,) => {
+
+
+
+
+  return `/api/customers/${id}/profile`
+}
+
+export const saveCompanyProfile = async (id: string,
+    companyProfileInput: CompanyProfileInput, options?: Parameters<typeof customFetch>[1]): Promise<Customer> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Customer>(getSaveCompanyProfileUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(companyProfileInput)
+  }
+);}
+
+
+
+
+
+export const getSaveCompanyProfileMutationKey = () => ['saveCompanyProfile'] as const;
+
+export const getSaveCompanyProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveCompanyProfile>>, TError,SaveCompanyProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveCompanyProfile>>, TError,SaveCompanyProfileMutationVariables, TContext> => {
+
+const mutationKey = getSaveCompanyProfileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveCompanyProfile>>, SaveCompanyProfileMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveCompanyProfile(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveCompanyProfileMutationResult = NonNullable<Awaited<ReturnType<typeof saveCompanyProfile>>>
+    export type SaveCompanyProfileMutationBody = BodyType<CompanyProfileInput>
+    export type SaveCompanyProfileMutationError = ErrorType<unknown>
+    export type SaveCompanyProfileMutationVariables = {id: string;data: BodyType<CompanyProfileInput>}
+
+    export const useSaveCompanyProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveCompanyProfile>>, TError,SaveCompanyProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveCompanyProfile>>,
+        TError,
+        SaveCompanyProfileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveCompanyProfileMutationOptions(options));
+    }
+
+export const getSubmitSedgUrl = (id: string,) => {
+
+
+
+
+  return `/api/customers/${id}/sedg`
+}
+
+export const submitSedg = async (id: string,
+    sedgInput: SedgInput, options?: Parameters<typeof customFetch>[1]): Promise<SedgSubmission> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SedgSubmission>(getSubmitSedgUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(sedgInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitSedgMutationKey = () => ['submitSedg'] as const;
+
+export const getSubmitSedgMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSedg>>, TError,SubmitSedgMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitSedg>>, TError,SubmitSedgMutationVariables, TContext> => {
+
+const mutationKey = getSubmitSedgMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitSedg>>, SubmitSedgMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitSedg(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitSedgMutationResult = NonNullable<Awaited<ReturnType<typeof submitSedg>>>
+    export type SubmitSedgMutationBody = BodyType<SedgInput>
+    export type SubmitSedgMutationError = ErrorType<unknown>
+    export type SubmitSedgMutationVariables = {id: string;data: BodyType<SedgInput>}
+
+    export const useSubmitSedg = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSedg>>, TError,SubmitSedgMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitSedg>>,
+        TError,
+        SubmitSedgMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSubmitSedgMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 

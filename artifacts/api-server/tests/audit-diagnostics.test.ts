@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { seedState } from "../src/lib/receivables/seed";
+import { seedState } from "./legacy-fixture";
 import { generate, decide } from "../src/lib/receivables/service";
 import { businessContext, generateAdvice } from "../src/lib/receivables/ai-provider";
 import { createPlanEnricher } from "../src/lib/receivables/ai-enrichment";

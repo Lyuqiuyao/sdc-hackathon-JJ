@@ -5,10 +5,19 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { CustomerReviewInput } from './customerReviewInput';
 import type { TaskEdit } from './taskEdit';
 
 export interface PlanEdit {
   tasks: TaskEdit[];
   /** @maxLength 5000 */
   notes: string;
+  /** @minimum 1 */
+  expectedVersion?: number;
+  customerReview?: CustomerReviewInput;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  mergeReason?: string;
 }

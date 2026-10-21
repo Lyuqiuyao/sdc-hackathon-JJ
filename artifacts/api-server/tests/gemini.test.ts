@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { seedState } from "../src/lib/receivables/seed";
+import { seedState } from "./legacy-fixture";
 // Historical filename retained so existing test commands continue to work.
 import { businessContext, createOpenAITransport, generateAdvice, OPENAI_MODEL } from "../src/lib/receivables/ai-provider";
 import { applyAdvice, decide, edit, execute, workspace, generate } from "../src/lib/receivables/service";

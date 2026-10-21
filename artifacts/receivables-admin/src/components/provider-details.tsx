@@ -41,7 +41,7 @@ export function ProviderDetails({ plan }: { plan: CollectionPlan }) {
         ? 'OpenAI (Replit managed)' : 'Historical OpenAI · connection unrecorded'}</span>}
     </div>
     {generation && <p className="text-muted-foreground">{REASONS[generation.reasonCode] ?? generation.reasonCode}</p>}
-    {plan.aiRiskExplanation && <div><strong>{provider === 'gemini' ? 'Historical Gemini' : generation?.contentPolicy === 'server_controlled_v1' && plan.tasks.some(t => t.aiAdvice?.esgEvidence === 'unknown') ? 'Server-controlled' : 'OpenAI'} risk explanation · 风险归因：</strong><p className="mt-1 whitespace-pre-wrap">{plan.aiRiskExplanation}</p></div>}
+    {plan.aiRiskExplanation && <div><strong>{provider === 'gemini' ? 'Historical Gemini' : generation?.contentPolicy === 'server_controlled_v1' && plan.tasks.some(t => t.aiAdvice?.esgEvidence === 'unknown') ? 'Server-controlled' : 'OpenAI'} risk explanation</strong><p className="mt-1 whitespace-pre-wrap">{plan.aiRiskExplanation}</p></div>}
     {generation?.contentPolicy === 'server_controlled_v1' && <p className="text-muted-foreground">Server-controlled notices and ESG prose. Unknown ESG task prose and its global risk explanation are also server-controlled, not model-authored credit opinions.</p>}
     <p className="text-muted-foreground">Provider describes the original generation. Historical sources remain unchanged. Later human edits have per-language sources. AI never approves or executes.</p>
   </div>;
