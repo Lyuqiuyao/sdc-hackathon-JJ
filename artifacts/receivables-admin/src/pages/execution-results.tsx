@@ -55,7 +55,7 @@ export default function ExecutionResults() {
                     <SelectContent>{plans.map((p) => <SelectItem key={p.id} value={p.id}>v{p.version} · {p.status} · {fmtDateTime(p.createdAt)}</SelectItem>)}</SelectContent></Select>
                   <Tag>{plan.status}</Tag>
                   {approval && <span className="text-xs text-muted-foreground">Approved by {approval.actor} at {fmtDateTime(approval.createdAt)}</span>}
-                  <div className="ml-auto flex gap-2">
+                  <div className="ml-auto flex flex-wrap gap-2">
                     <Button variant="outline" onClick={report} data-testid="button-export-report"><Download className="mr-1 h-4 w-4" />Export Report</Button>
                     <Button onClick={() => setAsk(true)} disabled={plan.status !== 'Approved' || exec.isPending || v2Blockers.length > 0} data-testid="button-execute"><PlayCircle className="mr-1 h-4 w-4" />{exec.isPending ? 'Executing...' : 'Execute Approved Plan'}</Button>
                   </div>

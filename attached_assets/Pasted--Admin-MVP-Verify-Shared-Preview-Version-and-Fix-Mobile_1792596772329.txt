@@ -1,0 +1,94 @@
+# Admin MVP: Verify Shared Preview Version and Fix Mobile Overflow
+
+## Objective
+
+Address only these two issues in the existing administrator-only application:
+
+1. Verify whether the shared preview is running the latest intended source version.
+2. Fix the approximately 36px horizontal overflow previously observed on the Execution Results page on mobile.
+
+Do not rebuild the project or introduce new features.
+
+## Phase 1 — Read-only shared preview version verification
+
+Start with a strictly read-only investigation. Do not modify files during this phase.
+
+### Inspect
+
+- Current Git branch, commit, and working-tree status.
+- The latest intended source revision and whether relevant changes are committed.
+- The configured build and shared-preview launch process.
+- The frontend and API build artifacts or version identifiers, where available.
+- Whether the running frontend and API can be reliably matched to the current source revision.
+- Whether stale build artifacts or older processes could explain a version mismatch.
+
+### Safety constraints
+
+- Do not restart, stop, or redeploy shared services.
+- Do not modify Secrets or environment configuration.
+- Do not call AI providers.
+- Do not access or modify shared business data.
+- Do not call `/api/workspace` or other business-data endpoints for version verification.
+- Do not invoke import, reset, risk generation, plan generation, approval, defer, execution, or other state-changing operations.
+- Avoid opening business pages if their polling or hooks could trigger database reads.
+
+Use existing health or version endpoints only if their behavior is known to be safe and does not read business data.
+
+### Phase 1 report
+
+Report:
+
+1. Current source commit and working-tree state.
+2. Evidence about the frontend build version and API version.
+3. Whether the shared preview can be confirmed to match the intended source revision.
+4. Any uncertainty or missing evidence.
+5. Whether a controlled restart or redeployment appears necessary.
+
+Do not infer that the shared preview is current merely because the local build succeeds.
+
+Stop and report the findings before performing any restart or redeployment. Proceed to Phase 2 without restarting services.
+
+## Phase 2 — Fix Execution Results mobile overflow
+
+After Phase 1, inspect the existing responsive layout and make the smallest targeted change needed to fix the known overflow.
+
+### Requirements
+
+- Reproduce the approximately 36px overflow at a documented mobile viewport if possible.
+- Identify the actual overflowing element rather than applying a blanket `overflow-x: hidden` to the entire page.
+- Preserve all existing execution-result information and functionality.
+- If a table is wider than the viewport, constrain horizontal scrolling to the table container or implement an appropriate responsive layout.
+- Preserve the desktop layout and existing visual design.
+- Do not change API contracts, database schemas, business logic, scoring formulas, queue ordering, manual merge behavior, approval gates, execution version checks, audit snapshots, or simulated email behavior.
+- Do not add real email sending, NLP, or any other new feature.
+- Keep all website UI text in English.
+
+### Validation
+
+Use an isolated local or preview environment. Do not use shared business data.
+
+Where browser verification is available:
+
+- Test the same mobile viewport used to reproduce the issue.
+- Test at a desktop viewport.
+- Confirm that the document no longer has unintended horizontal overflow on mobile.
+- Confirm that any necessary table scrolling is confined to the intended container.
+- Check that buttons, result details, and audit links remain accessible.
+
+Then run relevant frontend tests, the existing workflow tests, type checks, the production build, the English-only source check, and `git diff --check`, provided these checks do not access or mutate the shared business database.
+
+Do not run any test script that writes to the shared database.
+
+If browser verification is unavailable, report that limitation and distinguish code-level validation from observed browser results.
+
+## Final report
+
+Provide:
+
+- Phase 1 findings and the evidence supporting the version assessment.
+- Files changed in Phase 2 and the reason for each change.
+- The mobile and desktop viewport sizes tested.
+- The actual test commands and results.
+- Any remaining uncertainty about the shared preview version.
+
+Do not restart or redeploy shared services as part of this task. Do not perform a real AI test. Do not claim an issue is resolved unless the corresponding verification supports that conclusion.
