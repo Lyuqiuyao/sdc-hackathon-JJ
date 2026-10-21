@@ -1,7 +1,7 @@
-import { readState, changeState } from "./repository";
+import { readState, changeState, workspaceId } from "./repository";
 import { createPlanEnricher } from "./ai-enrichment";
 
-export const enrichPlan = createPlanEnricher({ readState, changeState });
+export const enrichPlan = createPlanEnricher({ workspaceId, readState, changeState });
 
 export async function enrichRiskDraft(eventId: string) {
   const state = await readState();

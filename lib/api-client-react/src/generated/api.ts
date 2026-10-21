@@ -21,6 +21,7 @@ import type {
 
 import type {
   ActionResult,
+  AdviceSnapshot,
   ApprovalInput,
   CollectionPlan,
   DocumentView,
@@ -504,6 +505,77 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getEditPlanMutationOptions(options));
     }
+
+export const getGetPlanAdviceSnapshotsUrl = (id: string,) => {
+
+
+
+
+  return `/api/plans/${id}/advice-snapshots`
+}
+
+export const getPlanAdviceSnapshots = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<AdviceSnapshot[]> => {
+
+  return customFetch<AdviceSnapshot[]>(getGetPlanAdviceSnapshotsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlanAdviceSnapshotsQueryKey = (id: string,) => {
+    return [
+    `/api/plans/${id}/advice-snapshots`
+    ] as const;
+    }
+
+
+export const getGetPlanAdviceSnapshotsQueryOptions = <TData = Awaited<ReturnType<typeof getPlanAdviceSnapshots>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlanAdviceSnapshots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlanAdviceSnapshotsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlanAdviceSnapshots>>> = ({ signal }) => getPlanAdviceSnapshots(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlanAdviceSnapshots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlanAdviceSnapshotsQueryResult = NonNullable<Awaited<ReturnType<typeof getPlanAdviceSnapshots>>>
+export type GetPlanAdviceSnapshotsQueryError = ErrorType<unknown>
+
+
+
+export function useGetPlanAdviceSnapshots<TData = Awaited<ReturnType<typeof getPlanAdviceSnapshots>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlanAdviceSnapshots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlanAdviceSnapshotsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getDecidePlanUrl = (id: string,) => {
 

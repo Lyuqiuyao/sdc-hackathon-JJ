@@ -230,6 +230,7 @@ export const GetWorkspaceResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
+  "attemptId": zod.string().optional(),
   "model": zod.string(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
@@ -529,6 +530,7 @@ export const GeneratePlanResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
+  "attemptId": zod.string().optional(),
   "model": zod.string(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
@@ -640,6 +642,7 @@ export const EditPlanResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
+  "attemptId": zod.string().optional(),
   "model": zod.string(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
@@ -697,6 +700,32 @@ export const EditPlanResponse = zod.object({
 })
 
 
+export const GetPlanAdviceSnapshotsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetPlanAdviceSnapshotsResponseItem = zod.object({
+  "id": zod.string(),
+  "workspaceId": zod.string(),
+  "planId": zod.string(),
+  "riskEventId": zod.string(),
+  "planVersion": zod.number().int(),
+  "attemptId": zod.string(),
+  "createdAt": zod.string(),
+  "provider": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']),
+  "source": zod.enum(['validated_projection', 'rules_template', 'human', 'metadata_only']),
+  "status": zod.enum(['started', 'applied', 'fallback', 'discarded', 'expired', 'edited', 'approved', 'rejected', 'deferred']),
+  "reasonCode": zod.string(),
+  "contentPolicy": zod.string(),
+  "validation": zod.enum(['passed', 'failed', 'not_run']),
+  "previousSnapshotId": zod.string().optional(),
+  "previousPlanId": zod.string().optional(),
+  "approvalId": zod.string().optional(),
+  "contentJson": zod.string().describe('Allowlisted, credential-redacted JSON snapshot. Raw model text and raw exceptions are never retained.')
+})
+export const GetPlanAdviceSnapshotsResponse = zod.array(GetPlanAdviceSnapshotsResponseItem)
+
+
 export const DecidePlanParams = zod.object({
   "id": zod.coerce.string()
 })
@@ -740,6 +769,7 @@ export const DecidePlanResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
+  "attemptId": zod.string().optional(),
   "model": zod.string(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
@@ -831,6 +861,7 @@ export const ExecutePlanResponse = zod.object({
   "durationMs": zod.number().int(),
   "status": zod.enum(['success', 'fallback']),
   "reasonCode": zod.string(),
+  "attemptId": zod.string().optional(),
   "model": zod.string(),
   "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
   "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')

@@ -7,6 +7,11 @@
  */
 
 export * from './actionResult';
+export * from './adviceSnapshot';
+export * from './adviceSnapshotProvider';
+export * from './adviceSnapshotSource';
+export * from './adviceSnapshotStatus';
+export * from './adviceSnapshotValidation';
 export * from './aIGeneration';
 export * from './aIGenerationConnectionMode';
 export * from './aIGenerationContentPolicy';

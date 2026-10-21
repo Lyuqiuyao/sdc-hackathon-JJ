@@ -1,7 +1,11 @@
 import type {
   Customer, Invoice, ESGDocument, RiskEvent, CollectionPlan, ApprovalRecord,
   ExecutionRecord, AuditLog, SystemSetting,
+  AdviceSnapshot,
 } from "@workspace/api-zod";
+import type { GenerationLease } from "./ai-coordination";
+
+export const DEMO_WORKSPACE_ID = "synthetic-demo-admin";
 
 export interface DemoState {
   schemaVersion: 1;
@@ -14,6 +18,9 @@ export interface DemoState {
   executions: ExecutionRecord[];
   auditLogs: AuditLog[];
   settings: SystemSetting;
+  workspaceId?: string;
+  aiLeases?: Record<string, GenerationLease>;
+  adviceSnapshots?: AdviceSnapshot[];
 }
 
 export class BusinessError extends Error {

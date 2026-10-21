@@ -3,6 +3,8 @@ import { createInsertSchema } from "drizzle-zod";
 
 // One transactional aggregate for the competition demo. The ten domain entities
 // are typed and related by IDs in the service layer; no financial amounts are floats.
+// Optional JSONB aiLeases/adviceSnapshots are coordinated by the existing row
+// lock. No new table/DDL migration; snapshots are application-level append-only.
 export const demoWorkspaces = pgTable("demo_workspaces", {
   id: text("id").primaryKey(),
   payload: jsonb("payload").notNull(),

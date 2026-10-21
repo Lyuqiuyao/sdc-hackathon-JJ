@@ -21,6 +21,7 @@ export interface AdvisorResult {
   providerMode: "openai" | "rules_fallback";
   generation: AIGeneration;
   advice?: AdviceResponse;
+  validatedModelSummary?: { taskId: string; esgEvidence: string; esgRating: string; strategyKinds: string[] }[];
 }
 export type OpenAITransport = (context: object, signal: AbortSignal) => Promise<string>;
 
@@ -87,7 +88,7 @@ export function businessContext(state: DemoState, plan: CollectionPlan) {
   };
 }
 
-function validateAdvice(raw: string, state: DemoState, plan: CollectionPlan): AdviceResponse {
+function validateAdvice(raw: string, state: DemoState, plan: CollectionPlan) {
   if (raw.length > 500_000) throw new Error("Invalid response");
   const result = responseSchema.parse(JSON.parse(raw));
   const byId = new Map(result.tasks.map(t => [t.taskId, t]));
@@ -103,10 +104,14 @@ function validateAdvice(raw: string, state: DemoState, plan: CollectionPlan): Ad
       || !/Draf demo sintetik/i.test(a.noticeMs) || !/tiada mesej dihantar/i.test(a.noticeMs))
       throw new Error("Unlabelled or unsafe notice");
   }
+  const validatedModelSummary = result.tasks.map(t => ({
+    taskId: t.taskId, esgEvidence: t.esgEvidence, esgRating: t.esgRating,
+    strategyKinds: t.strategies.map(s => s.kind),
+  }));
   protectAdviceContent(result, state, plan);
   // Projection/conditional suffixes may not bypass the original local bounds.
   responseSchema.parse(result);
-  return result;
+  return { advice: result, validatedModelSummary };
 }
 
 export async function generateAdvice(state: DemoState, plan: CollectionPlan, options: {
@@ -132,10 +137,10 @@ export async function generateAdvice(state: DemoState, plan: CollectionPlan, opt
         timer = setTimeout(() => { controller.abort(); reject(new Error("Timeout")); }, options.timeoutMs ?? OPENAI_TIMEOUT_MS);
       }),
     ]);
-    let advice: AdviceResponse;
-    try { advice = validateAdvice(raw, state, plan); }
+    let validated: ReturnType<typeof validateAdvice>;
+    try { validated = validateAdvice(raw, state, plan); }
     catch (error) { return fallback(error instanceof AdviceBoundaryError ? error.reasonCode : "invalid_response"); }
-    return { providerMode: "openai", advice,
+    return { providerMode: "openai", ...validated,
       generation: { requestedProvider, generatedAt: now(), durationMs: Date.now() - started,
         connectionMode: "replit_managed",
         contentPolicy: "server_controlled_v1",

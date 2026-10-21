@@ -1,32 +1,44 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, demoWorkspaces } from "@workspace/db";
 import { seedState } from "./seed";
-import type { DemoState } from "./model";
+import { DEMO_WORKSPACE_ID, BusinessError, type DemoState } from "./model";
+import { assertSnapshotsAppendOnly } from "./advice-snapshots";
 
-const ID = "synthetic-demo-admin";
-async function ensureSeeded() {
-  await db.insert(demoWorkspaces).values({ id: ID, payload: seedState() }).onConflictDoNothing();
-}
-
-export async function readState(): Promise<DemoState> {
-  const [row] = await db.select().from(demoWorkspaces).where(eq(demoWorkspaces.id, ID));
+export function createWorkspaceRepository(database: typeof db, workspaceId = DEMO_WORKSPACE_ID) {
+async function readState(): Promise<DemoState> {
+  const [row] = await database.select().from(demoWorkspaces).where(eq(demoWorkspaces.id, workspaceId));
   if (row) return row.payload as DemoState;
-  await ensureSeeded();
-  const [created] = await db.select().from(demoWorkspaces).where(eq(demoWorkspaces.id, ID));
+  await database.insert(demoWorkspaces).values({ id: workspaceId, payload: seedState() }).onConflictDoNothing();
+  const [created] = await database.select().from(demoWorkspaces).where(eq(demoWorkspaces.id, workspaceId));
   if (!created) throw new Error("Demo workspace initialization failed");
   return created.payload as DemoState;
 }
 
 // Database row locking serializes decisions and idempotent execution across tabs
 // and processes. Mutations and their audit entries commit or roll back together.
-export async function changeState<T>(operation: (state: DemoState) => T): Promise<T> {
+async function changeState<T>(operation: (state: DemoState, databaseNowMs?: number) => T): Promise<T> {
   await readState();
-  return db.transaction(async tx => {
-    const [row] = await tx.select().from(demoWorkspaces).where(eq(demoWorkspaces.id, ID)).for("update");
+  return database.transaction(async tx => {
+    const [row] = await tx.select().from(demoWorkspaces).where(eq(demoWorkspaces.id, workspaceId)).for("update");
     if (!row) throw new Error("Demo workspace not found");
     const state = row.payload as DemoState;
-    const result = operation(state);
-    await tx.update(demoWorkspaces).set({ payload: state, updatedAt: new Date() }).where(eq(demoWorkspaces.id, ID));
+    if (state.workspaceId && state.workspaceId !== workspaceId) throw new BusinessError("Workspace association mismatch.", 409);
+    state.workspaceId = workspaceId;
+    const previous = structuredClone(state.adviceSnapshots ?? []);
+    // Read the database clock after acquiring the lock, not a possibly skewed
+    // worker clock or the transaction-start timestamp before waiting.
+    const clock = await tx.execute<{ now_ms: string }>(sql`select floor(extract(epoch from clock_timestamp()) * 1000)::text as now_ms`);
+    const time = Number(clock.rows[0]?.now_ms);
+    if (!Number.isSafeInteger(time)) throw new Error("Database clock unavailable");
+    const result = operation(state, time);
+    if (state.workspaceId !== workspaceId) throw new BusinessError("Workspace association mismatch.", 409);
+    assertSnapshotsAppendOnly(previous, state.adviceSnapshots ?? []);
+    await tx.update(demoWorkspaces).set({ payload: state, updatedAt: new Date(time) }).where(eq(demoWorkspaces.id, workspaceId));
     return result;
   });
 }
+return { workspaceId, readState, changeState };
+}
+const repository = createWorkspaceRepository(db);
+export const { readState, changeState } = repository;
+export const workspaceId = repository.workspaceId;

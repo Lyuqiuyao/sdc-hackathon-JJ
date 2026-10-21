@@ -10,6 +10,7 @@ import { importCsv } from "./csv";
 import { seedState } from "./seed";
 import { rulesAdvisor, openaiConfigured, type AdvisorResult } from "./ai-provider";
 import { communication } from "./communication";
+import { appendPlanSnapshot } from "./advice-snapshots";
 
 export function audit(state: DemoState, type: string, content: string, related = "",
   before = "", after = "", plan?: CollectionPlan) {
@@ -69,6 +70,7 @@ export function generate(state: DemoState, input: PlanInput) {
   state.plans.push(plan);
   audit(state, "Plan generated", "Generated explainable four-factor rules-engine plan and bilingual notification templates; human approval required.",
     plan.tasks.map(t => `${t.invoiceNumber} ${t.customerName}`).join(", "), "", JSON.stringify(plan), plan);
+  appendPlanSnapshot(state, plan, { status: "fallback", reasonCode: "rules_draft", provider: "rules_fallback" });
   return plan;
 }
 
@@ -146,6 +148,9 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
   state.plans.push(plan);
   audit(state, "Manual adjustment", "Human reordered tasks and/or edited methods and bilingual drafts. New version needs approval.",
     plan.tasks.map(t => `${t.invoiceNumber} ${t.customerName}`).join(", "), before, JSON.stringify(plan), plan);
+  appendPlanSnapshot(state, plan, { status: "edited", reasonCode: "human_edit",
+    provider: "human", source: "human", previousPlanId: original.id,
+    attemptId: original.aiGeneration?.attemptId });
   return plan;
 }
 
@@ -171,6 +176,10 @@ export function decide(state: DemoState, id: string, input: ApprovalInput) {
   });
   audit(state, "Plan approval", `${input.decision}: ${input.notes || "No additional notes"}. No real notification or financial transaction.`,
     plan.tasks.map(t => `${t.invoiceNumber} ${t.customerName}`).join(", "), before, JSON.stringify(plan), plan);
+  appendPlanSnapshot(state, plan, { status: input.decision === "approve" ? "approved" : input.decision === "reject" ? "rejected" : "deferred",
+    reasonCode: `human_${input.decision}`, provider: "human", source: "human",
+    attemptId: plan.aiGeneration?.attemptId,
+    approvalId: state.approvals[state.approvals.length - 1]!.id });
   if (input.decision === "defer") {
     const currentRisk = recordRisk(state);
     const next = buildPlan(state, currentRisk.id, state.settings.weights, plan, true);
@@ -178,6 +187,8 @@ export function decide(state: DemoState, id: string, input: ApprovalInput) {
     state.plans.push(next);
     audit(state, "Plan generated", "Deferred plan recalculated from current data and current settings; communication shifted by two demo days; new approval required.",
       plan.id, before, JSON.stringify(next), next);
+    appendPlanSnapshot(state, next, { status: "fallback", reasonCode: "deferred_rules_draft",
+      provider: "rules_fallback", previousPlanId: plan.id });
     return next;
   }
   return plan;

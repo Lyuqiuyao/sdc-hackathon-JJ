@@ -72,6 +72,19 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CollectionPlan" }
+  /plans/{id}/advice-snapshots:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getPlanAdviceSnapshots
+      responses:
+        "200":
+          description: Append-only advice and human-decision snapshots for this exact plan ID; no raw model text
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdviceSnapshot" }
   /plans/{id}/decision:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
@@ -307,6 +320,29 @@ components:
         strategies: { type: array, items: { $ref: "#/components/schemas/AIStrategy" } }
         noticeEn: { type: string }
         noticeMs: { type: string }
+    AdviceSnapshot:
+      type: object
+      required: [id, workspaceId, planId, riskEventId, planVersion, attemptId, createdAt, provider, source, status, reasonCode, contentPolicy, validation, contentJson]
+      properties:
+        id: { type: string }
+        workspaceId: { type: string }
+        planId: { type: string }
+        riskEventId: { type: string }
+        planVersion: { type: integer }
+        attemptId: { type: string }
+        createdAt: { type: string }
+        provider: { type: string, enum: [openai, gemini, rules_fallback, human] }
+        source: { type: string, enum: [validated_projection, rules_template, human, metadata_only] }
+        status: { type: string, enum: [started, applied, fallback, discarded, expired, edited, approved, rejected, deferred] }
+        reasonCode: { type: string }
+        contentPolicy: { type: string }
+        validation: { type: string, enum: [passed, failed, not_run] }
+        previousSnapshotId: { type: string }
+        previousPlanId: { type: string }
+        approvalId: { type: string }
+        contentJson:
+          type: string
+          description: "Allowlisted, credential-redacted JSON snapshot. Raw model text and raw exceptions are never retained."
     AIGeneration:
       type: object
       required: [requestedProvider, generatedAt, durationMs, status, reasonCode, model]
@@ -316,6 +352,7 @@ components:
         durationMs: { type: integer }
         status: { type: string, enum: [success, fallback] }
         reasonCode: { type: string }
+        attemptId: { type: string }
         model: { type: string }
         connectionMode:
           type: string

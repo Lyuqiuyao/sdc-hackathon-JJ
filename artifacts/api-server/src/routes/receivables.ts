@@ -9,6 +9,8 @@ import { readState, changeState } from "../lib/receivables/repository";
 import { BusinessError } from "../lib/receivables/model";
 import * as service from "../lib/receivables/service";
 import { enrichPlan, enrichRiskDraft } from "../lib/receivables/ai-generation";
+import { listAdviceSnapshots } from "../lib/receivables/advice-snapshots";
+import { GetPlanAdviceSnapshotsParams, GetPlanAdviceSnapshotsResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
@@ -35,6 +37,10 @@ router.post("/plans", async (req, res): Promise<void> => {
 router.patch("/plans/:id", async (req, res): Promise<void> => {
   const { id } = EditPlanParams.parse(req.params), input = EditPlanBody.parse(req.body);
   res.json(await changeState(state => EditPlanResponse.parse(service.edit(state, id, input))));
+});
+router.get("/plans/:id/advice-snapshots", async (req, res): Promise<void> => {
+  const { id } = GetPlanAdviceSnapshotsParams.parse(req.params);
+  res.json(GetPlanAdviceSnapshotsResponse.parse(listAdviceSnapshots(await readState(), id)));
 });
 router.post("/plans/:id/decision", async (req, res): Promise<void> => {
   const { id } = DecidePlanParams.parse(req.params), input = DecidePlanBody.parse(req.body);

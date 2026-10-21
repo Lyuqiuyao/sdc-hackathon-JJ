@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:workflow": "node test-workflow.mjs",
+    "test:isolated-db": "node test-isolated-postgres.mjs",
     "test:gemini-live": "node test-gemini-live.mjs",
     "test:openai-live": "node test-openai-live.mjs",
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",

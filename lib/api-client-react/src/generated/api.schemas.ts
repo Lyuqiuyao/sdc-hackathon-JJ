@@ -294,6 +294,71 @@ export interface CollectionTask {
   noticeMsSource?: CollectionTaskNoticeMsSource;
 }
 
+export type AdviceSnapshotProvider = typeof AdviceSnapshotProvider[keyof typeof AdviceSnapshotProvider];
+
+
+export const AdviceSnapshotProvider = {
+  openai: 'openai',
+  gemini: 'gemini',
+  rules_fallback: 'rules_fallback',
+  human: 'human',
+} as const;
+
+export type AdviceSnapshotSource = typeof AdviceSnapshotSource[keyof typeof AdviceSnapshotSource];
+
+
+export const AdviceSnapshotSource = {
+  validated_projection: 'validated_projection',
+  rules_template: 'rules_template',
+  human: 'human',
+  metadata_only: 'metadata_only',
+} as const;
+
+export type AdviceSnapshotStatus = typeof AdviceSnapshotStatus[keyof typeof AdviceSnapshotStatus];
+
+
+export const AdviceSnapshotStatus = {
+  started: 'started',
+  applied: 'applied',
+  fallback: 'fallback',
+  discarded: 'discarded',
+  expired: 'expired',
+  edited: 'edited',
+  approved: 'approved',
+  rejected: 'rejected',
+  deferred: 'deferred',
+} as const;
+
+export type AdviceSnapshotValidation = typeof AdviceSnapshotValidation[keyof typeof AdviceSnapshotValidation];
+
+
+export const AdviceSnapshotValidation = {
+  passed: 'passed',
+  failed: 'failed',
+  not_run: 'not_run',
+} as const;
+
+export interface AdviceSnapshot {
+  id: string;
+  workspaceId: string;
+  planId: string;
+  riskEventId: string;
+  planVersion: number;
+  attemptId: string;
+  createdAt: string;
+  provider: AdviceSnapshotProvider;
+  source: AdviceSnapshotSource;
+  status: AdviceSnapshotStatus;
+  reasonCode: string;
+  contentPolicy: string;
+  validation: AdviceSnapshotValidation;
+  previousSnapshotId?: string;
+  previousPlanId?: string;
+  approvalId?: string;
+  /** Allowlisted, credential-redacted JSON snapshot. Raw model text and raw exceptions are never retained. */
+  contentJson: string;
+}
+
 export type AIGenerationRequestedProvider = typeof AIGenerationRequestedProvider[keyof typeof AIGenerationRequestedProvider];
 
 
@@ -337,6 +402,7 @@ export interface AIGeneration {
   durationMs: number;
   status: AIGenerationStatus;
   reasonCode: string;
+  attemptId?: string;
   model: string;
   /** Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections. */
   connectionMode?: AIGenerationConnectionMode;

@@ -16,6 +16,7 @@ export interface AIGeneration {
   durationMs: number;
   status: AIGenerationStatus;
   reasonCode: string;
+  attemptId?: string;
   model: string;
   /** Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections. */
   connectionMode?: AIGenerationConnectionMode;
