@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { seedState } from "../src/lib/receivables/seed";
 import { generate, applyAdvice, decide, execute } from "../src/lib/receivables/service";
-import { generateAdvice, geminiConfigured } from "../src/lib/receivables/ai-provider";
+import { generateAdvice, geminiConfigured, officialGeminiTransport } from "../src/lib/receivables/ai-provider";
 
 // This is a REAL Google request, no mocks or test transport. Only synthetic,
 // in-memory records are used; no customer/workspace data is modified.
@@ -13,7 +13,20 @@ if (!geminiConfigured()) {
   const plan=generate(state,{});
   const before=JSON.stringify({invoices:state.invoices,settings:state.settings,documents:state.documents});
   const snapshot=JSON.stringify(plan);
-  const result=await generateAdvice(state,plan);
+  const result=await generateAdvice(state,plan,{transport:async(context,signal)=>{
+    try{return await officialGeminiTransport(context,signal);}
+    catch(error){
+      const e=error as {status?:number;message?:string};
+      // Never print the raw exception/request. These allowlisted diagnostics
+      // distinguish quota/permission/schema failures without exposing secrets.
+      const text=String(e.message??"");
+      const category=["API_KEY_INVALID","PERMISSION_DENIED","RESOURCE_EXHAUSTED","NOT_FOUND","INVALID_ARGUMENT","SERVICE_DISABLED"]
+        .find(s=>text.includes(s))??"UNCLASSIFIED";
+      const unknownFields=[...text.matchAll(/Unknown name [\\"]+([A-Za-z0-9_$]+)[\\"]+/g)].map(m=>m[1]);
+      console.log(JSON.stringify({httpStatus:Number(e.status)||null,category,unknownFields}));
+      throw error;
+    }
+  }});
   if(result.providerMode!=="gemini"){
     console.log(JSON.stringify({result:"FAIL",reason:result.generation.reasonCode,model:result.generation.model}));
     process.exitCode=1;

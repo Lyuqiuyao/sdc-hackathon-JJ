@@ -1,1 +1,2 @@
 - [Administrator-only demo scope](product-scope.md) — do not expand into customer/certifier apps or request real financial customer records.
+- [Gemini 接入与验收](gemini-integration.md) — 自带服务端密钥，保留确定性引擎；密钥存在或模型列表成功不等于生成成功。

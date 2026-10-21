@@ -3,8 +3,11 @@
 ## 当前验收状态
 
 已实现官方 `@google/genai` SDK 服务端调用、结构化输出校验、逐方案来源标识、失败回退与审计。
-**尚未完成真实 Gemini 联网成功验收：当前没有 GEMINI_API_KEY。**
-运行真实测试脚本得到 `NOT_RUN / GEMINI_API_KEY is missing`（退出码 2），未发出真实请求。
+**尚未完成真实 Gemini 生成成功验收：密钥已配置，但实际生成请求失败。**
+最初缺密钥时脚本输出 NOT_RUN；配置后真实 `models.list` 成功并返回模型列表，
+但 `gemini-3.8-flash` 的完整业务请求与最小 JSON 请求均返回 HTTP 504。
+另一个列表中出现的稳定模型 `gemini-2.5-flash` 最小生成请求返回 404/NOT_FOUND，
+因此没有将生产默认模型盲目切换过去。模型列表成功不代表生成链路正常。
 
 本项目采用用户自己的 Google API key，不使用 Replit 代管 AI 代理。
 模型默认 `gemini-3.8-flash`，按 Google 官方模型页核对为稳定版本：
@@ -69,7 +72,7 @@ Replit 官方说明：https://docs.replit.com/core-concepts/project-editor/app-s
 |---|---|---|
 | 选择规则模式 | rules_fallback | rules_selected |
 | 缺密钥 | rules_fallback | missing_api_key |
-| API/权限/配额/网络错误 | rules_fallback | api_error |
+| API/权限/配额/网络错误（包括上游 504） | rules_fallback | api_error |
 | 超过 45 秒截止时间 | rules_fallback | timeout |
 | 无效 JSON/结构/任务/ESG证据 | rules_fallback | invalid_response |
 | 超过 50 个任务的上下文限制 | rules_fallback | context_limit |
@@ -120,9 +123,25 @@ node artifacts/api-server/tests/api-workflow.mjs "https://${REPLIT_DEV_DOMAIN}"
 pnpm --filter @workspace/api-server run test:gemini-live
 ```
 
-这个脚本不 mock、不覆盖 transport，使用服务端 secret 调用真实 Google API，
+这个脚本不 mock，调用正式 officialGeminiTransport（仅在外层输出白名单 HTTP 状态/错误类别），
+使用服务端 secret 调用真实 Google API，
 只操作内存中的原始合成数据，不改数据库。成功才输出 `PASS / realApiRequest:true / providerMode:gemini`，
 并验证双语、三策略、审批门禁及财务数据不变。
 
-当前实际输出是 `NOT_RUN`，因为密钥未配置。需配置后再运行，不能据此宣称已联网验收。
-之后还应按第2节在 UI 生成新的方案，确认持久化方案确实为 gemini/success。
+配置密钥后实际输出是 `FAIL / httpStatus:504 / reason:api_error`，不是生成成功。
+最小生成请求也复现 504，因此不能仅凭请求代码存在或 SDK 构造测试通过宣称已联网验收。
+
+```sh
+node artifacts/api-server/tests/api-gemini-live.mjs "https://${REPLIT_DEV_DOMAIN}"
+```
+
+还验证了运行中真实服务与数据库的完整请求路径：
+临时选择 Gemini → 手动风险检测 → 20 任务 Pending 方案 → 实际请求失败 → 持久化
+`rules_fallback / api_error` → 追加 AI generation 审计 → 未批准执行返回 409。
+脚本输出 `FALLBACK_VERIFIED_ONLY`（退出码 2，特意不当作真实生成通过），耗时约 43.9 秒。
+原始客户、账单、凭证、设置、审批、执行和旧方案/审计记录均逐项比较保持不变，设置最终恢复。
+审批页面可打开本次测试的新方案查看真实失败回退记录；没有保存真实密钥或上游原始异常。
+
+当前限制是生成接口失败，非缺钥。没有进一步轮换模型或无限重试。
+待生成服务可用后重新运行上述真实脚本；必须得到 gemini/success，
+再按第2节在 UI 确认新的持久化方案，才可将真实 Gemini 接入标为验收通过。
