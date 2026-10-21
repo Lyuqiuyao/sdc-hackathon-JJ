@@ -40,7 +40,7 @@ export function buildPlan(state: DemoState, riskEventId: string, weights: Weight
       reason: `Annual late fee ${i.lateFeeBps / 100}%: estimated accrued cost ${myr(accruedPenaltyCents)}, daily cost ${myr(dailyPenaltyCents)} (simple interest, not added to invoice). Urgency ${urgencyScore}/100; ${i.importance.toLowerCase()} business importance uses ${importanceScore}/100 to protect key relationships. ${document ? `Valid reviewed ESG ${document.rating} uses ${esgScore}/100.` : "Unverified/missing ESG uses neutral 50/100; it is not evidence of bad debt."} Weighted score ${score}/100.`,
       uncertainty: `Rules-engine Demo, not LLM output or a validated credit model. Payment forecasts and customer willingness are uncertain. Weights are illustrative, not business-validated. ${!document ? "No valid reviewed ESG rating; neutral treatment." : "ESG is auxiliary only and does not override contractual obligations."}`,
       esgNote: document ? `Synthetic Demo ${document.type}, ${document.number}; reviewer status Approved; valid until ${document.validUntil}; rating ${document.rating}. Use only for relationship-sensitive scheduling, never as sole evidence of credit quality.` : "No ESG compliance alert: no currently valid reviewed evidence. Neutral score 50.",
-      noticeEn, noticeMs, noticeEnSource: "rules_fallback" as const, noticeMsSource: "rules_fallback" as const, status: "Draft",
+      noticeEn, noticeMs, status: "Draft",
     };
   }).sort((a, b) => b.score - a.score || a.dueDate.localeCompare(b.dueDate) || a.invoiceNumber.localeCompare(b.invoiceNumber));
   tasks.forEach((t, n) => {
