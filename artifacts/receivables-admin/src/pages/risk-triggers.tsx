@@ -20,7 +20,7 @@ export default function RiskTriggers() {
 
   const doRun = async () => {
     setErr('');
-    try { const e = await run.mutateAsync(); setLatest(e); await refresh(); toast({ title: `Risk check complete: ${e.level}`, description: 'A new risk event was recorded.' }); } catch (e) { setErr(errMsg(e)); }
+    try { const e = await run.mutateAsync(); setLatest(e); await refresh(); toast({ title: `Risk check complete: ${e.level}`, description: e.level === 'Low' ? 'Risk event recorded; no automatic collection draft needed.' : 'Risk event recorded and a pending draft created if collectible invoices exist. Human approval is required.' }); } catch (e) { setErr(errMsg(e)); }
   };
   const doGen = async (id: string) => {
     setErr('');
@@ -64,6 +64,7 @@ export default function RiskTriggers() {
                 </div>
               </Panel>
               <Panel title="Rules and live test" zh="规则可解释 · 可测试" className="xl:col-span-3" bodyClass="space-y-2">
+                <p className="text-xs text-muted-foreground">Live values recalculate on workspace reads; there is no background scheduled check. Run Risk Check records an event and starts a pending draft for Medium/High risk. Approval and execution remain separate.</p>
                 <p className="text-xs text-muted-foreground">Thresholds come from Settings. Each rule is evaluated now against current data; the server remains the authority when you run a check.</p>
                 {rules.map((x) => (
                   <div key={x.n} className="flex items-start gap-3 rounded-md border p-3" data-testid={`rule-${x.n}`}>

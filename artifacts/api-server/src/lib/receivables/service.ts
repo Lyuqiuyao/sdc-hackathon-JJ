@@ -9,6 +9,7 @@ import { buildPlan, METHODS } from "./planner";
 import { importCsv } from "./csv";
 import { seedState } from "./seed";
 import { rulesAdvisor } from "./ai-provider";
+import { communication } from "./communication";
 
 export function audit(state: DemoState, type: string, content: string, related = "",
   before = "", after = "", plan?: CollectionPlan) {
@@ -33,7 +34,7 @@ export function workspace(state: DemoState): Workspace {
   };
 }
 
-export function riskCheck(state: DemoState) {
+function recordRisk(state: DemoState) {
   const event = calculateRisk(state, `RSK-${randomUUID().slice(0, 8)}`);
   state.riskEvents.push(event);
   audit(state, "Risk check", `Recalculated ${event.horizonDays}-day risk: ${event.level}. ${event.reasons.join(" ")}`,
@@ -41,14 +42,25 @@ export function riskCheck(state: DemoState) {
   return event;
 }
 
+export function riskCheck(state: DemoState) {
+  const event = recordRisk(state);
+  // Start the workflow but never bypass the separate human approval gate.
+  if (event.level !== "Low" && invoicesNow(state).some(collectible)) {
+    generate(state, { riskEventId: event.id });
+  }
+  return event;
+}
+
 export function generate(state: DemoState, input: PlanInput) {
   if (state.settings.aiMode !== "rules") throw new BusinessError("Gemini is not connected. Switch to Rules-engine Demo.");
-  const risk = input.riskEventId ? state.riskEvents.find(r => r.id === input.riskEventId) :
-    state.riskEvents[state.riskEvents.length - 1] ?? riskCheck(state);
+  let risk = input.riskEventId ? state.riskEvents.find(r => r.id === input.riskEventId) :
+    state.riskEvents[state.riskEvents.length - 1] ?? recordRisk(state);
   if (!risk) throw new BusinessError("Risk event not found.", 404);
   const weights = input.weights ?? state.settings.weights;
   validateWeights(weights);
   const dataSignature = signature(state);
+  // Legacy and stale event snapshots must not masquerade as current attribution.
+  if (risk.dataSignature !== dataSignature) risk = recordRisk(state);
   const existing = state.plans.find(p => p.riskEventId === risk.id && p.status === "Pending" &&
     p.dataSignature === dataSignature && JSON.stringify(p.weights) === JSON.stringify(weights));
   if (existing) return existing;
@@ -81,7 +93,14 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
     tasks: input.tasks.map((edited, n) => {
       const old = original.tasks.find(t => t.id === edited.id)!;
       // Keep recommended time slots ordered when human priority order changes.
-      return { ...old, ...edited, id: `TSK-${randomUUID().slice(0, 8)}`, rank: n + 1,
+      const changedMethod = old.method !== edited.method;
+      const advice = changedMethod ? communication(old, edited.method) : old;
+      return { ...old, ...edited,
+        negotiation: advice.negotiation,
+        noticeEn: changedMethod && edited.noticeEn === old.noticeEn ? advice.noticeEn : edited.noticeEn,
+        noticeMs: changedMethod && edited.noticeMs === old.noticeMs ? advice.noticeMs : edited.noticeMs,
+        reason: changedMethod ? `${old.reason}\nHuman method override: ${old.method} → ${edited.method}. Original algorithm scores retained; review both drafts before approval.` : old.reason,
+        id: `TSK-${randomUUID().slice(0, 8)}`, rank: n + 1,
         scheduledAt: original.tasks[n]!.scheduledAt, status: "Draft" };
     }),
   };
@@ -115,7 +134,8 @@ export function decide(state: DemoState, id: string, input: ApprovalInput) {
   audit(state, "Plan approval", `${input.decision}: ${input.notes || "No additional notes"}. No real notification or financial transaction.`,
     plan.tasks.map(t => `${t.invoiceNumber} ${t.customerName}`).join(", "), before, JSON.stringify(plan), plan);
   if (input.decision === "defer") {
-    const next = buildPlan(state, plan.riskEventId, state.settings.weights, plan, true);
+    const currentRisk = recordRisk(state);
+    const next = buildPlan(state, currentRisk.id, state.settings.weights, plan, true);
     next.notes = `Recalculated from ${plan.id} v${plan.version}. ${input.notes}`;
     state.plans.push(next);
     audit(state, "Plan generated", "Deferred plan recalculated from current data and current settings; communication shifted by two demo days; new approval required.",
@@ -173,7 +193,10 @@ export function documentView(state: DemoState, id: string) {
   const document = state.documents.find(d => d.id === id);
   if (!document) throw new BusinessError("Document not found.", 404);
   audit(state, "ESG document view", "Opened a clearly labelled synthetic ESG review record; NOT an official certification document.",
-    `${document.customerName} ${document.number}`, "", document.status);
+    `${document.customerName} ${document.number}`, "", JSON.stringify({
+      ...document, effectiveStatus: document.validUntil < today() ? "Expired" : document.status,
+      provenance: "Synthetic preloaded review outcome, NOT an administrator certification review",
+    }));
   return { title: `DEMO RECORD — ${document.type}`,
     content: [
       "SYNTHETIC DEMO RECORD — NOT AN OFFICIAL CERTIFICATE",

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useSearchParams } from 'wouter';
 import { ArrowDown, ArrowUp, CheckCircle2, Clock3, Save, XCircle } from 'lucide-react';
 import { useDecidePlan, useEditPlan, type CollectionPlan, type Workspace } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState, Field } from '@/components/kit';
@@ -81,6 +81,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
                 <Field label="Collection method · 催收方式">
                   <Select value={d.method} onValueChange={(v) => patch(i, { method: v })} disabled={!editable}><SelectTrigger className="sm:w-72" data-testid={`select-method-${d.id}`}><SelectValue /></SelectTrigger><SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
                 </Field>
+                {d.method !== t.method && <p className="text-xs text-orange-700">On save, unchanged EN/MS templates follow the new method. Custom wording is preserved; review both languages before approval.</p>}
                 <div className="grid gap-3 md:grid-cols-2">
                   <Field label="Notice (English)"><Textarea rows={7} value={d.noticeEn} onChange={(e) => patch(i, { noticeEn: e.target.value })} disabled={!editable} data-testid={`input-notice-en-${d.id}`} /></Field>
                   <Field label="Notis (Bahasa Melayu)"><Textarea rows={7} value={d.noticeMs} onChange={(e) => patch(i, { noticeMs: e.target.value })} disabled={!editable} data-testid={`input-notice-ms-${d.id}`} /></Field>
@@ -119,7 +120,15 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
 }
 
 export default function Approvals() {
-  const [sel, setSel] = useState(() => new URLSearchParams(window.location.search).get('plan') ?? '');
+  const [params, setParams] = useSearchParams();
+  const sel = params.get('plan') ?? '';
+  const selectPlan = (id: string) => {
+    setParams(previous => {
+      const next = new URLSearchParams(previous);
+      next.set('plan', id);
+      return next;
+    }, { replace: true });
+  };
   return (
     <Page title="Approval Center" zh="人工审批中心" description="Review, adjust and decide on AI collection plans">
       {(ws) => {
@@ -130,12 +139,12 @@ export default function Approvals() {
           <div className="space-y-4">
             <Panel bodyClass="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium">Plan / version</span>
-              <Select value={plan.id} onValueChange={setSel}><SelectTrigger className="w-full sm:w-96" data-testid="select-plan"><SelectValue /></SelectTrigger>
+              <Select value={plan.id} onValueChange={selectPlan}><SelectTrigger className="w-full sm:w-96" data-testid="select-plan"><SelectValue /></SelectTrigger>
                 <SelectContent>{plans.map((p) => <SelectItem key={p.id} value={p.id}>Family {p.familyId.slice(-6)} · v{p.version} · {p.status} · {fmtDateTime(p.createdAt)}</SelectItem>)}</SelectContent></Select>
               <Tag>{plan.status}</Tag>
               <span className="text-xs text-muted-foreground">{ws.plans.filter((p) => p.status === 'Pending').length} pending</span>
             </Panel>
-            <Editor key={plan.id} ws={ws} plan={plan} onSelect={setSel} />
+            <Editor key={plan.id} ws={ws} plan={plan} onSelect={selectPlan} />
           </div>
         );
       }}

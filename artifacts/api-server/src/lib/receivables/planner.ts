@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { CollectionPlan, CollectionTask, Weights } from "@workspace/api-zod";
 import { type DemoState, collectible, ratio, today, addDays, myr, now, BusinessError } from "./model";
 import { invoicesNow, signature, validEsg, validateWeights } from "./compute";
+import { communication } from "./communication";
 
 export const METHODS = [
   "Friendly reminder", "Due date reminder", "Overdue collection",
@@ -27,13 +28,10 @@ export function buildPlan(state: DemoState, riskEventId: string, weights: Weight
       importanceScore * weights.importance + esgScore * weights.esg) / 100);
     const method = i.daysOverdue > 45 ? "Priority human follow-up" :
       i.daysOverdue > 20 && i.outstandingCents >= state.settings.largeInvoiceCents ? "Installment negotiation" :
-      i.daysOverdue > 0 ? "Overdue collection" : daysToDue <= 7 ? "Due date reminder" : "Friendly reminder";
-    const negotiation = method === "Installment negotiation"
-      ? "Propose two equal installments over 30 days, subject to customer agreement and a separate contractual review. No terms are changed automatically."
-      : i.importance === "High" ? "Offer a relationship-manager call to agree a payment date; any extension needs separate consent."
-      : "Request payment by the contractual due date, or discuss a mutually agreed payment date.";
-    const noticeEn = `Dear ${i.customerName},\n\nThis is a courteous reminder regarding invoice ${i.number}, with an outstanding balance of ${myr(i.outstandingCents)}, due on ${i.dueDate}. ${i.daysOverdue > 0 ? `Our synthetic demo records show it is ${i.daysOverdue} days overdue.` : "The contractual due date is approaching."}\n\n${negotiation}\nIf payment has already been arranged, please share the remittance details. Thank you for your cooperation.\n\nPlease contact [Finance contact / email / phone].\nTemplate-generated Demo draft — no message has been sent.`;
-    const noticeMs = `Tuan/Puan ${i.customerName},\n\nIni ialah peringatan mesra bagi invois ${i.number}, dengan baki tertunggak ${myr(i.outstandingCents)} dan tarikh akhir ${i.dueDate}. ${i.daysOverdue > 0 ? `Rekod demo sintetik menunjukkan kelewatan ${i.daysOverdue} hari.` : "Tarikh akhir pembayaran semakin hampir."}\n\n${method === "Installment negotiation" ? "Kami mencadangkan dua ansuran sama rata dalam tempoh 30 hari, tertakluk kepada persetujuan bersama dan semakan kontrak berasingan." : "Sila buat pembayaran mengikut tarikh kontrak atau hubungi kami untuk membincangkan tarikh pembayaran yang dipersetujui bersama."}\nJika pembayaran telah diatur, sila kongsikan butiran kiriman wang. Terima kasih atas kerjasama anda.\n\nHubungi [Pegawai kewangan / e-mel / telefon].\nDraf templat Demo — tiada mesej dihantar.`;
+      i.daysOverdue > 0 ? "Overdue collection" :
+      i.importance === "High" && daysToDue > 7 ? "Extension negotiation" :
+      daysToDue <= 7 ? "Due date reminder" : "Friendly reminder";
+    const { negotiation, noticeEn, noticeMs } = communication({ ...i, invoiceNumber: i.number }, method);
     return {
       id: `TSK-${randomUUID().slice(0, 8)}`, invoiceId: i.id, invoiceNumber: i.number,
       customerId: i.customerId, customerName: i.customerName, outstandingCents: i.outstandingCents,

@@ -20,4 +20,6 @@ export interface RiskEvent {
   gapCents: number;
   horizonDays: number;
   settingsSnapshot: SystemSetting;
+  /** Source data fingerprint; absent on legacy demo events, which must be refreshed before planning. */
+  dataSignature?: string;
 }

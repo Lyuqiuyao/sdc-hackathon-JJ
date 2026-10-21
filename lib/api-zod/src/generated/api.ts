@@ -211,7 +211,8 @@ export const GetWorkspaceResponse = zod.object({
 }),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'gemini'])
-})
+}),
+  "dataSignature": zod.string().optional().describe('Source data fingerprint; absent on legacy demo events, which must be refreshed before planning.')
 })),
   "plans": zod.array(zod.object({
   "id": zod.string(),
@@ -362,7 +363,8 @@ export const GetWorkspaceResponse = zod.object({
 }),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'gemini'])
-})
+}),
+  "dataSignature": zod.string().optional().describe('Source data fingerprint; absent on legacy demo events, which must be refreshed before planning.')
 })
 })
 })
@@ -439,7 +441,8 @@ export const RunRiskCheckResponse = zod.object({
 }),
   "language": zod.enum(['en', 'ms']),
   "aiMode": zod.enum(['rules', 'gemini'])
-})
+}),
+  "dataSignature": zod.string().optional().describe('Source data fingerprint; absent on legacy demo events, which must be refreshed before planning.')
 })
 
 

@@ -256,6 +256,7 @@ components:
         gapCents: { type: integer }
         horizonDays: { type: integer }
         settingsSnapshot: { $ref: "#/components/schemas/SystemSetting" }
+        dataSignature: { type: string, description: "Source data fingerprint; absent on legacy demo events, which must be refreshed before planning." }
     CollectionTask:
       type: object
       required: [id, invoiceId, invoiceNumber, customerId, customerName, outstandingCents, dueDate, daysOverdue, rank, lateFeeScore, urgencyScore, importanceScore, esgScore, score, method, scheduledAt, negotiation, reason, uncertainty, esgNote, noticeEn, noticeMs, status]

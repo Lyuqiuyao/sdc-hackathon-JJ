@@ -64,7 +64,8 @@ export function calculateRisk(state: DemoState, id = "live"): RiskEvent {
   if (!reasons.length) reasons.push("Projected cash exceeds the minimum plus caution buffer; no concentration, overdue or large-invoice rule is triggered.");
   reasons.push(`Demo forecast: current cash + ${s.collectionRatePercent}% of not-yet-overdue receivables due in ${s.horizonDays} days − expected horizon expenses. Overdue recovery is not assumed. This is not a guaranteed receipt forecast.`);
   return { id, createdAt: now(), level, reasons, dueCents, overdueCents,
-    expectedCollectionCents, projectedCashCents, gapCents, horizonDays: s.horizonDays, settingsSnapshot: structuredClone(s) };
+    expectedCollectionCents, projectedCashCents, gapCents, horizonDays: s.horizonDays,
+    settingsSnapshot: structuredClone(s), dataSignature: signature(state) };
 }
 
 export function validateWeights(w: Weights) {
