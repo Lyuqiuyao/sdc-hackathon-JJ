@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { errMsg, fmtDate, fmtDateTime, rm, safeHistorical, useRefresh } from '@/lib/arus';
 import { CorrespondencePanel } from '@/components/correspondence-panel';
 import { CorrespondenceAnalysisCard } from '@/components/correspondence-analysis-card';
+import { CompanyPortraitPanel } from '@/components/company-portrait-panel';
 
 type Rating = CompanyProfileInput['existingEsgRating'];
 const SEDG_FIELDS = ['environmental', 'social', 'governance', 'sourceReference'] as const;
@@ -153,6 +154,7 @@ export function CompanyFolder({ customer: sel, ws }: { customer: Customer; ws: W
   const reviews = ws.plans.flatMap((p) => (p.customerReviews ?? []).filter((r) => r.customerId === sel.id).map((r) => ({ ...r, v: p.version })));
   return (
     <div className="space-y-5" data-testid="detail-customer">
+      <CompanyPortraitPanel key={`portrait-${sel.id}`} customer={sel} />
       <section>
         <div className="mb-1 flex items-center justify-between"><h3 className="text-sm font-semibold">Profile</h3>
           <Button size="sm" variant="outline" onClick={() => setEditing((x) => !x)} data-testid="button-edit-profile">{editing ? 'Close editor' : 'Edit profile'}</Button></div>

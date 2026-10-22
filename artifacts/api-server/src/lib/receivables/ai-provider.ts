@@ -10,6 +10,7 @@ import { protectAdviceContent } from "./ai-content-safety";
 import { AdviceDiagnostics } from "./ai-diagnostics";
 import { correspondenceJsonSchema, extractCorrespondenceRules, MAX_NLP_INPUT_CHARS,
   validateCorrespondenceExtraction } from "./correspondence-nlp";
+import { basicPortraitContent, portraitJsonSchema, validatePortraitSelection, type CompanyPortraitFacts } from "./company-portrait-facts";
 
 export const OPENAI_MODEL = "gpt-5-mini";
 export const OPENAI_TIMEOUT_MS = 45_000;
@@ -20,6 +21,48 @@ export const loadManagedOpenAIClient = async (): Promise<OpenAI> =>
   (await import("@workspace/integrations-openai-ai-server")).openai;
 
 export const rulesAdvisor = { createDraft: buildPlan };
+
+export async function generateCompanyPortraitContent(facts: CompanyPortraitFacts) {
+  const fallback = (reasonCode: string) => ({
+    ...basicPortraitContent(facts), provider: "rules_fallback" as const, reasonCode, model: "",
+  });
+  if (!openaiConfigured()) return fallback("missing_managed_config");
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let stage: "api" | "validation" = "api";
+  try {
+    const response = await Promise.race([
+      (async () => {
+        const managed = await loadManagedOpenAIClient();
+        return managed.withOptions({ timeout: OPENAI_TIMEOUT_MS, maxRetries: 0 }).responses.create({
+          model: OPENAI_MODEL, store: false, max_output_tokens: 2048, reasoning: { effort: "minimal" },
+          instructions: `Arrange an advisory company portrait from the supplied server-controlled facts.
+Return only the schema. Return every supplied risk tag code exactly once, ordered by relevance; never invent or change labels or severity.
+Return the supplied esgHintCode exactly. Missing ESG is neutral, never bad-debt or cooperation evidence.
+Select and order 2 to 5 supplied payment observation codes; invoice_summary and history_limit are mandatory.
+Prioritize overdue/balance observations when invoices are overdue, and communication observations when NLP evidence exists.
+No new prose, ratings, numbers, probabilities, certifications, contractual promises or unsupported claims.
+NLP mentions are unverified. Do not infer a customer's speaker identity, fulfilled promises or historical payment habits.
+This portrait must not change financial records, scores, planning, approval or execution.`,
+          input: JSON.stringify({ riskTags: facts.riskTags, esgHintCode: facts.esgHintCode,
+            esgHint: facts.esgHint, paymentObservations: facts.observations }),
+          text: { format: { type: "json_schema", name: "company_portrait_selection", strict: true, schema: portraitJsonSchema } },
+        }, { signal: controller.signal });
+      })(),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => { controller.abort(); reject(new Error("Portrait timeout")); }, OPENAI_TIMEOUT_MS);
+      }),
+    ]);
+    stage = "validation";
+    if (response.status !== "completed") return fallback("incomplete_response");
+    return { ...validatePortraitSelection(response.output_text ?? "", facts),
+      provider: "openai" as const, reasonCode: "success", model: OPENAI_MODEL };
+  } catch {
+    return fallback(controller.signal.aborted ? "timeout" : stage === "validation" ? "invalid_output" : "api_error");
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 // Additive NLP path: reuse the managed client and provider settings without
 // changing collection advice, planner output, or any financial inputs.

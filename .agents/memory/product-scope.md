@@ -37,11 +37,11 @@ The final MVP replaces four-dimensional collection ranking with deterministic tw
 
 **How to apply:** Preserve historical versions and separate ranking from risk warnings. AI may explain and suggest communication only; it cannot change financial facts, weights, scores, rank or approval. Further parameter or automatic cross-queue ordering changes need explicit business confirmation; do not silently tune the approved demo.
 
-Provide administrator-only synthetic SEDG submission/import, company information folders and human collection review. SEDG review is not certification or verification of a company, file or ESG rating. The user subsequently authorized manual NLP communication extraction from uploaded records, but not company profile generation. Email execution defaults to simulation, displaying recipient, final body, status, time and audit provenance; the user subsequently authorized optional real SMTP behind an explicit environment switch.
+Provide administrator-only synthetic SEDG submission/import, company information folders and human collection review. SEDG review is not certification or verification of a company, file or ESG rating. The user subsequently authorized manual NLP communication extraction and an advisory AI company portrait based on structured invoices and previous NLP results. Email execution defaults to simulation, displaying recipient, final body, status, time and audit provenance; the user subsequently authorized optional real SMTP behind an explicit environment switch.
 
 **Why:** The user specified these final MVP scope and trust boundaries.
 
-**How to apply:** Do not introduce a customer or certifier portal, NLP profile generation, unrelated model calls, Secret changes or shared database operations under this implementation scope. The later explicit authorizations permit the SMTP switch and manual communication extraction through the existing ai-provider, not broader profile or workflow changes.
+**How to apply:** Do not introduce a customer or certifier portal, unrelated model calls, Secret changes or shared database operations under this implementation scope. The later authorizations permit the SMTP switch, manual communication extraction and the specified advisory AI portrait through the existing ai-provider, not broader workflow changes.
 
 ## Incremental enhancement constraints
 
@@ -49,5 +49,5 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **Why:** 用户明确规定后续增量开发的保护边界。
 
-**How to apply:** 增量功能不得顺带重构或改变核心业务规则。按单功能验收推进，不一次修改所有功能。用户已授权手动 NLP 沟通归集，明确禁止改动 planner.ts 排程打分逻辑、提前做公司画像；完成后停止输出改动文件和 diff 等验收。本次 NLP 步骤按用户要求不自动运行测试。
+**How to apply:** 增量功能不得顺带重构或改变核心业务规则。按单功能验收推进，不一次修改所有功能。用户已授权 AI 公司画像，范围仅合作风险标签、ESG 关联提示、支付习惯摘要，以及审核中心公司夹可见性；绝对禁止改动 planner.ts 排程计算逻辑或做其他未列功能。完成后停止输出改动文件和 diff 等验收。本次画像步骤按用户要求不自动运行测试。
 

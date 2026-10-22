@@ -13,6 +13,7 @@ import { communication } from "./communication";
 import { appendPlanSnapshot } from "./advice-snapshots";
 import { assertEnglishInput } from "./language";
 import { smtpEnabled } from "./smtp-config";
+import { companyPortraitFacts } from "./company-portrait-facts";
 
 export function audit(state: DemoState, type: string, content: string, related = "",
   before = "", after = "", plan?: CollectionPlan, send?: { isRealSmtp: boolean; result?: string }) {
@@ -36,6 +37,9 @@ export function workspace(state: DemoState): Workspace {
       ...customer,
       ...(state.companyCorrespondenceAnalyses?.[customer.id]?.length
         ? { correspondenceAnalysis: state.companyCorrespondenceAnalyses[customer.id]!.at(-1) } : {}),
+      ...(state.companyPortraits?.[customer.id]?.length
+        ? { aiPortrait: { ...state.companyPortraits[customer.id]!.at(-1)!,
+          isStale: state.companyPortraits[customer.id]!.at(-1)!.inputSignature !== companyPortraitFacts(state, customer.id, invoices).inputSignature } } : {}),
     })), invoices, sedgSubmissions: state.sedgSubmissions ?? [],
     documents: state.documents.map(d => ({ ...d, status: d.validUntil < today() ? "Expired" : d.status })),
     riskEvents: [...state.riskEvents].reverse(), plans: [...state.plans].reverse(),

@@ -113,6 +113,61 @@ export interface CorrespondenceAnalysis {
   warnings: string[];
 }
 
+export type CompanyPortraitProvider = typeof CompanyPortraitProvider[keyof typeof CompanyPortraitProvider];
+
+
+export const CompanyPortraitProvider = {
+  openai: 'openai',
+  rules_fallback: 'rules_fallback',
+} as const;
+
+export type CompanyPortraitConnectionMode = typeof CompanyPortraitConnectionMode[keyof typeof CompanyPortraitConnectionMode];
+
+
+export const CompanyPortraitConnectionMode = {
+  replit_managed: 'replit_managed',
+} as const;
+
+export type CompanyPortraitContentPolicy = typeof CompanyPortraitContentPolicy[keyof typeof CompanyPortraitContentPolicy];
+
+
+export const CompanyPortraitContentPolicy = {
+  controlled_facts: 'controlled_facts',
+} as const;
+
+export type CompanyPortraitRiskTagLevel = typeof CompanyPortraitRiskTagLevel[keyof typeof CompanyPortraitRiskTagLevel];
+
+
+export const CompanyPortraitRiskTagLevel = {
+  high: 'high',
+  attention: 'attention',
+  information: 'information',
+} as const;
+
+export interface CompanyPortraitRiskTag {
+  code: string;
+  label: string;
+  level: CompanyPortraitRiskTagLevel;
+}
+
+export interface CompanyPortrait {
+  id: string;
+  companyId: string;
+  generatedAt: string;
+  actor: string;
+  provider: CompanyPortraitProvider;
+  connectionMode?: CompanyPortraitConnectionMode;
+  reasonCode: string;
+  model: string;
+  contentPolicy: CompanyPortraitContentPolicy;
+  riskTags: CompanyPortraitRiskTag[];
+  esgHint: string;
+  paymentHabitSummary: string;
+  inputSignature: string;
+  sourceAnalysisIds: string[];
+  isStale: boolean;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -128,6 +183,7 @@ export interface Customer {
   profileVersion?: number;
   profileSource?: string;
   correspondenceAnalysis?: CorrespondenceAnalysis;
+  aiPortrait?: CompanyPortrait;
 }
 
 export type CorrespondenceInputFileType = typeof CorrespondenceInputFileType[keyof typeof CorrespondenceInputFileType];

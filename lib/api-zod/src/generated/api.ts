@@ -11,6 +11,36 @@ import * as zod from 'zod';
 
 
 
+export const GenerateCompanyPortraitParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const GenerateCompanyPortraitResponse = zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "generatedAt": zod.string(),
+  "actor": zod.string(),
+  "provider": zod.enum(['openai', 'rules_fallback']),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "reasonCode": zod.string(),
+  "model": zod.string(),
+  "contentPolicy": zod.enum(['controlled_facts']),
+  "riskTags": zod.array(zod.object({
+  "code": zod.string(),
+  "label": zod.string(),
+  "level": zod.enum(['high', 'attention', 'information'])
+})),
+  "esgHint": zod.string(),
+  "paymentHabitSummary": zod.string(),
+  "inputSignature": zod.string(),
+  "sourceAnalysisIds": zod.array(zod.string()),
+  "isStale": zod.boolean()
+})
+
+
+
+
+
 
 export const AnalyzeCompanyCorrespondenceParams = zod.object({
   "id": zod.coerce.string().min(1),
@@ -200,6 +230,27 @@ export const SaveCompanyProfileResponse = zod.object({
   "disputes": zod.array(zod.string().min(1).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsDisputesItemMax)).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsDisputesMax)
 }),
   "warnings": zod.array(zod.string())
+}).optional(),
+  "aiPortrait": zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "generatedAt": zod.string(),
+  "actor": zod.string(),
+  "provider": zod.enum(['openai', 'rules_fallback']),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "reasonCode": zod.string(),
+  "model": zod.string(),
+  "contentPolicy": zod.enum(['controlled_facts']),
+  "riskTags": zod.array(zod.object({
+  "code": zod.string(),
+  "label": zod.string(),
+  "level": zod.enum(['high', 'attention', 'information'])
+})),
+  "esgHint": zod.string(),
+  "paymentHabitSummary": zod.string(),
+  "inputSignature": zod.string(),
+  "sourceAnalysisIds": zod.array(zod.string()),
+  "isStale": zod.boolean()
 }).optional()
 })
 
@@ -427,6 +478,27 @@ export const GetWorkspaceResponse = zod.object({
   "disputes": zod.array(zod.string().min(1).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDisputesItemMax)).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDisputesMax)
 }),
   "warnings": zod.array(zod.string())
+}).optional(),
+  "aiPortrait": zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "generatedAt": zod.string(),
+  "actor": zod.string(),
+  "provider": zod.enum(['openai', 'rules_fallback']),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "reasonCode": zod.string(),
+  "model": zod.string(),
+  "contentPolicy": zod.enum(['controlled_facts']),
+  "riskTags": zod.array(zod.object({
+  "code": zod.string(),
+  "label": zod.string(),
+  "level": zod.enum(['high', 'attention', 'information'])
+})),
+  "esgHint": zod.string(),
+  "paymentHabitSummary": zod.string(),
+  "inputSignature": zod.string(),
+  "sourceAnalysisIds": zod.array(zod.string()),
+  "isStale": zod.boolean()
 }).optional()
 })),
   "invoices": zod.array(zod.object({

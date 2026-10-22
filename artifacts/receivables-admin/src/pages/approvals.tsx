@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { CompanyFolder } from '@/components/company-folder';
 import { useToast } from '@/hooks/use-toast';
 import { METHODS, errMsg, fmtDate, fmtDateTime, rm, safeHistorical, useRefresh } from '@/lib/arus';
 
@@ -26,6 +28,9 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
   const [confirm, setConfirm] = useState<'approve' | 'defer' | 'reject' | null>(null);
   const [mergeReason, setMergeReason] = useState('');
   const [reviewForms, setReviewForms] = useState<Record<string, { decision: CustomerReviewInput['decision']; reason: string }>>({});
+  const [folderCustomerId, setFolderCustomerId] = useState<string | null>(null);
+  const folderCompany = ws.customers.find(customer => customer.id === folderCustomerId);
+  const planCompanies = ws.customers.filter(customer => plan.tasks.some(task => task.customerId === customer.id));
   const editable = plan.status === 'Pending';
   const byId = useMemo(() => new Map(plan.tasks.map((t) => [t.id, t])), [plan]);
   const dirty = JSON.stringify(drafts) !== JSON.stringify(plan.tasks.map((t) => ({ id: t.id, method: t.method, noticeEn: t.noticeEn, noticeMs: t.noticeMs }))) || notes !== plan.notes;
@@ -92,6 +97,13 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
   const busy = edit.isPending || decide.isPending;
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium">Company folder and AI portrait</span>
+        <Select value={folderCustomerId ?? ''} onValueChange={setFolderCustomerId}>
+          <SelectTrigger className="w-full sm:w-80" data-testid="select-approval-company-folder"><SelectValue placeholder="Open a company folder" /></SelectTrigger>
+          <SelectContent>{planCompanies.map(company => <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
       {err && <Alert variant="destructive" data-testid="alert-approval-error"><AlertTitle>Action failed</AlertTitle><AlertDescription>{err}</AlertDescription></Alert>}
       {!editable && <Alert><AlertDescription>This version is {plan.status} and read-only. {plan.status === 'Approved' ? 'Execute it from Execution Results.' : 'Changes require a new pending version.'}</AlertDescription></Alert>}
       <div className="grid gap-4 lg:grid-cols-3">
@@ -120,7 +132,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
               <div key={c.id} className="rounded-md border p-3 text-xs" data-testid={`review-customer-${c.id}`}>
                 <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold">{c.name}</span><Tag tone="gray">{c.queue === 'two_dimensional' ? '2D queue' : '3D queue'}</Tag><Tag>{c.esg ?? 'unknown'}</Tag>
                   {done ? <Tag tone="green">Reviewed: {done.decision === 'collect_now' ? 'Collect now' : 'Negotiable extension'}</Tag> : <Tag tone="orange">Review pending</Tag>}
-                  <Link href={`/customers?customer=${encodeURIComponent(c.id)}`} className="ml-auto inline-flex items-center gap-1 text-primary underline" data-testid={`link-folder-${c.id}`}><ExternalLink className="h-3 w-3" />Open company folder</Link></div>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setFolderCustomerId(c.id)} className="ml-auto" data-testid={`link-folder-${c.id}`}><ExternalLink className="mr-1 h-3 w-3" />Open company folder</Button></div>
                 <div className="mt-1 grid gap-x-4 gap-y-0.5 text-muted-foreground sm:grid-cols-2">
                   <div>Total outstanding {rm(c.outstandingCents)} across {c.tasks} task(s)</div><div>Max days overdue {c.days}</div>
                   <div>Profile: {cust?.profileSummary ? `v${cust.profileVersion ?? 0}, ${safeHistorical(cust.profileSummary).slice(0, 120)}` : 'No profile summary recorded'}</div>
@@ -189,6 +201,14 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
             <div className="mt-2 grid gap-2 md:grid-cols-2"><div><div className="text-xs font-semibold">Original</div><pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[10px]">{safeHistorical(a.originalSnapshot)}</pre></div><div><div className="text-xs font-semibold">Final</div><pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[10px]">{safeHistorical(a.finalSnapshot)}</pre></div></div>
           </details>))}
       </Panel>
+      <Sheet open={!!folderCompany} onOpenChange={open => { if (!open) setFolderCustomerId(null); }}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+          {folderCompany && <div className="space-y-4">
+            <SheetHeader><SheetTitle>{folderCompany.name}</SheetTitle><SheetDescription>Company folder · {folderCompany.id} · AI portrait and supporting evidence</SheetDescription></SheetHeader>
+            <CompanyFolder key={folderCompany.id} customer={folderCompany} ws={ws} />
+          </div>}
+        </SheetContent>
+      </Sheet>
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>{confirm === 'approve' ? 'Approve this plan?' : confirm === 'defer' ? 'Defer and recalculate?' : 'Reject this plan?'}</AlertDialogTitle>

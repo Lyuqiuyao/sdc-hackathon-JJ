@@ -6,6 +6,17 @@ info:
 servers:
   - url: /api
 paths:
+  /company/{id}/portrait:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
+    post:
+      operationId: generateCompanyPortrait
+      responses:
+        "200":
+          description: Saved advisory company portrait using controlled invoice and NLP facts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CompanyPortrait" }
   /company/{id}/correspondence/{recordId}/analyze:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
@@ -265,6 +276,37 @@ components:
         profileVersion: { type: integer }
         profileSource: { type: string }
         correspondenceAnalysis: { $ref: "#/components/schemas/CorrespondenceAnalysis" }
+        aiPortrait: { $ref: "#/components/schemas/CompanyPortrait" }
+    CompanyPortraitRiskTag:
+      type: object
+      required: [code, label, level]
+      properties:
+        code: { type: string }
+        label: { type: string }
+        level: { type: string, enum: [high, attention, information] }
+    CompanyPortrait:
+      type: object
+      required: [id, companyId, generatedAt, actor, provider, reasonCode, model, contentPolicy, riskTags, esgHint, paymentHabitSummary, inputSignature, sourceAnalysisIds, isStale]
+      properties:
+        id: { type: string }
+        companyId: { type: string }
+        generatedAt: { type: string }
+        actor: { type: string }
+        provider: { type: string, enum: [openai, rules_fallback] }
+        connectionMode: { type: string, enum: [replit_managed] }
+        reasonCode: { type: string }
+        model: { type: string }
+        contentPolicy: { type: string, enum: [controlled_facts] }
+        riskTags:
+          type: array
+          items: { $ref: "#/components/schemas/CompanyPortraitRiskTag" }
+        esgHint: { type: string }
+        paymentHabitSummary: { type: string }
+        inputSignature: { type: string }
+        sourceAnalysisIds:
+          type: array
+          items: { type: string }
+        isStale: { type: boolean }
     CorrespondenceExtraction:
       type: object
       required: [overdueDays, debtAmountCents, currency, overdueEvidence, amountEvidence, followUpItems, customerPromises, disputes]

@@ -24,6 +24,7 @@ import type {
   AdviceSnapshot,
   ApprovalInput,
   CollectionPlan,
+  CompanyPortrait,
   CompanyProfileInput,
   CorrespondenceAnalysis,
   CorrespondenceInput,
@@ -69,6 +70,74 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGenerateCompanyPortraitUrl = (id: string,) => {
+
+
+
+
+  return `/api/company/${id}/portrait`
+}
+
+export const generateCompanyPortrait = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CompanyPortrait> => {
+
+  return customFetch<CompanyPortrait>(getGenerateCompanyPortraitUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getGenerateCompanyPortraitMutationKey = () => ['generateCompanyPortrait'] as const;
+
+export const getGenerateCompanyPortraitMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCompanyPortrait>>, TError,GenerateCompanyPortraitMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateCompanyPortrait>>, TError,GenerateCompanyPortraitMutationVariables, TContext> => {
+
+const mutationKey = getGenerateCompanyPortraitMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateCompanyPortrait>>, GenerateCompanyPortraitMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  generateCompanyPortrait(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateCompanyPortraitMutationResult = NonNullable<Awaited<ReturnType<typeof generateCompanyPortrait>>>
+
+    export type GenerateCompanyPortraitMutationError = ErrorType<unknown>
+    export type GenerateCompanyPortraitMutationVariables = {id: string}
+
+    export const useGenerateCompanyPortrait = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCompanyPortrait>>, TError,GenerateCompanyPortraitMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateCompanyPortrait>>,
+        TError,
+        GenerateCompanyPortraitMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGenerateCompanyPortraitMutationOptions(options));
+    }
 
 export const getAnalyzeCompanyCorrespondenceUrl = (id: string,
     recordId: string,) => {

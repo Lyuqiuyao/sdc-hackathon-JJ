@@ -5,10 +5,12 @@ import type {
   SedgSubmission,
   CorrespondenceRecord,
   CorrespondenceAnalysis,
+  CompanyPortrait,
 } from "@workspace/api-zod";
 import type { GenerationLease } from "./ai-coordination";
 import type { SmtpDispatch } from "./smtp-execution";
 import type { CorrespondenceAnalysisJob } from "./correspondence-analysis";
+import type { CompanyPortraitJob } from "./company-portrait";
 
 export const DEMO_WORKSPACE_ID = "synthetic-demo-admin";
 
@@ -31,6 +33,8 @@ export interface DemoState {
   smtpDispatches?: Record<string, SmtpDispatch>;
   companyCorrespondenceAnalyses?: Record<string, CorrespondenceAnalysis[]>;
   correspondenceAnalysisJobs?: Record<string, CorrespondenceAnalysisJob>;
+  companyPortraits?: Record<string, CompanyPortrait[]>;
+  companyPortraitJobs?: Record<string, CompanyPortraitJob>;
 }
 
 export class BusinessError extends Error {
