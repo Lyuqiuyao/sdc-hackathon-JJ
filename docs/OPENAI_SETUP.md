@@ -44,11 +44,9 @@ https://developers.openai.com/api/docs/models/gpt-5-mini
 若历史设置仍为 Gemini，页面提示管理员显式选择并保存 Rules/OpenAI。
 不批量改写历史设置/风险快照/方案签名，不把历史内容重新标成 OpenAI。
 
-`legacy-gemini.ts` 保留旧 SDK transport，正式路由不导入、不选择它。
-旧 Gemini live/API 测试入口已禁用，避免误调用 Google。
-原 `@google/genai` 依赖和 `GEMINI_API_KEY` 未删除；
-正式 OpenAI 路径不依赖该密钥。真实成功验收尚未完成，建议暂留回查资料，
-后续确认不再需要旧诊断入口时，可移除旧 transport/依赖/密钥，不能删除历史来源枚举。
+未使用的 Gemini SDK transport、旧 live/API 验证脚本和 `@google/genai` 依赖已清理。
+不再提供 Gemini 调用入口；历史来源枚举及记录保留，避免改写历史证据。
+本次清理不操作环境密钥；正式 OpenAI 路径不依赖 `GEMINI_API_KEY`。
 
 ## 实际测试
 
@@ -88,14 +86,12 @@ workflow 回归新增 4 个计划版本、32 条审计；原 Rules 设置已恢�
 | `src/lib/receivables/ai-generation.ts` | OpenAI 编排、密钥状态、历史成功记录保护；保留外部 I/O 与事务分离 |
 | `src/lib/receivables/planner.ts` | 草稿记录 OpenAI 等待状态，旧 Gemini 标记 retired |
 | `src/lib/receivables/service.ts` | OpenAI 可用性提示、来源合并及审计、拒绝保存旧模式 |
-| `src/lib/receivables/legacy-gemini.ts` | 保留非正式路径旧 transport 供回查 |
 | `test-workflow.mjs` | 运行新增安全测试 |
 | `tests/workflow.test.ts` | 设置测试改为 OpenAI，并验证旧模式拒绝 |
 | `tests/gemini.test.ts` | 历史文件名保留；内容迁移为 OpenAI SDK/建议/安全回归测试 |
 | `tests/openai-safety.test.ts` | wire Schema、历史兼容、无重试、空/不完整响应测试 |
 | `test-openai-live.mjs`、`tests/openai-live.ts` | 真实单次合成业务请求；脱敏输出；成功后才验收内存审批与执行 |
 | `tests/api-openai-contract.mjs` | 实际 HTTP 设置/API 契约回归，无模型生成 |
-| `test-gemini-live.mjs`、`tests/gemini-live.ts`、`tests/api-gemini-live.mjs`、`tests/api-gemini-fallback.mjs` | 归档/禁用旧入口，不再意外调用 Google |
 
 其余文件：
 

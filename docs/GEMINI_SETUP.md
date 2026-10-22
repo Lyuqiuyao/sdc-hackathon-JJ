@@ -1,7 +1,8 @@
 # Gemini 接入、验证与边界
 
 > 历史资料：正式提供方现已迁移到 OpenAI。下文记录迁移前的实现与失败证据，
-> 不代表当前运行配置。旧 live 测试入口已禁用，当前说明与真实验收结果见 [OPENAI_SETUP.md](OPENAI_SETUP.md)。
+> 不代表当前运行配置。旧 Gemini 调用代码、SDK 依赖和 live/API 验证脚本已移除，
+> 下文中的旧命令及文件路径仅作历史记录，不再可执行。当前说明与真实验收结果见 [OPENAI_SETUP.md](OPENAI_SETUP.md)。
 
 ## 当前验收状态
 
