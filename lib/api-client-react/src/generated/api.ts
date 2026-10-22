@@ -25,6 +25,7 @@ import type {
   ApprovalInput,
   CollectionPlan,
   CompanyProfileInput,
+  CorrespondenceAnalysis,
   CorrespondenceInput,
   CorrespondenceRecord,
   Customer,
@@ -68,6 +69,76 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getAnalyzeCompanyCorrespondenceUrl = (id: string,
+    recordId: string,) => {
+
+
+
+
+  return `/api/company/${id}/correspondence/${recordId}/analyze`
+}
+
+export const analyzeCompanyCorrespondence = async (id: string,
+    recordId: string, options?: Parameters<typeof customFetch>[1]): Promise<CorrespondenceAnalysis> => {
+
+  return customFetch<CorrespondenceAnalysis>(getAnalyzeCompanyCorrespondenceUrl(id,recordId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAnalyzeCompanyCorrespondenceMutationKey = () => ['analyzeCompanyCorrespondence'] as const;
+
+export const getAnalyzeCompanyCorrespondenceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeCompanyCorrespondence>>, TError,AnalyzeCompanyCorrespondenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof analyzeCompanyCorrespondence>>, TError,AnalyzeCompanyCorrespondenceMutationVariables, TContext> => {
+
+const mutationKey = getAnalyzeCompanyCorrespondenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof analyzeCompanyCorrespondence>>, AnalyzeCompanyCorrespondenceMutationVariables> = (props) => {
+          const {id,recordId} = props ?? {};
+
+          return  analyzeCompanyCorrespondence(id,recordId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnalyzeCompanyCorrespondenceMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeCompanyCorrespondence>>>
+
+    export type AnalyzeCompanyCorrespondenceMutationError = ErrorType<unknown>
+    export type AnalyzeCompanyCorrespondenceMutationVariables = {id: string;recordId: string}
+
+    export const useAnalyzeCompanyCorrespondence = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeCompanyCorrespondence>>, TError,AnalyzeCompanyCorrespondenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof analyzeCompanyCorrespondence>>,
+        TError,
+        AnalyzeCompanyCorrespondenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAnalyzeCompanyCorrespondenceMutationOptions(options));
+    }
 
 export const getGetCompanyCorrespondenceUrl = (id: string,) => {
 

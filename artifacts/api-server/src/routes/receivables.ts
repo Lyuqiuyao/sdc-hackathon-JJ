@@ -18,9 +18,15 @@ import { GetCompanyCorrespondenceParams, GetCompanyCorrespondenceResponse,
   UploadCompanyCorrespondenceParams, UploadCompanyCorrespondenceResponse } from "@workspace/api-zod";
 import { appendCorrespondence, listCorrespondence } from "../lib/receivables/correspondence";
 import { executeWithSmtpSwitch } from "../lib/receivables/smtp-execution";
+import { AnalyzeCompanyCorrespondenceParams, AnalyzeCompanyCorrespondenceResponse } from "@workspace/api-zod";
+import { analyzeCompanyRecord } from "../lib/receivables/correspondence-analysis";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
+router.post("/company/:id/correspondence/:recordId/analyze", async (req, res): Promise<void> => {
+  const { id, recordId } = AnalyzeCompanyCorrespondenceParams.parse(req.params);
+  res.json(AnalyzeCompanyCorrespondenceResponse.parse(await analyzeCompanyRecord(id, recordId)));
+});
 router.get("/company/:id/correspondence", async (req, res): Promise<void> => {
   const { id } = GetCompanyCorrespondenceParams.parse(req.params);
   res.json(GetCompanyCorrespondenceResponse.parse(listCorrespondence(await readState(), id)));

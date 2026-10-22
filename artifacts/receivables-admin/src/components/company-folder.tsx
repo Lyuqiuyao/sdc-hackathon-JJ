@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { errMsg, fmtDate, fmtDateTime, rm, safeHistorical, useRefresh } from '@/lib/arus';
 import { CorrespondencePanel } from '@/components/correspondence-panel';
+import { CorrespondenceAnalysisCard } from '@/components/correspondence-analysis-card';
 
 type Rating = CompanyProfileInput['existingEsgRating'];
 const SEDG_FIELDS = ['environmental', 'social', 'governance', 'sourceReference'] as const;
@@ -172,6 +173,7 @@ export function CompanyFolder({ customer: sel, ws }: { customer: Customer; ws: W
       <section><h3 className="mb-1 text-sm font-semibold">ESG documents ({docs.length})</h3>
         {docs.length === 0 ? <p className="text-sm text-muted-foreground">No documents on record.</p> : <ul className="space-y-1 text-sm">{docs.map((d) => <li key={d.id} className="flex items-center justify-between"><span>{d.type} · {d.number}</span><Tag>{d.status}</Tag></li>)}</ul>}</section>
       <CorrespondencePanel key={sel.id} companyId={sel.id} />
+      <CorrespondenceAnalysisCard analysis={sel.correspondenceAnalysis} />
       <section><h3 className="mb-1 text-sm font-semibold">SEDG declarations</h3><SedgPanel customer={sel} ws={ws} /></section>
       {reviews.length > 0 && <section><h3 className="mb-1 text-sm font-semibold">Plan reviews ({reviews.length})</h3>
         <ul className="space-y-1 text-xs">{reviews.map((r, i) => <li key={`${r.v}-${i}`} className="rounded-md border p-2"><Tag>{r.decision === 'collect_now' ? 'Collect now' : 'Negotiable extension'}</Tag> plan v{r.v} · {r.actor} · {fmtDateTime(r.createdAt)} · profile v{r.profileVersion}{r.sedgSubmissionId ? ` · SEDG ${r.sedgSubmissionId.slice(-6)}` : ''}<div className="text-muted-foreground">{r.reason}</div></li>)}</ul></section>}

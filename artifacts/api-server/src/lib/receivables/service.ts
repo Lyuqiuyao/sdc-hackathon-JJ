@@ -32,7 +32,11 @@ export function workspace(state: DemoState): Workspace {
     aiMessage: openaiConfigured()
       ? "OpenAI (Replit managed) configuration is present, not proof of connectivity. Runtime usage is billed through Replit credits. Only openai / success with replit_managed contains validated managed output. Errors use rules_fallback; no private-key fallback."
       : "OpenAI (Replit managed) configuration is unavailable. Rules and bilingual templates remain usable. Enable the official Replit OpenAI integration; a private OPENAI_API_KEY is not used as a fallback.",
-    customers: customersNow(state, invoices), invoices, sedgSubmissions: state.sedgSubmissions ?? [],
+    customers: customersNow(state, invoices).map(customer => ({
+      ...customer,
+      ...(state.companyCorrespondenceAnalyses?.[customer.id]?.length
+        ? { correspondenceAnalysis: state.companyCorrespondenceAnalyses[customer.id]!.at(-1) } : {}),
+    })), invoices, sedgSubmissions: state.sedgSubmissions ?? [],
     documents: state.documents.map(d => ({ ...d, status: d.validUntil < today() ? "Expired" : d.status })),
     riskEvents: [...state.riskEvents].reverse(), plans: [...state.plans].reverse(),
     approvals: [...state.approvals].reverse(), executions: [...state.executions].reverse(),

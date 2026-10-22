@@ -6,6 +6,18 @@ info:
 servers:
   - url: /api
 paths:
+  /company/{id}/correspondence/{recordId}/analyze:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
+      - { name: recordId, in: path, required: true, schema: { type: string, minLength: 1 } }
+    post:
+      operationId: analyzeCompanyCorrespondence
+      responses:
+        "200":
+          description: Saved unverified communication extraction; no financial or profile changes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CorrespondenceAnalysis" }
   /company/{id}/correspondence:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
@@ -252,6 +264,47 @@ components:
         profileSummary: { type: string }
         profileVersion: { type: integer }
         profileSource: { type: string }
+        correspondenceAnalysis: { $ref: "#/components/schemas/CorrespondenceAnalysis" }
+    CorrespondenceExtraction:
+      type: object
+      required: [overdueDays, debtAmountCents, currency, overdueEvidence, amountEvidence, followUpItems, customerPromises, disputes]
+      properties:
+        overdueDays: { type: ["integer", "null"], minimum: 0, maximum: 36500 }
+        debtAmountCents: { type: ["integer", "null"], minimum: 0, maximum: 9000000000000 }
+        currency: { type: ["string", "null"], enum: [MYR, USD, SGD, CNY, EUR, GBP, null] }
+        overdueEvidence: { type: ["string", "null"], maxLength: 500 }
+        amountEvidence: { type: ["string", "null"], maxLength: 500 }
+        followUpItems:
+          type: array
+          maxItems: 10
+          items: { type: string, minLength: 1, maxLength: 500 }
+        customerPromises:
+          type: array
+          maxItems: 10
+          items: { type: string, minLength: 1, maxLength: 500 }
+        disputes:
+          type: array
+          maxItems: 10
+          items: { type: string, minLength: 1, maxLength: 500 }
+    CorrespondenceAnalysis:
+      type: object
+      required: [id, companyId, recordId, filename, extractedAt, actor, provider, reasonCode, model, sourceHash, fields, warnings]
+      properties:
+        id: { type: string }
+        companyId: { type: string }
+        recordId: { type: string }
+        filename: { type: string }
+        extractedAt: { type: string }
+        actor: { type: string }
+        provider: { type: string, enum: [openai, rules_fallback] }
+        connectionMode: { type: string, enum: [replit_managed] }
+        reasonCode: { type: string }
+        model: { type: string }
+        sourceHash: { type: string }
+        fields: { $ref: "#/components/schemas/CorrespondenceExtraction" }
+        warnings:
+          type: array
+          items: { type: string }
     CorrespondenceInput:
       type: object
       required: [fileType, rawText, filename]

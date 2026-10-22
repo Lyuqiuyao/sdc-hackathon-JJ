@@ -11,6 +11,65 @@ import * as zod from 'zod';
 
 
 
+
+export const AnalyzeCompanyCorrespondenceParams = zod.object({
+  "id": zod.coerce.string().min(1),
+  "recordId": zod.coerce.string().min(1)
+})
+
+export const analyzeCompanyCorrespondenceResponseFieldsOverdueDaysMin = 0;
+export const analyzeCompanyCorrespondenceResponseFieldsOverdueDaysMax = 36500;
+
+export const analyzeCompanyCorrespondenceResponseFieldsDebtAmountCentsMin = 0;
+export const analyzeCompanyCorrespondenceResponseFieldsDebtAmountCentsMax = 9000000000000;
+
+export const analyzeCompanyCorrespondenceResponseFieldsOverdueEvidenceMax = 500;
+
+export const analyzeCompanyCorrespondenceResponseFieldsAmountEvidenceMax = 500;
+
+export const analyzeCompanyCorrespondenceResponseFieldsFollowUpItemsItemMax = 500;
+
+export const analyzeCompanyCorrespondenceResponseFieldsFollowUpItemsMax = 10;
+
+export const analyzeCompanyCorrespondenceResponseFieldsCustomerPromisesItemMax = 500;
+
+export const analyzeCompanyCorrespondenceResponseFieldsCustomerPromisesMax = 10;
+
+export const analyzeCompanyCorrespondenceResponseFieldsDisputesItemMax = 500;
+
+export const analyzeCompanyCorrespondenceResponseFieldsDisputesMax = 10;
+
+
+
+export const AnalyzeCompanyCorrespondenceResponse = zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "recordId": zod.string(),
+  "filename": zod.string(),
+  "extractedAt": zod.string(),
+  "actor": zod.string(),
+  "provider": zod.enum(['openai', 'rules_fallback']),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "reasonCode": zod.string(),
+  "model": zod.string(),
+  "sourceHash": zod.string(),
+  "fields": zod.object({
+  "overdueDays": zod.number().int().min(analyzeCompanyCorrespondenceResponseFieldsOverdueDaysMin).max(analyzeCompanyCorrespondenceResponseFieldsOverdueDaysMax).nullable(),
+  "debtAmountCents": zod.number().int().min(analyzeCompanyCorrespondenceResponseFieldsDebtAmountCentsMin).max(analyzeCompanyCorrespondenceResponseFieldsDebtAmountCentsMax).nullable(),
+  "currency": zod.union([zod.literal('MYR'),zod.literal('USD'),zod.literal('SGD'),zod.literal('CNY'),zod.literal('EUR'),zod.literal('GBP'),zod.literal(null)]).nullable(),
+  "overdueEvidence": zod.string().max(analyzeCompanyCorrespondenceResponseFieldsOverdueEvidenceMax).nullable(),
+  "amountEvidence": zod.string().max(analyzeCompanyCorrespondenceResponseFieldsAmountEvidenceMax).nullable(),
+  "followUpItems": zod.array(zod.string().min(1).max(analyzeCompanyCorrespondenceResponseFieldsFollowUpItemsItemMax)).max(analyzeCompanyCorrespondenceResponseFieldsFollowUpItemsMax),
+  "customerPromises": zod.array(zod.string().min(1).max(analyzeCompanyCorrespondenceResponseFieldsCustomerPromisesItemMax)).max(analyzeCompanyCorrespondenceResponseFieldsCustomerPromisesMax),
+  "disputes": zod.array(zod.string().min(1).max(analyzeCompanyCorrespondenceResponseFieldsDisputesItemMax)).max(analyzeCompanyCorrespondenceResponseFieldsDisputesMax)
+}),
+  "warnings": zod.array(zod.string())
+})
+
+
+
+
+
 export const GetCompanyCorrespondenceParams = zod.object({
   "id": zod.coerce.string().min(1)
 })
@@ -80,6 +139,30 @@ export const SaveCompanyProfileBody = zod.object({
   "syntheticConfirmed": zod.boolean()
 })
 
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsOverdueDaysMin = 0;
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsOverdueDaysMax = 36500;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsDebtAmountCentsMin = 0;
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsDebtAmountCentsMax = 9000000000000;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsOverdueEvidenceMax = 500;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsAmountEvidenceMax = 500;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsFollowUpItemsItemMax = 500;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsFollowUpItemsMax = 10;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsCustomerPromisesItemMax = 500;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsCustomerPromisesMax = 10;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsDisputesItemMax = 500;
+
+export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsDisputesMax = 10;
+
+
+
 export const SaveCompanyProfileResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -93,7 +176,31 @@ export const SaveCompanyProfileResponse = zod.object({
   "paymentHistory": zod.string(),
   "profileSummary": zod.string().optional(),
   "profileVersion": zod.number().int().optional(),
-  "profileSource": zod.string().optional()
+  "profileSource": zod.string().optional(),
+  "correspondenceAnalysis": zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "recordId": zod.string(),
+  "filename": zod.string(),
+  "extractedAt": zod.string(),
+  "actor": zod.string(),
+  "provider": zod.enum(['openai', 'rules_fallback']),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "reasonCode": zod.string(),
+  "model": zod.string(),
+  "sourceHash": zod.string(),
+  "fields": zod.object({
+  "overdueDays": zod.number().int().min(saveCompanyProfileResponseCorrespondenceAnalysisFieldsOverdueDaysMin).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsOverdueDaysMax).nullable(),
+  "debtAmountCents": zod.number().int().min(saveCompanyProfileResponseCorrespondenceAnalysisFieldsDebtAmountCentsMin).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsDebtAmountCentsMax).nullable(),
+  "currency": zod.union([zod.literal('MYR'),zod.literal('USD'),zod.literal('SGD'),zod.literal('CNY'),zod.literal('EUR'),zod.literal('GBP'),zod.literal(null)]).nullable(),
+  "overdueEvidence": zod.string().max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsOverdueEvidenceMax).nullable(),
+  "amountEvidence": zod.string().max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsAmountEvidenceMax).nullable(),
+  "followUpItems": zod.array(zod.string().min(1).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsFollowUpItemsItemMax)).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsFollowUpItemsMax),
+  "customerPromises": zod.array(zod.string().min(1).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsCustomerPromisesItemMax)).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsCustomerPromisesMax),
+  "disputes": zod.array(zod.string().min(1).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsDisputesItemMax)).max(saveCompanyProfileResponseCorrespondenceAnalysisFieldsDisputesMax)
+}),
+  "warnings": zod.array(zod.string())
+}).optional()
 })
 
 
@@ -137,6 +244,28 @@ export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
 
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsOverdueDaysMin = 0;
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsOverdueDaysMax = 36500;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDebtAmountCentsMin = 0;
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDebtAmountCentsMax = 9000000000000;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsOverdueEvidenceMax = 500;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsAmountEvidenceMax = 500;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsFollowUpItemsItemMax = 500;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsFollowUpItemsMax = 10;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsCustomerPromisesItemMax = 500;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsCustomerPromisesMax = 10;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDisputesItemMax = 500;
+
+export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDisputesMax = 10;
 
 export const getWorkspaceResponseRiskEventsItemSettingsSnapshotCashCentsMin = 0;
 export const getWorkspaceResponseRiskEventsItemSettingsSnapshotCashCentsMax = 100000000000;
@@ -274,7 +403,31 @@ export const GetWorkspaceResponse = zod.object({
   "paymentHistory": zod.string(),
   "profileSummary": zod.string().optional(),
   "profileVersion": zod.number().int().optional(),
-  "profileSource": zod.string().optional()
+  "profileSource": zod.string().optional(),
+  "correspondenceAnalysis": zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "recordId": zod.string(),
+  "filename": zod.string(),
+  "extractedAt": zod.string(),
+  "actor": zod.string(),
+  "provider": zod.enum(['openai', 'rules_fallback']),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "reasonCode": zod.string(),
+  "model": zod.string(),
+  "sourceHash": zod.string(),
+  "fields": zod.object({
+  "overdueDays": zod.number().int().min(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsOverdueDaysMin).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsOverdueDaysMax).nullable(),
+  "debtAmountCents": zod.number().int().min(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDebtAmountCentsMin).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDebtAmountCentsMax).nullable(),
+  "currency": zod.union([zod.literal('MYR'),zod.literal('USD'),zod.literal('SGD'),zod.literal('CNY'),zod.literal('EUR'),zod.literal('GBP'),zod.literal(null)]).nullable(),
+  "overdueEvidence": zod.string().max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsOverdueEvidenceMax).nullable(),
+  "amountEvidence": zod.string().max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsAmountEvidenceMax).nullable(),
+  "followUpItems": zod.array(zod.string().min(1).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsFollowUpItemsItemMax)).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsFollowUpItemsMax),
+  "customerPromises": zod.array(zod.string().min(1).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsCustomerPromisesItemMax)).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsCustomerPromisesMax),
+  "disputes": zod.array(zod.string().min(1).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDisputesItemMax)).max(getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsDisputesMax)
+}),
+  "warnings": zod.array(zod.string())
+}).optional()
 })),
   "invoices": zod.array(zod.object({
   "id": zod.string(),

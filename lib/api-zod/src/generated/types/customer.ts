@@ -5,6 +5,7 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { CorrespondenceAnalysis } from './correspondenceAnalysis';
 import type { CustomerImportance } from './customerImportance';
 
 export interface Customer {
@@ -21,4 +22,5 @@ export interface Customer {
   profileSummary?: string;
   profileVersion?: number;
   profileSource?: string;
+  correspondenceAnalysis?: CorrespondenceAnalysis;
 }

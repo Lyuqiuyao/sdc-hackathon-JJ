@@ -22,6 +22,97 @@ export const CustomerImportance = {
   Low: 'Low',
 } as const;
 
+export type CorrespondenceAnalysisProvider = typeof CorrespondenceAnalysisProvider[keyof typeof CorrespondenceAnalysisProvider];
+
+
+export const CorrespondenceAnalysisProvider = {
+  openai: 'openai',
+  rules_fallback: 'rules_fallback',
+} as const;
+
+export type CorrespondenceAnalysisConnectionMode = typeof CorrespondenceAnalysisConnectionMode[keyof typeof CorrespondenceAnalysisConnectionMode];
+
+
+export const CorrespondenceAnalysisConnectionMode = {
+  replit_managed: 'replit_managed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CorrespondenceExtractionCurrency = typeof CorrespondenceExtractionCurrency[keyof typeof CorrespondenceExtractionCurrency] | null;
+
+
+export const CorrespondenceExtractionCurrency = {
+  MYR: 'MYR',
+  USD: 'USD',
+  SGD: 'SGD',
+  CNY: 'CNY',
+  EUR: 'EUR',
+  GBP: 'GBP',
+} as const;
+
+export interface CorrespondenceExtraction {
+  /**
+     * @minimum 0
+     * @maximum 36500
+     * @nullable
+     */
+  overdueDays: number | null;
+  /**
+     * @minimum 0
+     * @maximum 9000000000000
+     * @nullable
+     */
+  debtAmountCents: number | null;
+  /** @nullable */
+  currency: CorrespondenceExtractionCurrency;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  overdueEvidence: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  amountEvidence: string | null;
+  /**
+     * @maxItems 10
+     * @items.minLength 1
+     * @items.maxLength 500
+     */
+  followUpItems: string[];
+  /**
+     * @maxItems 10
+     * @items.minLength 1
+     * @items.maxLength 500
+     */
+  customerPromises: string[];
+  /**
+     * @maxItems 10
+     * @items.minLength 1
+     * @items.maxLength 500
+     */
+  disputes: string[];
+}
+
+export interface CorrespondenceAnalysis {
+  id: string;
+  companyId: string;
+  recordId: string;
+  filename: string;
+  extractedAt: string;
+  actor: string;
+  provider: CorrespondenceAnalysisProvider;
+  connectionMode?: CorrespondenceAnalysisConnectionMode;
+  reasonCode: string;
+  model: string;
+  sourceHash: string;
+  fields: CorrespondenceExtraction;
+  warnings: string[];
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -36,6 +127,7 @@ export interface Customer {
   profileSummary?: string;
   profileVersion?: number;
   profileSource?: string;
+  correspondenceAnalysis?: CorrespondenceAnalysis;
 }
 
 export type CorrespondenceInputFileType = typeof CorrespondenceInputFileType[keyof typeof CorrespondenceInputFileType];
