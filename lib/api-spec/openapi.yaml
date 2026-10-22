@@ -6,6 +6,36 @@ info:
 servers:
   - url: /api
 paths:
+  /correspondence/intakes:
+    post:
+      operationId: identifyCorrespondence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CorrespondenceInput" }
+      responses:
+        "200":
+          description: Company identification and lossless line groups; clear matches may be archived automatically
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CorrespondenceIntake" }
+  /correspondence/intakes/{id}/archive:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: archiveCorrespondenceGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CorrespondenceAssignment" }
+      responses:
+        "200":
+          description: Archived group metadata; retries return the original record without duplicating it
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CorrespondenceMetadata" }
   /execution-mode:
     get:
       operationId: getExecutionMode
@@ -289,6 +319,44 @@ paths:
               schema: { $ref: "#/components/schemas/ActionResult" }
 components:
   schemas:
+    CorrespondenceLineSpan:
+      type: object
+      required: [startLine, endLine]
+      properties:
+        startLine: { type: integer, minimum: 1 }
+        endLine: { type: integer, minimum: 1 }
+    CorrespondenceIntakeGroup:
+      type: object
+      required: [id, resolution, companyId, suggestedCompanyId, reason, spans]
+      properties:
+        id: { type: string }
+        resolution: { type: string, enum: [matched, needs_confirmation, conflicting] }
+        companyId: { type: ["string", "null"] }
+        suggestedCompanyId: { type: ["string", "null"] }
+        reason: { type: string }
+        spans:
+          type: array
+          items: { $ref: "#/components/schemas/CorrespondenceLineSpan" }
+    CorrespondenceIntake:
+      type: object
+      required: [id, createdAt, expiresAt, provider, reasonCode, groups]
+      properties:
+        id: { type: string }
+        createdAt: { type: string }
+        expiresAt: { type: string }
+        provider: { type: string, enum: [openai, rules_fallback] }
+        reasonCode: { type: string }
+        groups:
+          type: array
+          items: { $ref: "#/components/schemas/CorrespondenceIntakeGroup" }
+    CorrespondenceAssignment:
+      type: object
+      required: [groupId, companyId, rawText, manualConfirmed]
+      properties:
+        groupId: { type: string, minLength: 1, maxLength: 100 }
+        companyId: { type: string, minLength: 1, maxLength: 100 }
+        rawText: { type: string, minLength: 1, maxLength: 10485760 }
+        manualConfirmed: { type: boolean }
     HealthStatus:
       type: object
       required: [status]

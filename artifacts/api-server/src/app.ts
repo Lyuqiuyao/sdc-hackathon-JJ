@@ -30,6 +30,7 @@ app.use(cors());
 // Route-scoped allowance for JSON escaping of up to 10 MiB of raw text.
 // All other routes retain their existing 2 MiB limit.
 app.use("/api/company/:id/correspondence", express.json({ limit: "64mb" }));
+app.use("/api/correspondence/intakes", express.json({ limit: "64mb" }));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -37,9 +38,10 @@ app.use("/api", router);
 
 app.use(async (error: Error & { type?: string }, req: express.Request, res: express.Response, next: express.NextFunction) => {
   const uploadPath = req.path.match(/^\/api\/company\/([^/]+)\/correspondence\/?$/);
-  if (req.method === "POST" && uploadPath && ["entity.too.large", "entity.parse.failed"].includes(error.type ?? "")) {
+  const centralUpload = /^\/api\/correspondence\/intakes(?:\/[^/]+\/archive)?\/?$/.test(req.path);
+  if (req.method === "POST" && (uploadPath || centralUpload) && ["entity.too.large", "entity.parse.failed"].includes(error.type ?? "")) {
     try {
-      await recordUploadFailure(uploadPath[1]!, error.type === "entity.too.large"
+      await recordUploadFailure(uploadPath?.[1] ?? "central-intake", error.type === "entity.too.large"
         ? "Upload request body exceeded the parser limit." : "Upload request contained invalid JSON.");
     } catch {
       res.status(503).json({ error: "Upload rejected, but its failure audit could not be saved. No upload was accepted." });

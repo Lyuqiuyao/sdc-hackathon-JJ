@@ -5,6 +5,69 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+export interface CorrespondenceLineSpan {
+  /** @minimum 1 */
+  startLine: number;
+  /** @minimum 1 */
+  endLine: number;
+}
+
+export type CorrespondenceIntakeGroupResolution = typeof CorrespondenceIntakeGroupResolution[keyof typeof CorrespondenceIntakeGroupResolution];
+
+
+export const CorrespondenceIntakeGroupResolution = {
+  matched: 'matched',
+  needs_confirmation: 'needs_confirmation',
+  conflicting: 'conflicting',
+} as const;
+
+export interface CorrespondenceIntakeGroup {
+  id: string;
+  resolution: CorrespondenceIntakeGroupResolution;
+  /** @nullable */
+  companyId: string | null;
+  /** @nullable */
+  suggestedCompanyId: string | null;
+  reason: string;
+  spans: CorrespondenceLineSpan[];
+}
+
+export type CorrespondenceIntakeProvider = typeof CorrespondenceIntakeProvider[keyof typeof CorrespondenceIntakeProvider];
+
+
+export const CorrespondenceIntakeProvider = {
+  openai: 'openai',
+  rules_fallback: 'rules_fallback',
+} as const;
+
+export interface CorrespondenceIntake {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  provider: CorrespondenceIntakeProvider;
+  reasonCode: string;
+  groups: CorrespondenceIntakeGroup[];
+}
+
+export interface CorrespondenceAssignment {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  groupId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  companyId: string;
+  /**
+     * @minLength 1
+     * @maxLength 10485760
+     */
+  rawText: string;
+  manualConfirmed: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }

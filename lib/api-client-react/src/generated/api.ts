@@ -27,7 +27,9 @@ import type {
   CompanyPortrait,
   CompanyProfileInput,
   CorrespondenceAnalysis,
+  CorrespondenceAssignment,
   CorrespondenceInput,
+  CorrespondenceIntake,
   CorrespondenceMetadata,
   CorrespondenceRecord,
   Customer,
@@ -74,6 +76,171 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getIdentifyCorrespondenceUrl = () => {
+
+
+
+
+  return `/api/correspondence/intakes`
+}
+
+export const identifyCorrespondence = async (correspondenceInput: CorrespondenceInput, options?: Parameters<typeof customFetch>[1]): Promise<CorrespondenceIntake> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CorrespondenceIntake>(getIdentifyCorrespondenceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(correspondenceInput)
+  }
+);}
+
+
+
+
+
+export const getIdentifyCorrespondenceMutationKey = () => ['identifyCorrespondence'] as const;
+
+export const getIdentifyCorrespondenceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof identifyCorrespondence>>, TError,IdentifyCorrespondenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof identifyCorrespondence>>, TError,IdentifyCorrespondenceMutationVariables, TContext> => {
+
+const mutationKey = getIdentifyCorrespondenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof identifyCorrespondence>>, IdentifyCorrespondenceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  identifyCorrespondence(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IdentifyCorrespondenceMutationResult = NonNullable<Awaited<ReturnType<typeof identifyCorrespondence>>>
+    export type IdentifyCorrespondenceMutationBody = BodyType<CorrespondenceInput>
+    export type IdentifyCorrespondenceMutationError = ErrorType<unknown>
+    export type IdentifyCorrespondenceMutationVariables = {data: BodyType<CorrespondenceInput>}
+
+    export const useIdentifyCorrespondence = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof identifyCorrespondence>>, TError,IdentifyCorrespondenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof identifyCorrespondence>>,
+        TError,
+        IdentifyCorrespondenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getIdentifyCorrespondenceMutationOptions(options));
+    }
+
+export const getArchiveCorrespondenceGroupUrl = (id: string,) => {
+
+
+
+
+  return `/api/correspondence/intakes/${id}/archive`
+}
+
+export const archiveCorrespondenceGroup = async (id: string,
+    correspondenceAssignment: CorrespondenceAssignment, options?: Parameters<typeof customFetch>[1]): Promise<CorrespondenceMetadata> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CorrespondenceMetadata>(getArchiveCorrespondenceGroupUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(correspondenceAssignment)
+  }
+);}
+
+
+
+
+
+export const getArchiveCorrespondenceGroupMutationKey = () => ['archiveCorrespondenceGroup'] as const;
+
+export const getArchiveCorrespondenceGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveCorrespondenceGroup>>, TError,ArchiveCorrespondenceGroupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveCorrespondenceGroup>>, TError,ArchiveCorrespondenceGroupMutationVariables, TContext> => {
+
+const mutationKey = getArchiveCorrespondenceGroupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveCorrespondenceGroup>>, ArchiveCorrespondenceGroupMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  archiveCorrespondenceGroup(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveCorrespondenceGroupMutationResult = NonNullable<Awaited<ReturnType<typeof archiveCorrespondenceGroup>>>
+    export type ArchiveCorrespondenceGroupMutationBody = BodyType<CorrespondenceAssignment>
+    export type ArchiveCorrespondenceGroupMutationError = ErrorType<unknown>
+    export type ArchiveCorrespondenceGroupMutationVariables = {id: string;data: BodyType<CorrespondenceAssignment>}
+
+    export const useArchiveCorrespondenceGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveCorrespondenceGroup>>, TError,ArchiveCorrespondenceGroupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveCorrespondenceGroup>>,
+        TError,
+        ArchiveCorrespondenceGroupMutationVariables,
+        TContext
+      > => {
+      return useMutation(getArchiveCorrespondenceGroupMutationOptions(options));
+    }
 
 export const getGetExecutionModeUrl = () => {
 

@@ -72,8 +72,7 @@ export async function uploadCorrespondence(companyId: string, body: unknown) {
   return result.record;
 }
 
-export function appendCorrespondence(state: DemoState, companyId: string, body: unknown): CorrespondenceRecord {
-  assertCompany(state, companyId);
+export function validateCorrespondenceInput(body: unknown) {
   const rawText = body && typeof body === "object" ? (body as { rawText?: unknown }).rawText : undefined;
   if (typeof rawText === "string" && Buffer.byteLength(rawText, "utf8") > MAX_CORRESPONDENCE_BYTES)
     throw new BusinessError("Correspondence exceeds the 10 MB limit.", 413);
@@ -86,6 +85,12 @@ export function appendCorrespondence(state: DemoState, companyId: string, body: 
     throw new BusinessError("A valid filename is required.");
   if (input.fileType !== "text" && !input.filename.toLowerCase().endsWith(`.${input.fileType}`))
     throw new BusinessError("Only matching .txt or .csv files are supported.");
+  return input;
+}
+
+export function appendCorrespondence(state: DemoState, companyId: string, body: unknown): CorrespondenceRecord {
+  assertCompany(state, companyId);
+  const input = validateCorrespondenceInput(body);
   const record: CorrespondenceRecord = {
     id: `COR-${randomUUID()}`, companyId, ...input,
     uploadedBy: "Demo Admin", uploadedAt: now(),

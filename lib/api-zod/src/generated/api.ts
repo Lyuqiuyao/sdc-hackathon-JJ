@@ -8,6 +8,71 @@
 import * as zod from 'zod';
 
 
+export const identifyCorrespondenceBodyRawTextMax = 10485760;
+
+export const identifyCorrespondenceBodyFilenameMax = 255;
+
+
+
+export const IdentifyCorrespondenceBody = zod.object({
+  "fileType": zod.enum(['text', 'txt', 'csv']),
+  "rawText": zod.string().min(1).max(identifyCorrespondenceBodyRawTextMax),
+  "filename": zod.string().min(1).max(identifyCorrespondenceBodyFilenameMax)
+})
+
+
+
+
+
+export const IdentifyCorrespondenceResponse = zod.object({
+  "id": zod.string(),
+  "createdAt": zod.string(),
+  "expiresAt": zod.string(),
+  "provider": zod.enum(['openai', 'rules_fallback']),
+  "reasonCode": zod.string(),
+  "groups": zod.array(zod.object({
+  "id": zod.string(),
+  "resolution": zod.enum(['matched', 'needs_confirmation', 'conflicting']),
+  "companyId": zod.string().nullable(),
+  "suggestedCompanyId": zod.string().nullable(),
+  "reason": zod.string(),
+  "spans": zod.array(zod.object({
+  "startLine": zod.number().int().min(1),
+  "endLine": zod.number().int().min(1)
+}))
+}))
+})
+
+
+export const ArchiveCorrespondenceGroupParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const archiveCorrespondenceGroupBodyGroupIdMax = 100;
+
+export const archiveCorrespondenceGroupBodyCompanyIdMax = 100;
+
+export const archiveCorrespondenceGroupBodyRawTextMax = 10485760;
+
+
+
+export const ArchiveCorrespondenceGroupBody = zod.object({
+  "groupId": zod.string().min(1).max(archiveCorrespondenceGroupBodyGroupIdMax),
+  "companyId": zod.string().min(1).max(archiveCorrespondenceGroupBodyCompanyIdMax),
+  "rawText": zod.string().min(1).max(archiveCorrespondenceGroupBodyRawTextMax),
+  "manualConfirmed": zod.boolean()
+})
+
+export const ArchiveCorrespondenceGroupResponse = zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "fileType": zod.enum(['text', 'txt', 'csv']),
+  "filename": zod.string(),
+  "uploadedBy": zod.string(),
+  "uploadedAt": zod.string()
+})
+
+
 export const GetExecutionModeResponse = zod.object({
   "smtpEnabled": zod.boolean()
 })

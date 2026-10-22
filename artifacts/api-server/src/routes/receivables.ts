@@ -27,9 +27,18 @@ import { smtpEnabled } from "../lib/receivables/smtp-config";
 import { generateReviewedCustomerNotices } from "../lib/receivables/notice-generation";
 import { planRecipients } from "../lib/receivables/email-recipients";
 import { GetPlanRecipientsParams, GetPlanRecipientsResponse } from "@workspace/api-zod";
+import { ArchiveCorrespondenceGroupParams } from "@workspace/api-zod";
+import { identifyCorrespondence, archiveCorrespondenceGroup } from "../lib/receivables/correspondence-intake";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
+router.post("/correspondence/intakes", async (req, res): Promise<void> => {
+  res.json(await identifyCorrespondence(req.body));
+});
+router.post("/correspondence/intakes/:id/archive", async (req, res): Promise<void> => {
+  const { id } = ArchiveCorrespondenceGroupParams.parse(req.params);
+  res.json(await archiveCorrespondenceGroup(id, req.body));
+});
 router.get("/execution-mode", (_req, res): void => {
   res.json(GetExecutionModeResponse.parse({ smtpEnabled: smtpEnabled() }));
 });

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CompanyFolder } from '@/components/company-folder';
+import { CorrespondenceIntakePanel } from '@/components/correspondence-intake';
 import { fmtDate, rm } from '@/lib/arus';
 
 export default function Customers() {
@@ -25,6 +26,7 @@ export default function Customers() {
         const sel = ws.customers.find((c) => c.id === selId);
         return (
           <div className="space-y-4">
+            <CorrespondenceIntakePanel customers={ws.customers} onOpenCompany={setSelId} />
             <Panel bodyClass="grid gap-3 sm:grid-cols-4">
               <Input placeholder="Search name or ID" value={q} onChange={(e) => setQ(e.target.value)} data-testid="input-search" />
               <Select value={imp} onValueChange={setImp}><SelectTrigger data-testid="select-importance"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All importance</SelectItem>{['High', 'Medium', 'Low'].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>

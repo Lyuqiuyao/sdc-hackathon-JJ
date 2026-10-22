@@ -12,10 +12,12 @@ import type { SmtpDispatch } from "./smtp-execution";
 import type { CorrespondenceAnalysisJob } from "./correspondence-analysis";
 import type { CompanyPortraitJob } from "./company-portrait";
 import type { NoticeGenerationJob } from "./notice-generation";
+import type { StoredCorrespondenceIntake } from "./correspondence-intake";
 
 export const DEMO_WORKSPACE_ID = "synthetic-demo-admin";
 
 export interface DemoState {
+  correspondenceIntakes?: Record<string, StoredCorrespondenceIntake>;
   noticeGenerationJobs?: Record<string, NoticeGenerationJob>;
   schemaVersion: 1;
   customers: Customer[];
