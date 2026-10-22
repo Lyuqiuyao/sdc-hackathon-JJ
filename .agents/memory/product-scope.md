@@ -75,3 +75,9 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **How to apply:** 使用上一版画像、新增／重新解析的记录与累计证据生成新版，保留旧版本；同一记录重解析不重复计数，旧画像不得覆盖当前发票事实。
 
+往来信息不是在每个公司分别上传，而是从统一入口上传，上传后由 AI 识别并整合到对应公司。
+
+**Why:** 用户明确纠正了之前按公司分别上传的理解。
+
+**How to apply:** 不再要求先打开或选择公司才能上传；公司档案是识别归档后的查看位置，不能把仅增加一个公司内上传按钮描述为统一识别归档。
+
