@@ -5,11 +5,14 @@ import { changeState, readState } from "./repository";
 import { BusinessError, now, type DemoState } from "./model";
 import { audit, execute } from "./service";
 import { smtpConfiguration, smtpEnabled } from "./smtp-config";
+import { planRecipients } from "./email-recipients";
+import { canonicalJson } from "./compute";
 
 export interface SmtpDispatch {
   attemptId: string;
   status: "sending" | "failed" | "uncertain" | "complete";
-  recipient: string;
+  recipient?: string;
+  recipients?: Record<string, string>;
   currentTaskId?: string;
 }
 
@@ -34,7 +37,7 @@ const smtpNotice = (text: string) => text.replace(
   /[ \t]*(?:[—–-][ \t]*)?(?:no message(?: has been)? sent|tiada mesej dihantar)\.?\s*$/i, "",
 ).trimEnd();
 
-export async function executeWithSmtpSwitch(id: string, expectedSmtpEnabled?: boolean): Promise<CollectionPlan> {
+export async function executeWithSmtpSwitch(id: string, expectedSmtpEnabled?: boolean, expectedRecipientsSignature?: string): Promise<CollectionPlan> {
   const existing = (await readState()).plans.find(plan => plan.id === id);
   if (existing?.status === "Executed") return existing;
   const realMode = smtpEnabled();
@@ -76,15 +79,21 @@ export async function executeWithSmtpSwitch(id: string, expectedSmtpEnabled?: bo
       // Completed plans return before credentials are validated, including races.
       const config = smtpConfiguration();
       const plan = approvedPlan(state, id);
+      const preview = planRecipients(state, plan);
+      if (preview.signature !== expectedRecipientsSignature)
+        throw new BusinessError("Recipients or approved messages changed or were not confirmed. Reopen the execution confirmation.", 409);
+      if (preview.recipients.some(row => !row.valid))
+        throw new BusinessError("Every task needs a valid confirmed customer collection email. No message was sent.", 400);
+      const recipients = Object.fromEntries(preview.recipients.map(row => [row.taskId, row.recipient]));
       const previous = state.smtpDispatches?.[id];
       if (previous?.status === "sending" || previous?.status === "uncertain")
         throw new BusinessError("SMTP is already sending or its outcome requires reconciliation. Check the audit and SMTP server logs before retrying.", 409);
-      if (previous && previous.recipient !== config.to)
-        throw new BusinessError("SMTP_TO changed after a real send attempt. Reconcile the existing attempt before changing its recipient.", 409);
-      (state.smtpDispatches ??= {})[id] = { attemptId, status: "sending", recipient: config.to };
+      if (previous && (!previous.recipients || canonicalJson(previous.recipients) !== canonicalJson(recipients)))
+        throw new BusinessError("Customer recipients changed or a legacy shared-mailbox attempt exists. Reconcile the existing attempt before retrying.", 409);
+      (state.smtpDispatches ??= {})[id] = { attemptId, status: "sending", recipients };
       audit(state, "SMTP execution", "Claimed approved plan for real SMTP execution. Invoice payment records remain unchanged.",
         id, "", attemptId, plan, { isRealSmtp: true, result: "Pending" });
-      return { plan: structuredClone(plan), config, done: false as const };
+      return { plan: structuredClone(plan), config, recipients, done: false as const };
     });
     if (claim.done) return claim.plan;
     const config = claim.config;
@@ -96,15 +105,18 @@ export async function executeWithSmtpSwitch(id: string, expectedSmtpEnabled?: bo
       pool: false, logger: false, debug: false, disableFileAccess: true, disableUrlAccess: true,
     });
     for (const task of claim.plan.tasks) {
+      const recipient = claim.recipients[task.id]!;
       const shouldSend = await changeState(state => {
         if (!smtpEnabled()) throw new BusinessError("Execution mode changed during dispatch. Stop and reconfirm before sending further messages.", 409);
         const plan = approvedPlan(state, id), dispatch = state.smtpDispatches?.[id];
         if (dispatch?.attemptId !== attemptId || dispatch.status !== "sending")
           throw new BusinessError("SMTP execution ownership changed.", 409);
+        if (planRecipients(state, plan).signature !== expectedRecipientsSignature)
+          throw new BusinessError("Recipients or approved messages changed during dispatch. Stop and reconfirm.", 409);
         if (state.executions.some(e => e.planId === id && e.taskId === task.id && e.channel === "SMTP Email")) return false;
         dispatch.currentTaskId = task.id;
         audit(state, "SMTP send attempt", "Starting real SMTP submission of the approved English and Malay drafts.",
-          task.invoiceNumber, "", JSON.stringify({ taskId: task.id, recipient: config.to }), plan, { isRealSmtp: true, result: "Pending" });
+          task.invoiceNumber, "", JSON.stringify({ taskId: task.id, recipient }), plan, { isRealSmtp: true, result: "Pending" });
         return true;
       });
       if (!shouldSend) continue;
@@ -117,7 +129,7 @@ export async function executeWithSmtpSwitch(id: string, expectedSmtpEnabled?: bo
       try {
         await Promise.race([
           transport.sendMail({
-            from: config.from, to: config.to,
+            from: config.from, to: recipient,
             subject: `Collection notice - ${task.invoiceNumber.replace(/[\r\n]/g, " ")}`,
             text: `${noticeEn}\n\n--- Bahasa Melayu ---\n\n${noticeMs}`,
             messageId: `<${randomUUID()}@arus.local>`,
@@ -145,7 +157,7 @@ export async function executeWithSmtpSwitch(id: string, expectedSmtpEnabled?: bo
           invoiceNumber: task.invoiceNumber, customerName: task.customerName, actor: "Demo Admin",
           executedAt: now(), result: "SMTP server accepted the message. Delivery to the mailbox is not guaranteed. No payment changed.",
           noticeStatus: `SMTP accepted · EN: ${task.noticeEnSource ?? "rules_fallback"} / MS: ${task.noticeMsSource ?? "rules_fallback"}`,
-          channel: "SMTP Email", recipient: config.to,
+          channel: "SMTP Email", recipient,
           noticeEn, noticeMs, planVersion: claim.plan.version,
         };
         state.executions.push(record);

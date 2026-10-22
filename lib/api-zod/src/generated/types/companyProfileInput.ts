@@ -14,6 +14,11 @@ export interface CompanyProfileInput {
      */
   industry: string;
   /**
+     * @maxLength 254
+     * @nullable
+     */
+  collectionEmail?: string | null;
+  /**
      * @minLength 1
      * @maxLength 2000
      */

@@ -182,6 +182,11 @@ export interface Customer {
   profileSummary?: string;
   profileVersion?: number;
   profileSource?: string;
+  /**
+     * @maxLength 254
+     * @nullable
+     */
+  collectionEmail?: string | null;
   correspondenceAnalysis?: CorrespondenceAnalysis;
   aiPortrait?: CompanyPortrait;
 }
@@ -212,6 +217,32 @@ export interface CorrespondenceInput {
 export interface ExecutionConfirmationInput {
   /** Required for a new execution; must match the live server mode. Completed plans remain idempotent. */
   expectedSmtpEnabled?: boolean;
+  /**
+     * @minLength 64
+     * @maxLength 64
+     */
+  expectedRecipientsSignature?: string;
+}
+
+export type PlanRecipientNoticeKind = typeof PlanRecipientNoticeKind[keyof typeof PlanRecipientNoticeKind];
+
+
+export const PlanRecipientNoticeKind = {
+  collectNow: 'collectNow',
+  extension: 'extension',
+} as const;
+
+export interface PlanRecipient {
+  taskId: string;
+  customerName: string;
+  recipient: string;
+  valid: boolean;
+  noticeKind: PlanRecipientNoticeKind;
+}
+
+export interface PlanRecipients {
+  signature: string;
+  recipients: PlanRecipient[];
 }
 
 export type CorrespondenceMetadataFileType = typeof CorrespondenceMetadataFileType[keyof typeof CorrespondenceMetadataFileType];
@@ -268,6 +299,11 @@ export interface CompanyProfileInput {
      */
   industry: string;
   /**
+     * @maxLength 254
+     * @nullable
+     */
+  collectionEmail?: string | null;
+  /**
      * @minLength 1
      * @maxLength 2000
      */
@@ -284,6 +320,31 @@ export interface CompanyProfileInput {
 }
 
 export interface SedgInput {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  repaymentWillingness: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  cashFlowAssessment: string;
+  /**
+     * @minimum 0
+     * @maximum 200
+     */
+  cooperationYears: number;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  overdueCount: number;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  businessAssessment: string;
   /**
      * @minLength 1
      * @maxLength 2000
@@ -315,6 +376,11 @@ export const SedgSubmissionStatus = {
 } as const;
 
 export interface SedgSubmission {
+  repaymentWillingness?: string;
+  cashFlowAssessment?: string;
+  cooperationYears?: number;
+  overdueCount?: number;
+  businessAssessment?: string;
   id: string;
   customerId: string;
   environmental: string;
@@ -354,6 +420,7 @@ export const CustomerReviewDecision = {
 } as const;
 
 export interface CustomerReview {
+  noticeGenerationRequired?: boolean;
   customerId: string;
   decision: CustomerReviewDecision;
   reason: string;
@@ -576,6 +643,63 @@ export interface RiskEvent {
   dataSignature?: string;
 }
 
+export type NoticeDraftNoticeEnSource = typeof NoticeDraftNoticeEnSource[keyof typeof NoticeDraftNoticeEnSource];
+
+
+export const NoticeDraftNoticeEnSource = {
+  openai: 'openai',
+  rules_fallback: 'rules_fallback',
+  human: 'human',
+} as const;
+
+export type NoticeDraftNoticeMsSource = typeof NoticeDraftNoticeMsSource[keyof typeof NoticeDraftNoticeMsSource];
+
+
+export const NoticeDraftNoticeMsSource = {
+  openai: 'openai',
+  rules_fallback: 'rules_fallback',
+  human: 'human',
+} as const;
+
+export interface NoticeDraft {
+  /**
+     * @minLength 1
+     * @maxLength 10000
+     */
+  noticeEn: string;
+  /**
+     * @minLength 1
+     * @maxLength 10000
+     */
+  noticeMs: string;
+  noticeEnSource: NoticeDraftNoticeEnSource;
+  noticeMsSource: NoticeDraftNoticeMsSource;
+}
+
+export type NoticeVariantsConnectionMode = typeof NoticeVariantsConnectionMode[keyof typeof NoticeVariantsConnectionMode];
+
+
+export const NoticeVariantsConnectionMode = {
+  replit_managed: 'replit_managed',
+} as const;
+
+export type NoticeVariantsContentPolicy = typeof NoticeVariantsContentPolicy[keyof typeof NoticeVariantsContentPolicy];
+
+
+export const NoticeVariantsContentPolicy = {
+  contextual_paragraph_with_controlled_facts: 'contextual_paragraph_with_controlled_facts',
+} as const;
+
+export interface NoticeVariants {
+  model?: string;
+  connectionMode?: NoticeVariantsConnectionMode;
+  collectNow: NoticeDraft;
+  extension: NoticeDraft;
+  generatedAt: string;
+  reasonCode: string;
+  contentPolicy: NoticeVariantsContentPolicy;
+}
+
 export type CollectionTaskQueue = typeof CollectionTaskQueue[keyof typeof CollectionTaskQueue];
 
 
@@ -660,6 +784,8 @@ export interface AITaskAdvice {
 }
 
 export interface CollectionTask {
+  /** @nullable */
+  recipientEmail?: string | null;
   id: string;
   invoiceId: string;
   invoiceNumber: string;
@@ -692,6 +818,7 @@ export interface CollectionTask {
   status: string;
   noticeEnSource?: CollectionTaskNoticeEnSource;
   noticeMsSource?: CollectionTaskNoticeMsSource;
+  noticeVariants?: NoticeVariants;
 }
 
 export type AdviceDiagnosticStage = typeof AdviceDiagnosticStage[keyof typeof AdviceDiagnosticStage];
@@ -1004,6 +1131,7 @@ export interface PlanInput {
 }
 
 export interface TaskEdit {
+  noticeVariants?: NoticeVariants;
   id: string;
   /**
      * @minLength 1

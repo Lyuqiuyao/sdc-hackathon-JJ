@@ -39,6 +39,7 @@ import type {
   ImportResult,
   PlanEdit,
   PlanInput,
+  PlanRecipients,
   ResetInput,
   RiskEvent,
   SedgInput,
@@ -1275,6 +1276,77 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getDecidePlanMutationOptions(options));
     }
+
+export const getGetPlanRecipientsUrl = (id: string,) => {
+
+
+
+
+  return `/api/plans/${id}/recipients`
+}
+
+export const getPlanRecipients = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<PlanRecipients> => {
+
+  return customFetch<PlanRecipients>(getGetPlanRecipientsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlanRecipientsQueryKey = (id: string,) => {
+    return [
+    `/api/plans/${id}/recipients`
+    ] as const;
+    }
+
+
+export const getGetPlanRecipientsQueryOptions = <TData = Awaited<ReturnType<typeof getPlanRecipients>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlanRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlanRecipientsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlanRecipients>>> = ({ signal }) => getPlanRecipients(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlanRecipients>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlanRecipientsQueryResult = NonNullable<Awaited<ReturnType<typeof getPlanRecipients>>>
+export type GetPlanRecipientsQueryError = ErrorType<unknown>
+
+
+
+export function useGetPlanRecipients<TData = Awaited<ReturnType<typeof getPlanRecipients>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlanRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlanRecipientsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getExecutePlanUrl = (id: string,) => {
 

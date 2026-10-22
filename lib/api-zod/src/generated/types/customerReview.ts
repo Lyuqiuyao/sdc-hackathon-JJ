@@ -8,6 +8,7 @@
 import type { CustomerReviewDecision } from './customerReviewDecision';
 
 export interface CustomerReview {
+  noticeGenerationRequired?: boolean;
   customerId: string;
   decision: CustomerReviewDecision;
   reason: string;

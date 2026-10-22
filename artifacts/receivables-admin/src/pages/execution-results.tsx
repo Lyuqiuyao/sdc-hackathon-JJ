@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
 import { Download, PlayCircle } from 'lucide-react';
-import { getExecutionMode, useExecutePlan, type GetExecutionModeQueryResult } from '@workspace/api-client-react';
+import { getExecutionMode, getPlanRecipients, useExecutePlan, type GetExecutionModeQueryResult, type PlanRecipients } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState } from '@/components/kit';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -20,7 +20,7 @@ export default function ExecutionResults() {
   const [sel, setSel] = useState('');
   const [ask, setAsk] = useState(false);
   const [checkingMode, setCheckingMode] = useState(false);
-  const [confirmation, setConfirmation] = useState<(GetExecutionModeQueryResult & { planId: string }) | null>(null);
+  const [confirmation, setConfirmation] = useState<(GetExecutionModeQueryResult & PlanRecipients & { planId: string }) | null>(null);
   const [err, setErr] = useState('');
   return (
     <Page title="Execution Results" description="Execution records for approved plans">
@@ -35,7 +35,8 @@ export default function ExecutionResults() {
           try {
             // Direct request for each confirmation, not a workspace/query cache.
             const current = await getExecutionMode({ cache: 'no-store' });
-            setConfirmation({ ...current, planId: plan.id }); setAsk(true);
+            const recipients = await getPlanRecipients(plan.id, { cache: 'no-store' });
+            setConfirmation({ ...current, ...recipients, planId: plan.id }); setAsk(true);
           } catch (e) { setErr(errMsg(e)); }
           finally { setCheckingMode(false); }
         };
@@ -44,7 +45,8 @@ export default function ExecutionResults() {
           const confirmed = confirmation;
           setAsk(false); setConfirmation(null); setErr('');
           try {
-            await exec.mutateAsync({ id: confirmed.planId, data: { expectedSmtpEnabled: confirmed.smtpEnabled } }); await refresh();
+            await exec.mutateAsync({ id: confirmed.planId, data: { expectedSmtpEnabled: confirmed.smtpEnabled,
+              expectedRecipientsSignature: confirmed.signature } }); await refresh();
             toast({ title: 'Execution state recorded',
               description: 'Review the execution records for actual channels and outcomes. No invoice payment was changed.' });
           } catch (e) {
@@ -116,8 +118,11 @@ export default function ExecutionResults() {
                 </Panel>
               </>)}
             <AlertDialog open={ask} onOpenChange={open => { setAsk(open); if (!open) setConfirmation(null); }}>
-              <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{confirmation?.smtpEnabled ? 'Execute approved plan (real SMTP)?' : 'Execute approved plan (simulation)?'}</AlertDialogTitle><AlertDialogDescription>{confirmation?.smtpEnabled ? 'The server currently reports real SMTP mode. Sends email to the configured SMTP_TO mailbox. Previously accepted tasks are not resent. If the mode changes, execution is rejected and must be reconfirmed.' : 'The server currently reports simulation mode. No real message is sent. If the mode changes, execution is rejected and must be reconfirmed.'}</AlertDialogDescription></AlertDialogHeader>
-                <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction disabled={!confirmation || exec.isPending} onClick={run} data-testid="button-confirm-execute">Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+              <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{confirmation?.smtpEnabled ? 'Execute approved plan (real SMTP)?' : 'Execute approved plan (simulation)?'}</AlertDialogTitle><AlertDialogDescription>{confirmation?.smtpEnabled ? 'Real SMTP sends each selected bilingual variant to its confirmed customer mailbox below. Previously accepted tasks are not resent. Changes to mode, recipients or approved messages require reconfirmation.' : 'Simulation only. No real message is sent. Missing customer mailboxes use synthetic example.invalid addresses in simulated records.'}</AlertDialogDescription></AlertDialogHeader>
+                <ul className="max-h-52 space-y-2 overflow-auto text-xs" data-testid="list-confirm-recipients">{confirmation?.recipients.map(row =>
+                  <li key={row.taskId} className="rounded border p-2"><b>{row.customerName}</b> · {row.noticeKind === 'extension' ? 'Negotiable extension' : 'Immediate collection'}<div className={row.valid ? '' : 'text-red-700'}>{row.recipient || 'Customer collection email not configured'}{!row.valid && row.recipient ? ' (invalid)' : ''}</div></li>)}</ul>
+                {confirmation?.smtpEnabled && confirmation.recipients.some(row => !row.valid) && <p className="text-xs text-red-700" role="alert">Set valid customer collection emails and obtain current approval before real sending.</p>}
+                <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction disabled={!confirmation || exec.isPending || (confirmation.smtpEnabled && confirmation.recipients.some(row => !row.valid))} onClick={run} data-testid="button-confirm-execute">Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
             </AlertDialog>
           </div>
         );

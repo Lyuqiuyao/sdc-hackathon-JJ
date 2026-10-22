@@ -63,3 +63,9 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **How to apply:** 不再把手动 Analyze／Generate portrait 作为新上传的必要步骤；保留现有审计与规则兜底，不改变排程评分或金融事实。
 
+用户随后授权审核后二类英／马双语稿件、对应客户邮箱投递及 SEDG 五项合成自评；未授权阶段四后端上传处理链或自动触发排程。
+
+**Why:** 用户明确要求执行计划中的阶段一、二、三；这扩展了此前“保持邮件流程”的范围，仅允许所述收件人与话术确认变化。
+
+**How to apply:** 保持默认模拟、实时发送确认、幂等和结果不确定时禁止自动重试；缺失客户邮箱不得回退统一邮箱。历史 SEDG 缺字段应显示未提供，不补写历史。
+

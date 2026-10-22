@@ -23,6 +23,11 @@ export interface Customer {
   profileSummary?: string;
   profileVersion?: number;
   profileSource?: string;
+  /**
+     * @maxLength 254
+     * @nullable
+     */
+  collectionEmail?: string | null;
   correspondenceAnalysis?: CorrespondenceAnalysis;
   aiPortrait?: CompanyPortrait;
 }

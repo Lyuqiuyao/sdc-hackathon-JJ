@@ -10,8 +10,11 @@ import type { CollectionTaskAssignedEsgRating } from './collectionTaskAssignedEs
 import type { CollectionTaskNoticeEnSource } from './collectionTaskNoticeEnSource';
 import type { CollectionTaskNoticeMsSource } from './collectionTaskNoticeMsSource';
 import type { CollectionTaskQueue } from './collectionTaskQueue';
+import type { NoticeVariants } from './noticeVariants';
 
 export interface CollectionTask {
+  /** @nullable */
+  recipientEmail?: string | null;
   id: string;
   invoiceId: string;
   invoiceNumber: string;
@@ -44,4 +47,5 @@ export interface CollectionTask {
   status: string;
   noticeEnSource?: CollectionTaskNoticeEnSource;
   noticeMsSource?: CollectionTaskNoticeMsSource;
+  noticeVariants?: NoticeVariants;
 }

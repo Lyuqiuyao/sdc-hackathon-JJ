@@ -207,6 +207,17 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CollectionPlan" }
+  /plans/{id}/recipients:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
+    get:
+      operationId: getPlanRecipients
+      responses:
+        "200":
+          description: Current customer recipients and approved message confirmation fingerprint
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanRecipients" }
   /plans/{id}/execute:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
@@ -305,6 +316,7 @@ components:
         profileSummary: { type: string }
         profileVersion: { type: integer }
         profileSource: { type: string }
+        collectionEmail: { type: ["string", "null"], format: email, maxLength: 254 }
         correspondenceAnalysis: { $ref: "#/components/schemas/CorrespondenceAnalysis" }
         aiPortrait: { $ref: "#/components/schemas/CompanyPortrait" }
     CompanyPortraitRiskTag:
@@ -390,6 +402,24 @@ components:
         expectedSmtpEnabled:
           type: boolean
           description: Required for a new execution; must match the live server mode. Completed plans remain idempotent.
+        expectedRecipientsSignature: { type: string, minLength: 64, maxLength: 64 }
+    PlanRecipient:
+      type: object
+      required: [taskId, customerName, recipient, valid, noticeKind]
+      properties:
+        taskId: { type: string }
+        customerName: { type: string }
+        recipient: { type: string }
+        valid: { type: boolean }
+        noticeKind: { type: string, enum: [collectNow, extension] }
+    PlanRecipients:
+      type: object
+      required: [signature, recipients]
+      properties:
+        signature: { type: string }
+        recipients:
+          type: array
+          items: { $ref: "#/components/schemas/PlanRecipient" }
     CorrespondenceMetadata:
       type: object
       required: [id, companyId, fileType, filename, uploadedBy, uploadedAt]
@@ -416,6 +446,7 @@ components:
       required: [industry, paymentHistory, profileSummary, existingEsgRating, expectedVersion, syntheticConfirmed]
       properties:
         industry: { type: string, minLength: 1, maxLength: 200 }
+        collectionEmail: { type: ["string", "null"], format: email, maxLength: 254 }
         paymentHistory: { type: string, minLength: 1, maxLength: 2000 }
         profileSummary: { type: string, minLength: 1, maxLength: 3000 }
         existingEsgRating: { type: string, enum: [A, B, C, unknown] }
@@ -423,8 +454,13 @@ components:
         syntheticConfirmed: { type: boolean }
     SedgInput:
       type: object
-      required: [environmental, social, governance, sourceReference, syntheticConfirmed]
+      required: [environmental, social, governance, sourceReference, syntheticConfirmed, repaymentWillingness, cashFlowAssessment, cooperationYears, overdueCount, businessAssessment]
       properties:
+        repaymentWillingness: { type: string, minLength: 1, maxLength: 2000 }
+        cashFlowAssessment: { type: string, minLength: 1, maxLength: 2000 }
+        cooperationYears: { type: integer, minimum: 0, maximum: 200 }
+        overdueCount: { type: integer, minimum: 0, maximum: 100000 }
+        businessAssessment: { type: string, minLength: 1, maxLength: 2000 }
         environmental: { type: string, minLength: 1, maxLength: 2000 }
         social: { type: string, minLength: 1, maxLength: 2000 }
         governance: { type: string, minLength: 1, maxLength: 2000 }
@@ -434,6 +470,11 @@ components:
       type: object
       required: [id, customerId, environmental, social, governance, sourceReference, source, status, createdAt, actor]
       properties:
+        repaymentWillingness: { type: string }
+        cashFlowAssessment: { type: string }
+        cooperationYears: { type: integer }
+        overdueCount: { type: integer }
+        businessAssessment: { type: string }
         id: { type: string }
         customerId: { type: string }
         environmental: { type: string }
@@ -455,6 +496,7 @@ components:
       type: object
       required: [customerId, decision, reason, actor, createdAt, profileVersion]
       properties:
+        noticeGenerationRequired: { type: boolean }
         customerId: { type: string }
         decision: { type: string, enum: [collect_now, negotiable_extension] }
         reason: { type: string }
@@ -576,10 +618,30 @@ components:
         horizonDays: { type: integer }
         settingsSnapshot: { $ref: "#/components/schemas/SystemSetting" }
         dataSignature: { type: string, description: "Source data fingerprint; absent on legacy demo events, which must be refreshed before planning." }
+    NoticeDraft:
+      type: object
+      required: [noticeEn, noticeMs, noticeEnSource, noticeMsSource]
+      properties:
+        noticeEn: { type: string, minLength: 1, maxLength: 10000 }
+        noticeMs: { type: string, minLength: 1, maxLength: 10000 }
+        noticeEnSource: { type: string, enum: [openai, rules_fallback, human] }
+        noticeMsSource: { type: string, enum: [openai, rules_fallback, human] }
+    NoticeVariants:
+      type: object
+      required: [collectNow, extension, generatedAt, reasonCode, contentPolicy]
+      properties:
+        model: { type: string }
+        connectionMode: { type: string, enum: [replit_managed] }
+        collectNow: { $ref: "#/components/schemas/NoticeDraft" }
+        extension: { $ref: "#/components/schemas/NoticeDraft" }
+        generatedAt: { type: string }
+        reasonCode: { type: string }
+        contentPolicy: { type: string, enum: [contextual_paragraph_with_controlled_facts] }
     CollectionTask:
       type: object
       required: [id, invoiceId, invoiceNumber, customerId, customerName, outstandingCents, dueDate, daysOverdue, rank, lateFeeScore, urgencyScore, importanceScore, esgScore, score, method, scheduledAt, negotiation, reason, uncertainty, esgNote, noticeEn, noticeMs, status]
       properties:
+        recipientEmail: { type: ["string", "null"], format: email }
         id: { type: string }
         invoiceId: { type: string }
         invoiceNumber: { type: string }
@@ -611,6 +673,7 @@ components:
         status: { type: string }
         noticeEnSource: { type: string, enum: [openai, gemini, rules_fallback, human] }
         noticeMsSource: { type: string, enum: [openai, gemini, rules_fallback, human] }
+        noticeVariants: { $ref: "#/components/schemas/NoticeVariants" }
     AIStrategy:
       type: object
       required: [kind, proposal, conditions]
@@ -821,6 +884,7 @@ components:
       type: object
       required: [id, method, noticeEn, noticeMs]
       properties:
+        noticeVariants: { $ref: "#/components/schemas/NoticeVariants" }
         id: { type: string }
         method: { type: string, minLength: 1, maxLength: 100 }
         noticeEn: { type: string, minLength: 1, maxLength: 10000 }

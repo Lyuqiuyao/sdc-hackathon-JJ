@@ -8,6 +8,11 @@
 import type { SedgSubmissionStatus } from './sedgSubmissionStatus';
 
 export interface SedgSubmission {
+  repaymentWillingness?: string;
+  cashFlowAssessment?: string;
+  cooperationYears?: number;
+  overdueCount?: number;
+  businessAssessment?: string;
   id: string;
   customerId: string;
   environmental: string;

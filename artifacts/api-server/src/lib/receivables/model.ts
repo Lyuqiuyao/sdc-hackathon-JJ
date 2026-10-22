@@ -11,10 +11,12 @@ import type { GenerationLease } from "./ai-coordination";
 import type { SmtpDispatch } from "./smtp-execution";
 import type { CorrespondenceAnalysisJob } from "./correspondence-analysis";
 import type { CompanyPortraitJob } from "./company-portrait";
+import type { NoticeGenerationJob } from "./notice-generation";
 
 export const DEMO_WORKSPACE_ID = "synthetic-demo-admin";
 
 export interface DemoState {
+  noticeGenerationJobs?: Record<string, NoticeGenerationJob>;
   schemaVersion: 1;
   customers: Customer[];
   invoices: Invoice[];

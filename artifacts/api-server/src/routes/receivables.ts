@@ -13,7 +13,7 @@ import { listAdviceSnapshots } from "../lib/receivables/advice-snapshots";
 import { GetPlanAdviceSnapshotsParams, GetPlanAdviceSnapshotsResponse } from "@workspace/api-zod";
 import { SaveCompanyProfileParams, SaveCompanyProfileBody, SaveCompanyProfileResponse,
   SubmitSedgParams, SubmitSedgBody, SubmitSedgResponse } from "@workspace/api-zod";
-import { saveProfile, submitSedg } from "../lib/receivables/company";
+import { saveProfile, submitSedg, auditedCompanyChange } from "../lib/receivables/company";
 import { GetCompanyCorrespondenceParams, GetCompanyCorrespondenceResponse,
   UploadCompanyCorrespondenceParams, UploadCompanyCorrespondenceResponse } from "@workspace/api-zod";
 import { correspondenceMetadata, correspondenceDetail, uploadCorrespondence } from "../lib/receivables/correspondence";
@@ -24,6 +24,9 @@ import { GenerateCompanyPortraitParams, GenerateCompanyPortraitResponse } from "
 import { generatePortrait } from "../lib/receivables/company-portrait";
 import { GetCompanyCorrespondenceRecordParams, GetCompanyCorrespondenceRecordResponse, GetExecutionModeResponse } from "@workspace/api-zod";
 import { smtpEnabled } from "../lib/receivables/smtp-config";
+import { generateReviewedCustomerNotices } from "../lib/receivables/notice-generation";
+import { planRecipients } from "../lib/receivables/email-recipients";
+import { GetPlanRecipientsParams, GetPlanRecipientsResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
@@ -51,12 +54,14 @@ router.post("/company/:id/correspondence", async (req, res): Promise<void> => {
   res.status(201).json(UploadCompanyCorrespondenceResponse.parse(await uploadCorrespondence(id, req.body)));
 });
 router.put("/customers/:id/profile", async (req, res): Promise<void> => {
-  const { id } = SaveCompanyProfileParams.parse(req.params), input = SaveCompanyProfileBody.parse(req.body);
-  res.json(await changeState(state => SaveCompanyProfileResponse.parse(saveProfile(state, id, input))));
+  const { id } = SaveCompanyProfileParams.parse(req.params);
+  res.json(await auditedCompanyChange(id, "Company information", state =>
+    SaveCompanyProfileResponse.parse(saveProfile(state, id, SaveCompanyProfileBody.parse(req.body)))));
 });
 router.post("/customers/:id/sedg", async (req, res): Promise<void> => {
-  const { id } = SubmitSedgParams.parse(req.params), input = SubmitSedgBody.parse(req.body);
-  res.json(await changeState(state => SubmitSedgResponse.parse(submitSedg(state, id, input))));
+  const { id } = SubmitSedgParams.parse(req.params);
+  res.json(await auditedCompanyChange(id, "SEDG submission", state =>
+    SubmitSedgResponse.parse(submitSedg(state, id, SubmitSedgBody.parse(req.body)))));
 });
 
 router.get("/workspace", async (_req, res): Promise<void> => {
@@ -80,7 +85,14 @@ router.post("/plans", async (req, res): Promise<void> => {
 });
 router.patch("/plans/:id", async (req, res): Promise<void> => {
   const { id } = EditPlanParams.parse(req.params), input = EditPlanBody.parse(req.body);
-  res.json(await changeState(state => EditPlanResponse.parse(service.edit(state, id, input))));
+  const plan = await changeState(state => EditPlanResponse.parse(service.edit(state, id, input)));
+  res.json(EditPlanResponse.parse(input.customerReview
+    ? await generateReviewedCustomerNotices(plan.id, input.customerReview.customerId) : plan));
+});
+router.get("/plans/:id/recipients", async (req, res): Promise<void> => {
+  const { id } = GetPlanRecipientsParams.parse(req.params);
+  const state = await readState();
+  res.set("Cache-Control", "no-store").json(GetPlanRecipientsResponse.parse(planRecipients(state, service.findPlan(state, id))));
 });
 router.get("/plans/:id/advice-snapshots", async (req, res): Promise<void> => {
   const { id } = GetPlanAdviceSnapshotsParams.parse(req.params);
@@ -94,7 +106,7 @@ router.post("/plans/:id/decision", async (req, res): Promise<void> => {
 router.post("/plans/:id/execute", async (req, res): Promise<void> => {
   const { id } = ExecutePlanParams.parse(req.params);
   const input = ExecutePlanBody.parse(req.body ?? {});
-  res.json(ExecutePlanResponse.parse(await executeWithSmtpSwitch(id, input.expectedSmtpEnabled)));
+  res.json(ExecutePlanResponse.parse(await executeWithSmtpSwitch(id, input.expectedSmtpEnabled, input.expectedRecipientsSignature)));
 });
 router.put("/settings", async (req, res): Promise<void> => {
   const input = SaveSettingsBody.parse(req.body);

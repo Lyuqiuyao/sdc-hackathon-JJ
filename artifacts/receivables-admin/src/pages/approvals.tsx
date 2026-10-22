@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'wouter';
 import { ArrowDown, ArrowUp, CheckCircle2, Clock3, ExternalLink, ListChecks, Save, XCircle } from 'lucide-react';
-import { useDecidePlan, useEditPlan, type CollectionPlan, type CustomerReviewInput, type Workspace } from '@workspace/api-client-react';
+import { useDecidePlan, useEditPlan, type CollectionPlan, type CollectionTask, type CustomerReviewInput, type Workspace } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState, Field } from '@/components/kit';
 import { QueuesOverview, ScoringSummary, TaskDetail, TaskHead } from '@/components/plan';
 import { ProviderDetails } from '@/components/provider-details';
@@ -15,14 +15,45 @@ import { CompanyFolder } from '@/components/company-folder';
 import { useToast } from '@/hooks/use-toast';
 import { METHODS, errMsg, fmtDate, fmtDateTime, rm, safeHistorical, useRefresh } from '@/lib/arus';
 
-type Draft = { id: string; method: string; noticeEn: string; noticeMs: string };
+type Draft = Pick<CollectionTask, 'id' | 'method' | 'noticeEn' | 'noticeMs' | 'noticeVariants'>;
+const asDraft = (task: CollectionTask): Draft => ({
+  id: task.id, method: task.method, noticeEn: task.noticeEn, noticeMs: task.noticeMs, noticeVariants: task.noticeVariants,
+});
+const selectedKind = (method: string) => method === 'Extension negotiation' ? 'extension' as const : 'collectNow' as const;
 
 function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; onSelect: (id: string) => void }) {
   const { toast } = useToast();
   const refresh = useRefresh();
   const edit = useEditPlan();
   const decide = useDecidePlan();
-  const [drafts, setDrafts] = useState<Draft[]>(() => plan.tasks.map((t) => ({ id: t.id, method: t.method, noticeEn: t.noticeEn, noticeMs: t.noticeMs })));
+  const [drafts, setDrafts] = useState<Draft[]>(() => plan.tasks.map(asDraft));
+  const serverDrafts = useRef(plan.tasks.map(asDraft));
+  useEffect(() => {
+    const previous = serverDrafts.current, next = plan.tasks.map(asDraft);
+    if (JSON.stringify(previous) === JSON.stringify(next)) return;
+    serverDrafts.current = next;
+    setDrafts(current => current.map(local => {
+      const before = previous.find(task => task.id === local.id), latest = next.find(task => task.id === local.id);
+      if (!before || !latest) return local;
+      const merged = { ...latest,
+        method: local.method !== before.method ? local.method : latest.method,
+        noticeEn: local.noticeEn !== before.noticeEn ? local.noticeEn : latest.noticeEn,
+        noticeMs: local.noticeMs !== before.noticeMs ? local.noticeMs : latest.noticeMs,
+        noticeVariants: latest.noticeVariants ? structuredClone(latest.noticeVariants) : local.noticeVariants };
+      if (merged.noticeVariants) {
+        for (const kind of ['collectNow', 'extension'] as const)
+          for (const field of ['noticeEn', 'noticeMs'] as const) {
+            const text = local.noticeVariants?.[kind][field];
+            if (text !== undefined && text !== before.noticeVariants?.[kind][field])
+              merged.noticeVariants[kind][field] = text;
+          }
+        for (const field of ['noticeEn', 'noticeMs'] as const)
+          if (local[field] !== before[field]) merged.noticeVariants[selectedKind(merged.method)][field] = local[field];
+      }
+      return merged;
+    }));
+  }, [plan.tasks]);
+  const [viewKinds, setViewKinds] = useState<Record<string, 'collectNow' | 'extension'>>({});
   const [notes, setNotes] = useState(plan.notes);
   const [err, setErr] = useState('');
   const [confirm, setConfirm] = useState<'approve' | 'defer' | 'reject' | null>(null);
@@ -33,13 +64,25 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
   const planCompanies = ws.customers.filter(customer => plan.tasks.some(task => task.customerId === customer.id));
   const editable = plan.status === 'Pending';
   const byId = useMemo(() => new Map(plan.tasks.map((t) => [t.id, t])), [plan]);
-  const dirty = JSON.stringify(drafts) !== JSON.stringify(plan.tasks.map((t) => ({ id: t.id, method: t.method, noticeEn: t.noticeEn, noticeMs: t.noticeMs }))) || notes !== plan.notes;
+  const dirty = JSON.stringify(drafts) !== JSON.stringify(plan.tasks.map(asDraft)) || notes !== plan.notes;
   const event = ws.riskEvents.find((e) => e.id === plan.riskEventId);
   const records = ws.approvals.filter((a) => ws.plans.some((p) => p.id === a.planId && p.familyId === plan.familyId));
   const move = (i: number, d: -1 | 1) => setDrafts((a) => { const b = [...a]; const j = i + d; if (j < 0 || j >= b.length) return a; [b[i], b[j]] = [b[j], b[i]]; return b; });
-  const patch = (i: number, p: Partial<Draft>) => setDrafts((a) => a.map((x, k) => (k === i ? { ...x, ...p } : x)));
+  const patch = (i: number, p: Partial<Draft>) => setDrafts((a) => a.map((x, k) => {
+    if (k !== i) return x;
+    const selected = p.method ? x.noticeVariants?.[selectedKind(p.method)] : undefined;
+    return { ...x, ...(selected ? { noticeEn: selected.noticeEn, noticeMs: selected.noticeMs } : {}), ...p };
+  }));
+  const patchNotice = (i: number, kind: 'collectNow' | 'extension', field: 'noticeEn' | 'noticeMs', value: string) => {
+    setDrafts(current => current.map((draft, index) => {
+      if (index !== i) return draft;
+      if (!draft.noticeVariants) return { ...draft, [field]: value };
+      return { ...draft, ...(kind === selectedKind(draft.method) ? { [field]: value } : {}),
+        noticeVariants: { ...draft.noticeVariants, [kind]: { ...draft.noticeVariants[kind], [field]: value } } };
+    }));
+  };
 
-  const persisted = useMemo(() => plan.tasks.map((t) => ({ id: t.id, method: t.method, noticeEn: t.noticeEn, noticeMs: t.noticeMs })), [plan]);
+  const persisted = useMemo(() => plan.tasks.map(asDraft), [plan]);
   const isV2 = !!plan.scoringSnapshot;
   const reviewsBy = useMemo(() => new Map((plan.customerReviews ?? []).map((r) => [r.customerId, r])), [plan]);
   const reviewCustomers = useMemo(() => {
@@ -54,6 +97,9 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
   const pendingReviews = reviewCustomers.filter((c) => !reviewsBy.has(c.id));
   const blockers: string[] = [];
   if (isV2 && pendingReviews.length) blockers.push(`${pendingReviews.length} customer review(s) pending`);
+  if (isV2 && plan.customerReviews?.some(review => review.noticeGenerationRequired &&
+    plan.tasks.some(task => task.customerId === review.customerId && !task.noticeVariants)))
+    blockers.push('Bilingual variants missing; save the customer review again to retry');
   if (isV2 && !plan.manualMerge) blockers.push('Final merged order not confirmed');
   if (dirty) blockers.push('Unsaved edits');
 
@@ -121,6 +167,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
       {isV2 && <>
         <Panel title="Initial queues" bodyClass="space-y-2"><QueuesOverview tasks={plan.tasks} /></Panel>
         <Panel title={`Customer review (${reviewCustomers.length - pendingReviews.length}/${reviewCustomers.length} done)`} bodyClass="space-y-3" data-testid="panel-customer-reviews">
+          {edit.isPending && <p className="text-xs" role="status">Saving changes and, for a customer decision, generating both bilingual notice variants...</p>}
           <p className="text-xs text-muted-foreground">Review every customer in both queues, with or without an ESG rating, before merging. Unknown or missing ESG is never treated as bad risk. A decision applies to all of that customer's tasks and saves a new Pending version.</p>
           {reviewCustomers.length === 0 && <p className="text-sm text-muted-foreground">No customers need review in this plan.</p>}
           {reviewCustomers.map((c) => {
@@ -163,6 +210,8 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
         {drafts.length === 0 && <EmptyState title="Plan has no tasks" />}
         {drafts.map((d, i) => {
           const t = byId.get(d.id); if (!t) return null;
+          const kind = viewKinds[d.id] ?? selectedKind(d.method);
+          const viewed = d.noticeVariants?.[kind];
           return (
             <details key={d.id} className="rounded-md border" data-testid={`approval-task-${d.id}`}>
               <summary className="flex cursor-pointer items-center gap-2 p-3 hover:bg-accent/50">
@@ -175,9 +224,18 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
                   <Select value={d.method} onValueChange={(v) => patch(i, { method: v })} disabled={!editable}><SelectTrigger className="sm:w-72" data-testid={`select-method-${d.id}`}><SelectValue /></SelectTrigger><SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
                 </Field>
                 {d.method !== t.method && <p className="text-xs text-orange-700">On save, unchanged EN/MS templates follow the new method. Custom wording is preserved; review both languages before approval.</p>}
+                {d.noticeVariants && <div className="space-y-2">
+                  <Field label="View / edit notice variant" hint="Viewing a variant does not change the collection decision. The collection method determines which approved variant is sent.">
+                    <Select value={kind} onValueChange={value => setViewKinds(current => ({ ...current, [d.id]: value as 'collectNow' | 'extension' }))}>
+                      <SelectTrigger className="sm:w-72" data-testid={`select-notice-variant-${d.id}`}><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="collectNow">Immediate collection</SelectItem><SelectItem value="extension">Negotiable extension</SelectItem></SelectContent>
+                    </Select>
+                  </Field>
+                  <p className="text-xs text-muted-foreground">Send: {selectedKind(d.method) === 'extension' ? 'Negotiable extension' : 'Immediate collection'} · EN: {viewed?.noticeEnSource} / MS: {viewed?.noticeMsSource} · {d.noticeVariants.reasonCode}. AI adds a validated contextual paragraph; invoice facts and proposed terms remain controlled.</p>
+                </div>}
                 <div className="grid gap-3 md:grid-cols-2">
-                  <Field label="Notice (English)"><Textarea rows={7} value={d.noticeEn} onChange={(e) => patch(i, { noticeEn: e.target.value })} disabled={!editable} data-testid={`input-notice-en-${d.id}`} /></Field>
-                  <Field label="Notis (Bahasa Melayu)"><Textarea rows={7} value={d.noticeMs} onChange={(e) => patch(i, { noticeMs: e.target.value })} disabled={!editable} data-testid={`input-notice-ms-${d.id}`} /></Field>
+                  <Field label="Notice (English)"><Textarea rows={7} maxLength={10000} value={viewed?.noticeEn ?? d.noticeEn} onChange={(e) => patchNotice(i, kind, 'noticeEn', e.target.value)} disabled={!editable} data-testid={`input-notice-en-${d.id}`} /></Field>
+                  <Field label="Notis (Bahasa Melayu)"><Textarea rows={7} maxLength={10000} value={viewed?.noticeMs ?? d.noticeMs} onChange={(e) => patchNotice(i, kind, 'noticeMs', e.target.value)} disabled={!editable} data-testid={`input-notice-ms-${d.id}`} /></Field>
                 </div>
                 <TaskDetail t={t} weights={plan.weights} snapshot={plan.scoringSnapshot} defaultLanguage={ws.settings.language} />
               </div>
@@ -212,7 +270,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>{confirm === 'approve' ? 'Approve this plan?' : confirm === 'defer' ? 'Defer and recalculate?' : 'Reject this plan?'}</AlertDialogTitle>
-            <AlertDialogDescription>{confirm === 'approve' ? ws.smtpEnabled ? 'The plan becomes Approved. Execution is a separate step that sends real email through SMTP to the configured recipient.' : 'The plan becomes Approved. Execution is a separate simulated step; no real notices are sent.' : confirm === 'defer' ? 'This version is deferred and a new pending version is recalculated.' : 'The plan is rejected and cannot be executed.'}</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogDescription>{confirm === 'approve' ? ws.smtpEnabled ? 'The plan becomes Approved. Execution is a separate step that sends the selected bilingual variant to each confirmed customer mailbox.' : 'The plan becomes Approved. Execution is a separate simulated step; no real notices are sent.' : confirm === 'defer' ? 'This version is deferred and a new pending version is recalculated.' : 'The plan is rejected and cannot be executed.'}</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={doDecide} data-testid="button-confirm-decision">Confirm</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

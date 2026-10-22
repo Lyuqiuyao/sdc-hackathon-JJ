@@ -19,10 +19,14 @@ import { CorrespondenceAnalysisCard } from '@/components/correspondence-analysis
 import { CompanyPortraitPanel } from '@/components/company-portrait-panel';
 
 type Rating = CompanyProfileInput['existingEsgRating'];
-const SEDG_FIELDS = ['environmental', 'social', 'governance', 'sourceReference'] as const;
+const SEDG_FIELDS = ['environmental', 'social', 'governance', 'sourceReference',
+  'repaymentWillingness', 'cashFlowAssessment', 'cooperationYears', 'overdueCount', 'businessAssessment'] as const;
 type SedgForm = Record<(typeof SEDG_FIELDS)[number], string>;
-const EMPTY_SEDG: SedgForm = { environmental: '', social: '', governance: '', sourceReference: '' };
-const LIMITS: SedgForm = { environmental: '2000', social: '2000', governance: '2000', sourceReference: '300' };
+const EMPTY_SEDG: SedgForm = { environmental: '', social: '', governance: '', sourceReference: '',
+  repaymentWillingness: '', cashFlowAssessment: '', cooperationYears: '', overdueCount: '', businessAssessment: '' };
+const LIMITS: SedgForm = { environmental: '2000', social: '2000', governance: '2000', sourceReference: '300',
+  repaymentWillingness: '2000', cashFlowAssessment: '2000', cooperationYears: '3', overdueCount: '6', businessAssessment: '2000' };
+const SEDG_NUMERIC = { cooperationYears: 200, overdueCount: 100000 } as const;
 
 /** Validates a parsed structured SEDG import. Returns field values or a list of readable errors. */
 export function validateSedgJson(text: string): { ok: true; value: SedgForm } | { ok: false; errors: string[] } {
@@ -34,7 +38,11 @@ export function validateSedgJson(text: string): { ok: true; value: SedgForm } | 
   const value = { ...EMPTY_SEDG };
   for (const k of SEDG_FIELDS) {
     const v = obj[k];
-    if (typeof v !== 'string') errors.push(`"${k}" must be a string${v === undefined ? ' (missing)' : ''}.`);
+    if (k === 'cooperationYears' || k === 'overdueCount') {
+      if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > SEDG_NUMERIC[k])
+        errors.push(`"${k}" must be an integer between 0 and ${SEDG_NUMERIC[k]}.`);
+      else value[k] = String(v);
+    } else if (typeof v !== 'string') errors.push(`"${k}" must be a string${v === undefined ? ' (missing)' : ''}.`);
     else if (!v.trim()) errors.push(`"${k}" must not be empty.`);
     else if (v.length > Number(LIMITS[k])) errors.push(`"${k}" is longer than ${LIMITS[k]} characters.`);
     else value[k] = v.trim();
@@ -51,14 +59,17 @@ function ProfileEditor({ customer }: { customer: Customer }) {
     paymentHistory: customer.paymentHistory ?? '',
     profileSummary: customer.profileSummary ?? '',
     existingEsgRating: (['A', 'B', 'C'].includes(customer.esgRating) ? customer.esgRating : 'unknown') as Rating,
+    collectionEmail: customer.collectionEmail ?? '',
   });
   const [ok, setOk] = useState(false);
   const [err, setErr] = useState('');
-  const valid = f.industry.trim() && f.paymentHistory.trim() && f.profileSummary.trim() && ok;
+  const emailValid = !f.collectionEmail.trim() || (f.collectionEmail.trim().length <= 254 &&
+    /^[^\s@<>,;:\r\n]+@[^\s@<>,;:\r\n]+\.[^\s@<>,;:\r\n]+$/.test(f.collectionEmail.trim()));
+  const valid = f.industry.trim() && f.paymentHistory.trim() && f.profileSummary.trim() && emailValid && ok;
   const submit = async () => {
     setErr('');
     try {
-      await save.mutateAsync({ id: customer.id, data: { ...f, industry: f.industry.trim(), paymentHistory: f.paymentHistory.trim(), profileSummary: f.profileSummary.trim(), expectedVersion: customer.profileVersion ?? 0, syntheticConfirmed: true } });
+      await save.mutateAsync({ id: customer.id, data: { ...f, collectionEmail: f.collectionEmail.trim() || null, industry: f.industry.trim(), paymentHistory: f.paymentHistory.trim(), profileSummary: f.profileSummary.trim(), expectedVersion: customer.profileVersion ?? 0, syntheticConfirmed: true } });
       await refresh(); setOk(false);
       toast({ title: 'Company profile saved', description: 'Recorded in the audit log. Existing plans are not rescored.' });
     } catch (e) { setErr(errMsg(e)); }
@@ -66,6 +77,10 @@ function ProfileEditor({ customer }: { customer: Customer }) {
   return (
     <div className="space-y-3 rounded-md border p-3" data-testid="form-profile">
       <Field label="Industry"><Input value={f.industry} maxLength={200} onChange={(e) => setF({ ...f, industry: e.target.value })} data-testid="input-profile-industry" /></Field>
+      <Field label="Collection email" hint="Optional for simulation. Real SMTP requires this customer's confirmed mailbox; there is no shared-mailbox fallback.">
+        <Input type="email" maxLength={254} value={f.collectionEmail} onChange={e => setF({ ...f, collectionEmail: e.target.value })} data-testid="input-profile-email" />
+      </Field>
+      {!emailValid && <p className="text-xs text-red-700" role="alert">Enter one valid email address or leave it empty.</p>}
       <Field label="Payment history"><Textarea rows={2} value={f.paymentHistory} maxLength={2000} onChange={(e) => setF({ ...f, paymentHistory: e.target.value })} data-testid="input-profile-payment" /></Field>
       <Field label="Profile summary"><Textarea rows={3} value={f.profileSummary} maxLength={3000} onChange={(e) => setF({ ...f, profileSummary: e.target.value })} data-testid="input-profile-summary" /></Field>
       <Field label="Existing ESG rating (imported)" hint="Records a rating that already exists in the synthetic data. It is not calculated or certified here. Choose unknown if there is none.">
@@ -91,7 +106,10 @@ function SedgPanel({ customer, ws }: { customer: Customer; ws: Workspace }) {
   const [ok, setOk] = useState(false);
   const [err, setErr] = useState('');
   const history = (ws.sedgSubmissions ?? []).filter((s) => s.customerId === customer.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const valid = SEDG_FIELDS.every((k) => f[k].trim()) && ok;
+  const valid = SEDG_FIELDS.every((k) => f[k].trim()) && Object.entries(SEDG_NUMERIC).every(([key, max]) => {
+    const n = Number(f[key as keyof typeof SEDG_NUMERIC]);
+    return Number.isInteger(n) && n >= 0 && n <= max;
+  }) && ok;
 
   const applyJson = (text: string) => {
     const r = validateSedgJson(text);
@@ -108,7 +126,12 @@ function SedgPanel({ customer, ws }: { customer: Customer; ws: Workspace }) {
   const submit = async () => {
     setErr('');
     try {
-      await submitSedg.mutateAsync({ id: customer.id, data: { environmental: f.environmental.trim(), social: f.social.trim(), governance: f.governance.trim(), sourceReference: f.sourceReference.trim(), syntheticConfirmed: true } });
+      await submitSedg.mutateAsync({ id: customer.id, data: {
+        environmental: f.environmental.trim(), social: f.social.trim(), governance: f.governance.trim(), sourceReference: f.sourceReference.trim(),
+        repaymentWillingness: f.repaymentWillingness.trim(), cashFlowAssessment: f.cashFlowAssessment.trim(),
+        cooperationYears: Number(f.cooperationYears), overdueCount: Number(f.overdueCount), businessAssessment: f.businessAssessment.trim(),
+        syntheticConfirmed: true,
+      } });
       await refresh(); setF(EMPTY_SEDG); setJson(''); setOk(false);
       toast({ title: 'SEDG declaration appended', description: 'Status: Submitted - unverified. It is not a verification.' });
     } catch (e) { setErr(errMsg(e)); }
@@ -120,12 +143,16 @@ function SedgPanel({ customer, ws }: { customer: Customer; ws: Workspace }) {
         <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-xs font-semibold">Structured JSON import</h4>
           <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} data-testid="button-sedg-file"><FileJson className="mr-1 h-4 w-4" />Choose .json file</Button></div>
         <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} data-testid="input-sedg-file" />
-        <Textarea rows={4} className="font-mono text-xs" value={json} onChange={(e) => setJson(e.target.value)} placeholder={'{"environmental": "...", "social": "...", "governance": "...", "sourceReference": "..."}'} data-testid="input-sedg-json" />
+        <Textarea rows={4} className="font-mono text-xs" value={json} onChange={(e) => setJson(e.target.value)} placeholder={'{"environmental":"...","social":"...","governance":"...","sourceReference":"...","repaymentWillingness":"...","cashFlowAssessment":"...","cooperationYears":0,"overdueCount":0,"businessAssessment":"..."}'} data-testid="input-sedg-json" />
         <Button type="button" size="sm" variant="secondary" onClick={() => applyJson(json)} disabled={!json.trim()} data-testid="button-sedg-load-json">Validate and load into form</Button>
         {jsonErrors.length > 0 && <ul className="list-disc space-y-0.5 rounded border border-red-200 bg-red-50 p-2 pl-6 text-xs text-red-700" data-testid="list-sedg-json-errors">{jsonErrors.map((e) => <li key={e}>{e}</li>)}</ul>}
-        <p className="text-[11px] text-muted-foreground">Only the text fields are kept. The file itself is not stored.</p>
+        <p className="text-[11px] text-muted-foreground">Only the validated structured fields are kept. The file itself is not stored. Self-assessments do not change ESG ratings or planner scores.</p>
       </div>
       <div className="space-y-3 rounded-md border p-3" data-testid="form-sedg">
+        {([['repaymentWillingness', 'Repayment willingness'], ['cashFlowAssessment', 'Cash-flow self-assessment'], ['businessAssessment', 'Business self-assessment']] as const).map(([key, label]) =>
+          <Field key={key} label={label}><Textarea rows={2} maxLength={2000} value={f[key]} onChange={e => setF({ ...f, [key]: e.target.value })} data-testid={`input-sedg-${key}`} /></Field>)}
+        {([['cooperationYears', 'Years of cooperation'], ['overdueCount', 'Number of overdue occurrences']] as const).map(([key, label]) =>
+          <Field key={key} label={label}><Input type="number" min={0} max={SEDG_NUMERIC[key]} step={1} value={f[key]} onChange={e => setF({ ...f, [key]: e.target.value })} data-testid={`input-sedg-${key}`} /></Field>)}
         <Field label="Environmental"><Textarea rows={2} maxLength={2000} value={f.environmental} onChange={(e) => setF({ ...f, environmental: e.target.value })} data-testid="input-sedg-environmental" /></Field>
         <Field label="Social"><Textarea rows={2} maxLength={2000} value={f.social} onChange={(e) => setF({ ...f, social: e.target.value })} data-testid="input-sedg-social" /></Field>
         <Field label="Governance"><Textarea rows={2} maxLength={2000} value={f.governance} onChange={(e) => setF({ ...f, governance: e.target.value })} data-testid="input-sedg-governance" /></Field>
@@ -140,6 +167,13 @@ function SedgPanel({ customer, ws }: { customer: Customer; ws: Workspace }) {
           <li key={s.id} className="rounded-md border p-2" data-testid={`sedg-${s.id}`}>
             <div className="flex flex-wrap items-center gap-2"><Tag tone="orange">{s.status}</Tag><span className="font-mono">{s.id.slice(-8)}</span><span className="text-muted-foreground">{s.actor} · {fmtDateTime(s.createdAt)} · {safeHistorical(s.source)}</span></div>
             <dl className="mt-1 space-y-0.5"><div><b>Environmental: </b>{safeHistorical(s.environmental)}</div><div><b>Social: </b>{safeHistorical(s.social)}</div><div><b>Governance: </b>{safeHistorical(s.governance)}</div><div><b>Source: </b>{safeHistorical(s.sourceReference)}</div></dl>
+            <dl className="mt-2 space-y-0.5">
+              <div><b>Repayment willingness: </b>{s.repaymentWillingness ? safeHistorical(s.repaymentWillingness) : 'Not provided'}</div>
+              <div><b>Cash-flow self-assessment: </b>{s.cashFlowAssessment ? safeHistorical(s.cashFlowAssessment) : 'Not provided'}</div>
+              <div><b>Years of cooperation: </b>{s.cooperationYears ?? 'Not provided'}</div>
+              <div><b>Overdue occurrences: </b>{s.overdueCount ?? 'Not provided'}</div>
+              <div><b>Business self-assessment: </b>{s.businessAssessment ? safeHistorical(s.businessAssessment) : 'Not provided'}</div>
+            </dl>
           </li>))}</ul>)}
     </div>
   );
@@ -161,6 +195,7 @@ export function CompanyFolder({ customer: sel, ws }: { customer: Customer; ws: W
           <Button size="sm" variant="outline" onClick={() => setEditing((x) => !x)} data-testid="button-edit-profile">{editing ? 'Close editor' : 'Edit profile'}</Button></div>
         <dl>
           <KV k="Business importance" v={<Tag>{sel.importance}</Tag>} /><KV k="Existing ESG rating (imported, unverified)" v={<Tag>{sel.esgRating || 'Uncertified'}</Tag>} />
+          <KV k="Collection email" v={sel.collectionEmail || 'Not configured'} />
           <KV k="Outstanding" v={rm(sel.outstandingCents)} /><KV k="Overdue" v={rm(sel.overdueCents)} /><KV k="Max days overdue" v={maxDaysOverdue} /><KV k="Earliest due" v={sel.earliestDue ? fmtDate(sel.earliestDue) : '-'} /><KV k="Risk status" v={<Tag>{sel.risk}</Tag>} />
           <KV k="Profile version" v={`v${sel.profileVersion ?? 0}${sel.profileSource ? ` · ${safeHistorical(sel.profileSource)}` : ''}`} />
         </dl>

@@ -42,6 +42,8 @@ export function appendPlanSnapshot(state: DemoState, plan: CollectionPlan, input
   const entries = state.adviceSnapshots ?? [];
   const familyIds = new Set(state.plans.filter(p => p.familyId === plan.familyId).map(p => p.id));
   const previous = [...entries].reverse().find(s => familyIds.has(s.planId));
+  const noticePolicy = plan.tasks.some(task => task.noticeVariants)
+    ? "contextual_paragraph_with_controlled_facts" : plan.aiGeneration?.contentPolicy ?? "rules_template";
   const finalNotices = plan.tasks.map(t => ({
     taskId: t.id, noticeEn: t.noticeEn, noticeMs: t.noticeMs,
     noticeEnSource: t.noticeEnSource ?? "rules_fallback", noticeMsSource: t.noticeMsSource ?? "rules_fallback",
@@ -52,7 +54,7 @@ export function appendPlanSnapshot(state: DemoState, plan: CollectionPlan, input
       validatedModelSummary: input.result?.validatedModelSummary ?? null,
       effectiveAdvice: input.result?.advice ?? null,
       controlledTemplates: {
-        policy: plan.aiGeneration?.contentPolicy ?? "rules_template",
+        policy: noticePolicy,
         riskExplanation: plan.aiGeneration?.contentPolicy === "server_controlled_v1" &&
           plan.tasks.some(t => t.aiAdvice?.esgEvidence === "unknown") ? plan.aiRiskExplanation : null,
         tasks: plan.tasks.map(t => ({
@@ -81,7 +83,7 @@ export function appendPlanSnapshot(state: DemoState, plan: CollectionPlan, input
     provider: input.provider ?? plan.providerMode ?? "rules_fallback",
     source: input.source ?? (input.metadataOnly ? "metadata_only" : "rules_template"),
     status: input.status, reasonCode: /^[a-z_]{1,80}$/.test(input.reasonCode) ? input.reasonCode : "unclassified",
-    contentPolicy: plan.aiGeneration?.contentPolicy ?? "rules_template",
+    contentPolicy: noticePolicy,
     validation: input.validation ?? "not_run",
     rawResponseRetained: false,
     ...(input.result?.generation.model && input.result.generation.connectionMode === "replit_managed" ? {

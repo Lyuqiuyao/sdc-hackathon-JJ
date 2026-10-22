@@ -9,6 +9,7 @@ import { buildPlan, METHODS } from "./planner";
 import { importCsv } from "./csv";
 import { seedState } from "./seed";
 import { rulesAdvisor, openaiConfigured, type AdvisorResult } from "./ai-provider";
+import { editedNoticeVariants, noticeKind } from "./notice-content";
 import { communication } from "./communication";
 import { appendPlanSnapshot } from "./advice-snapshots";
 import { assertEnglishInput } from "./language";
@@ -126,7 +127,7 @@ export function humanAdjusted(state: DemoState, plan: CollectionPlan) {
   return state.auditLogs.some(a => a.type === "Manual adjustment" && a.planVersion === `${plan.id} v${plan.version}`);
 }
 
-function findPlan(state: DemoState, id: string) {
+export function findPlan(state: DemoState, id: string) {
   const plan = state.plans.find(p => p.id === id);
   if (!plan) throw new BusinessError("Plan not found.", 404);
   return plan;
@@ -165,7 +166,7 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
             const old = original.tasks.find(task => task.id === t.id);
             return old?.customerId === r.customerId && old.method !== t.method;
           })),
-        ...(review ? [{ ...review, reason: review.reason.trim(), actor: "Demo Admin", createdAt: now(),
+        ...(review ? [{ ...review, reason: review.reason.trim(), actor: "Demo Admin", createdAt: now(), noticeGenerationRequired: true,
           profileVersion: state.customers.find(c => c.id === review.customerId)!.profileVersion ?? 0,
           sedgSubmissionId: [...(state.sedgSubmissions ?? [])].reverse().find(s => s.customerId === review.customerId)?.id }] : []),
       ],
@@ -178,12 +179,15 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
       // Keep recommended time slots ordered when human priority order changes.
       const changedMethod = old.method !== edited.method;
       const advice = changedMethod ? communication(old, edited.method) : old;
+      const variants = editedNoticeVariants(old, edited);
+      const selected = variants?.[noticeKind(edited.method)];
       return { ...old, ...edited,
+        ...(variants ? { noticeVariants: variants } : { noticeVariants: undefined }),
         negotiation: advice.negotiation,
-        noticeEn: changedMethod && edited.noticeEn === old.noticeEn ? advice.noticeEn : edited.noticeEn,
-        noticeMs: changedMethod && edited.noticeMs === old.noticeMs ? advice.noticeMs : edited.noticeMs,
-        noticeEnSource: edited.noticeEn !== old.noticeEn ? "human" : changedMethod ? "rules_fallback" : old.noticeEnSource ?? "rules_fallback",
-        noticeMsSource: edited.noticeMs !== old.noticeMs ? "human" : changedMethod ? "rules_fallback" : old.noticeMsSource ?? "rules_fallback",
+        noticeEn: selected?.noticeEn ?? (changedMethod && edited.noticeEn === old.noticeEn && old.noticeEnSource !== "human" ? advice.noticeEn : edited.noticeEn),
+        noticeMs: selected?.noticeMs ?? (changedMethod && edited.noticeMs === old.noticeMs && old.noticeMsSource !== "human" ? advice.noticeMs : edited.noticeMs),
+        noticeEnSource: selected?.noticeEnSource ?? (edited.noticeEn !== old.noticeEn ? "human" : old.noticeEnSource === "human" ? "human" : changedMethod ? "rules_fallback" : old.noticeEnSource ?? "rules_fallback"),
+        noticeMsSource: selected?.noticeMsSource ?? (edited.noticeMs !== old.noticeMs ? "human" : old.noticeMsSource === "human" ? "human" : changedMethod ? "rules_fallback" : old.noticeMsSource ?? "rules_fallback"),
         reason: changedMethod ? `${old.reason}\nHuman method override: ${old.method} → ${edited.method}. Original algorithm scores retained; review both drafts before approval.` : old.reason,
         id: `TSK-${randomUUID().slice(0, 8)}`, rank: n + 1,
         scheduledAt: original.tasks[n]!.scheduledAt, status: "Draft" };
@@ -214,10 +218,14 @@ export function assertCustomerReviews(state: DemoState, plan: CollectionPlan) {
     if (reviews.length !== 1 || !customer || !reviews[0]!.reason.trim() ||
       reviews[0]!.profileVersion !== (customer.profileVersion ?? 0) || reviews[0]!.sedgSubmissionId !== latest?.id)
       throw new BusinessError("Complete current customer reviews for all customers before merging or approving.", 409);
+    if (reviews[0]!.noticeGenerationRequired && plan.tasks.some(task => task.customerId === id && !task.noticeVariants))
+      throw new BusinessError("Generate both bilingual notice variants for each reviewed customer before merging or approving.", 409);
   }
 }
 function assertPlanningReview(state: DemoState, plan: CollectionPlan) {
   if (!plan.scoringSnapshot) return;
+  if (Object.keys(state.noticeGenerationJobs ?? {}).some(key => key.startsWith(`${plan.id}:`)))
+    throw new BusinessError("Notice generation is pending. Wait for completion, or save the customer review again if the attempt stalled.", 409);
   assertCustomerReviews(state, plan);
   if (!plan.manualMerge?.reason.trim() || plan.manualMerge.actor !== "Demo Admin")
     throw new BusinessError("Human confirmation of the final merged order is required.", 409);
@@ -238,7 +246,10 @@ export function decide(state: DemoState, id: string, input: ApprovalInput) {
   const before = JSON.stringify(plan);
   plan.status = input.decision === "approve" ? "Approved" : input.decision === "reject" ? "Rejected" : "Deferred";
   plan.notes = input.notes;
-  if (input.decision === "approve") plan.tasks.forEach(t => { t.status = "Approved"; });
+  if (input.decision === "approve") plan.tasks.forEach(t => {
+    t.status = "Approved";
+    t.recipientEmail = state.customers.find(customer => customer.id === t.customerId)?.collectionEmail ?? null;
+  });
   state.approvals.push({
     id: `APR-${randomUUID().slice(0, 8)}`, planId: plan.id, version: plan.version,
     decision: input.decision, notes: input.notes, actor: "Demo Admin", createdAt: now(),
@@ -279,7 +290,9 @@ export function execute(state: DemoState, id: string) {
       invoiceNumber: task.invoiceNumber, customerName: task.customerName, actor: "Demo Admin",
       executedAt: now(), result: "Demo simulation complete — no real message sent and no money collected.",
       noticeStatus: `Simulated send · EN: ${task.noticeEnSource ?? "rules_fallback"} / MS: ${task.noticeMsSource ?? "rules_fallback"} · no real dispatch`,
-      channel: "Simulated Email" as const, recipient: `${task.customerId.replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase()}@example.invalid`,
+      channel: "Simulated Email" as const, recipient: task.recipientEmail ??
+        state.customers.find(customer => customer.id === task.customerId)?.collectionEmail ??
+        `${task.customerId.replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase()}@example.invalid`,
       noticeEn: task.noticeEn, noticeMs: task.noticeMs, planVersion: plan.version };
     state.executions.push(record);
     audit(state, "Simulated execution", `Simulated task ${task.rank}: ${task.method}. Notice marked simulated only; invoice payment is unchanged.`,

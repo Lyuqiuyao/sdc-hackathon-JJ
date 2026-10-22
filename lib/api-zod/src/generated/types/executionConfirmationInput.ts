@@ -9,4 +9,9 @@
 export interface ExecutionConfirmationInput {
   /** Required for a new execution; must match the live server mode. Completed plans remain idempotent. */
   expectedSmtpEnabled?: boolean;
+  /**
+     * @minLength 64
+     * @maxLength 64
+     */
+  expectedRecipientsSignature?: string;
 }

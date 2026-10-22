@@ -5,8 +5,10 @@
  * Synthetic MYR receivables administrator demonstration
  * OpenAPI spec version: 1.0.0
  */
+import type { NoticeVariants } from './noticeVariants';
 
 export interface TaskEdit {
+  noticeVariants?: NoticeVariants;
   id: string;
   /**
      * @minLength 1

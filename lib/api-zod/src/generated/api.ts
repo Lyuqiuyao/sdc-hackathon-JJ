@@ -176,6 +176,8 @@ export const SaveCompanyProfileParams = zod.object({
 
 export const saveCompanyProfileBodyIndustryMax = 200;
 
+export const saveCompanyProfileBodyCollectionEmailMax = 254;
+
 export const saveCompanyProfileBodyPaymentHistoryMax = 2000;
 
 export const saveCompanyProfileBodyProfileSummaryMax = 3000;
@@ -186,12 +188,15 @@ export const saveCompanyProfileBodyExpectedVersionMin = 0;
 
 export const SaveCompanyProfileBody = zod.object({
   "industry": zod.string().min(1).max(saveCompanyProfileBodyIndustryMax),
+  "collectionEmail": zod.string().email().max(saveCompanyProfileBodyCollectionEmailMax).nullish(),
   "paymentHistory": zod.string().min(1).max(saveCompanyProfileBodyPaymentHistoryMax),
   "profileSummary": zod.string().min(1).max(saveCompanyProfileBodyProfileSummaryMax),
   "existingEsgRating": zod.enum(['A', 'B', 'C', 'unknown']),
   "expectedVersion": zod.number().int().min(saveCompanyProfileBodyExpectedVersionMin),
   "syntheticConfirmed": zod.boolean()
 })
+
+export const saveCompanyProfileResponseCollectionEmailMax = 254;
 
 export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsOverdueDaysMin = 0;
 export const saveCompanyProfileResponseCorrespondenceAnalysisFieldsOverdueDaysMax = 36500;
@@ -231,6 +236,7 @@ export const SaveCompanyProfileResponse = zod.object({
   "profileSummary": zod.string().optional(),
   "profileVersion": zod.number().int().optional(),
   "profileSource": zod.string().optional(),
+  "collectionEmail": zod.string().email().max(saveCompanyProfileResponseCollectionEmailMax).nullish(),
   "correspondenceAnalysis": zod.object({
   "id": zod.string(),
   "companyId": zod.string(),
@@ -283,6 +289,18 @@ export const SubmitSedgParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const submitSedgBodyRepaymentWillingnessMax = 2000;
+
+export const submitSedgBodyCashFlowAssessmentMax = 2000;
+
+export const submitSedgBodyCooperationYearsMin = 0;
+export const submitSedgBodyCooperationYearsMax = 200;
+
+export const submitSedgBodyOverdueCountMin = 0;
+export const submitSedgBodyOverdueCountMax = 100000;
+
+export const submitSedgBodyBusinessAssessmentMax = 2000;
+
 export const submitSedgBodyEnvironmentalMax = 2000;
 
 export const submitSedgBodySocialMax = 2000;
@@ -294,6 +312,11 @@ export const submitSedgBodySourceReferenceMax = 300;
 
 
 export const SubmitSedgBody = zod.object({
+  "repaymentWillingness": zod.string().min(1).max(submitSedgBodyRepaymentWillingnessMax),
+  "cashFlowAssessment": zod.string().min(1).max(submitSedgBodyCashFlowAssessmentMax),
+  "cooperationYears": zod.number().int().min(submitSedgBodyCooperationYearsMin).max(submitSedgBodyCooperationYearsMax),
+  "overdueCount": zod.number().int().min(submitSedgBodyOverdueCountMin).max(submitSedgBodyOverdueCountMax),
+  "businessAssessment": zod.string().min(1).max(submitSedgBodyBusinessAssessmentMax),
   "environmental": zod.string().min(1).max(submitSedgBodyEnvironmentalMax),
   "social": zod.string().min(1).max(submitSedgBodySocialMax),
   "governance": zod.string().min(1).max(submitSedgBodyGovernanceMax),
@@ -302,6 +325,11 @@ export const SubmitSedgBody = zod.object({
 })
 
 export const SubmitSedgResponse = zod.object({
+  "repaymentWillingness": zod.string().optional(),
+  "cashFlowAssessment": zod.string().optional(),
+  "cooperationYears": zod.number().int().optional(),
+  "overdueCount": zod.number().int().optional(),
+  "businessAssessment": zod.string().optional(),
   "id": zod.string(),
   "customerId": zod.string(),
   "environmental": zod.string(),
@@ -319,6 +347,8 @@ export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
 
+
+export const getWorkspaceResponseCustomersItemCollectionEmailMax = 254;
 
 export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsOverdueDaysMin = 0;
 export const getWorkspaceResponseCustomersItemCorrespondenceAnalysisFieldsOverdueDaysMax = 36500;
@@ -387,6 +417,14 @@ export const getWorkspaceResponsePlansItemWeightsImportanceMax = 100;
 
 export const getWorkspaceResponsePlansItemWeightsEsgMin = 0;
 export const getWorkspaceResponsePlansItemWeightsEsgMax = 100;
+
+export const getWorkspaceResponsePlansItemTasksItemNoticeVariantsCollectNowNoticeEnMax = 10000;
+
+export const getWorkspaceResponsePlansItemTasksItemNoticeVariantsCollectNowNoticeMsMax = 10000;
+
+export const getWorkspaceResponsePlansItemTasksItemNoticeVariantsExtensionNoticeEnMax = 10000;
+
+export const getWorkspaceResponsePlansItemTasksItemNoticeVariantsExtensionNoticeMsMax = 10000;
 
 export const getWorkspaceResponseSettingsCashCentsMin = 0;
 export const getWorkspaceResponseSettingsCashCentsMax = 100000000000;
@@ -479,6 +517,7 @@ export const GetWorkspaceResponse = zod.object({
   "profileSummary": zod.string().optional(),
   "profileVersion": zod.number().int().optional(),
   "profileSource": zod.string().optional(),
+  "collectionEmail": zod.string().email().max(getWorkspaceResponseCustomersItemCollectionEmailMax).nullish(),
   "correspondenceAnalysis": zod.object({
   "id": zod.string(),
   "companyId": zod.string(),
@@ -560,6 +599,11 @@ export const GetWorkspaceResponse = zod.object({
   "source": zod.string()
 })),
   "sedgSubmissions": zod.array(zod.object({
+  "repaymentWillingness": zod.string().optional(),
+  "cashFlowAssessment": zod.string().optional(),
+  "cooperationYears": zod.number().int().optional(),
+  "overdueCount": zod.number().int().optional(),
+  "businessAssessment": zod.string().optional(),
   "id": zod.string(),
   "customerId": zod.string(),
   "environmental": zod.string(),
@@ -664,6 +708,7 @@ export const GetWorkspaceResponse = zod.object({
   "createdAt": zod.string()
 }).optional(),
   "customerReviews": zod.array(zod.object({
+  "noticeGenerationRequired": zod.boolean().optional(),
   "customerId": zod.string(),
   "decision": zod.enum(['collect_now', 'negotiable_extension']),
   "reason": zod.string(),
@@ -673,6 +718,7 @@ export const GetWorkspaceResponse = zod.object({
   "sedgSubmissionId": zod.string().optional()
 })).optional(),
   "tasks": zod.array(zod.object({
+  "recipientEmail": zod.string().email().nullish(),
   "id": zod.string(),
   "invoiceId": zod.string(),
   "invoiceNumber": zod.string(),
@@ -717,7 +763,26 @@ export const GetWorkspaceResponse = zod.object({
   "noticeMs": zod.string(),
   "status": zod.string(),
   "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeVariants": zod.object({
+  "model": zod.string().optional(),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "collectNow": zod.object({
+  "noticeEn": zod.string().min(1).max(getWorkspaceResponsePlansItemTasksItemNoticeVariantsCollectNowNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(getWorkspaceResponsePlansItemTasksItemNoticeVariantsCollectNowNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "extension": zod.object({
+  "noticeEn": zod.string().min(1).max(getWorkspaceResponsePlansItemTasksItemNoticeVariantsExtensionNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(getWorkspaceResponsePlansItemTasksItemNoticeVariantsExtensionNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "generatedAt": zod.string(),
+  "reasonCode": zod.string(),
+  "contentPolicy": zod.enum(['contextual_paragraph_with_controlled_facts'])
+}).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -957,6 +1022,14 @@ export const generatePlanResponseWeightsImportanceMax = 100;
 export const generatePlanResponseWeightsEsgMin = 0;
 export const generatePlanResponseWeightsEsgMax = 100;
 
+export const generatePlanResponseTasksItemNoticeVariantsCollectNowNoticeEnMax = 10000;
+
+export const generatePlanResponseTasksItemNoticeVariantsCollectNowNoticeMsMax = 10000;
+
+export const generatePlanResponseTasksItemNoticeVariantsExtensionNoticeEnMax = 10000;
+
+export const generatePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 10000;
+
 
 
 export const GeneratePlanResponse = zod.object({
@@ -1018,6 +1091,7 @@ export const GeneratePlanResponse = zod.object({
   "createdAt": zod.string()
 }).optional(),
   "customerReviews": zod.array(zod.object({
+  "noticeGenerationRequired": zod.boolean().optional(),
   "customerId": zod.string(),
   "decision": zod.enum(['collect_now', 'negotiable_extension']),
   "reason": zod.string(),
@@ -1027,6 +1101,7 @@ export const GeneratePlanResponse = zod.object({
   "sedgSubmissionId": zod.string().optional()
 })).optional(),
   "tasks": zod.array(zod.object({
+  "recipientEmail": zod.string().email().nullish(),
   "id": zod.string(),
   "invoiceId": zod.string(),
   "invoiceNumber": zod.string(),
@@ -1071,7 +1146,26 @@ export const GeneratePlanResponse = zod.object({
   "noticeMs": zod.string(),
   "status": zod.string(),
   "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeVariants": zod.object({
+  "model": zod.string().optional(),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "collectNow": zod.object({
+  "noticeEn": zod.string().min(1).max(generatePlanResponseTasksItemNoticeVariantsCollectNowNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(generatePlanResponseTasksItemNoticeVariantsCollectNowNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "extension": zod.object({
+  "noticeEn": zod.string().min(1).max(generatePlanResponseTasksItemNoticeVariantsExtensionNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(generatePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "generatedAt": zod.string(),
+  "reasonCode": zod.string(),
+  "contentPolicy": zod.enum(['contextual_paragraph_with_controlled_facts'])
+}).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -1081,6 +1175,14 @@ export const GeneratePlanResponse = zod.object({
 export const EditPlanParams = zod.object({
   "id": zod.coerce.string()
 })
+
+export const editPlanBodyTasksItemNoticeVariantsCollectNowNoticeEnMax = 10000;
+
+export const editPlanBodyTasksItemNoticeVariantsCollectNowNoticeMsMax = 10000;
+
+export const editPlanBodyTasksItemNoticeVariantsExtensionNoticeEnMax = 10000;
+
+export const editPlanBodyTasksItemNoticeVariantsExtensionNoticeMsMax = 10000;
 
 export const editPlanBodyTasksItemMethodMax = 100;
 
@@ -1099,6 +1201,25 @@ export const editPlanBodyMergeReasonMax = 2000;
 
 export const EditPlanBody = zod.object({
   "tasks": zod.array(zod.object({
+  "noticeVariants": zod.object({
+  "model": zod.string().optional(),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "collectNow": zod.object({
+  "noticeEn": zod.string().min(1).max(editPlanBodyTasksItemNoticeVariantsCollectNowNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(editPlanBodyTasksItemNoticeVariantsCollectNowNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "extension": zod.object({
+  "noticeEn": zod.string().min(1).max(editPlanBodyTasksItemNoticeVariantsExtensionNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(editPlanBodyTasksItemNoticeVariantsExtensionNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "generatedAt": zod.string(),
+  "reasonCode": zod.string(),
+  "contentPolicy": zod.enum(['contextual_paragraph_with_controlled_facts'])
+}).optional(),
   "id": zod.string(),
   "method": zod.string().min(1).max(editPlanBodyTasksItemMethodMax),
   "noticeEn": zod.string().min(1).max(editPlanBodyTasksItemNoticeEnMax),
@@ -1125,6 +1246,14 @@ export const editPlanResponseWeightsImportanceMax = 100;
 
 export const editPlanResponseWeightsEsgMin = 0;
 export const editPlanResponseWeightsEsgMax = 100;
+
+export const editPlanResponseTasksItemNoticeVariantsCollectNowNoticeEnMax = 10000;
+
+export const editPlanResponseTasksItemNoticeVariantsCollectNowNoticeMsMax = 10000;
+
+export const editPlanResponseTasksItemNoticeVariantsExtensionNoticeEnMax = 10000;
+
+export const editPlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 10000;
 
 
 
@@ -1187,6 +1316,7 @@ export const EditPlanResponse = zod.object({
   "createdAt": zod.string()
 }).optional(),
   "customerReviews": zod.array(zod.object({
+  "noticeGenerationRequired": zod.boolean().optional(),
   "customerId": zod.string(),
   "decision": zod.enum(['collect_now', 'negotiable_extension']),
   "reason": zod.string(),
@@ -1196,6 +1326,7 @@ export const EditPlanResponse = zod.object({
   "sedgSubmissionId": zod.string().optional()
 })).optional(),
   "tasks": zod.array(zod.object({
+  "recipientEmail": zod.string().email().nullish(),
   "id": zod.string(),
   "invoiceId": zod.string(),
   "invoiceNumber": zod.string(),
@@ -1240,7 +1371,26 @@ export const EditPlanResponse = zod.object({
   "noticeMs": zod.string(),
   "status": zod.string(),
   "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeVariants": zod.object({
+  "model": zod.string().optional(),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "collectNow": zod.object({
+  "noticeEn": zod.string().min(1).max(editPlanResponseTasksItemNoticeVariantsCollectNowNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(editPlanResponseTasksItemNoticeVariantsCollectNowNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "extension": zod.object({
+  "noticeEn": zod.string().min(1).max(editPlanResponseTasksItemNoticeVariantsExtensionNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(editPlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "generatedAt": zod.string(),
+  "reasonCode": zod.string(),
+  "contentPolicy": zod.enum(['contextual_paragraph_with_controlled_facts'])
+}).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
@@ -1308,6 +1458,14 @@ export const decidePlanResponseWeightsImportanceMax = 100;
 export const decidePlanResponseWeightsEsgMin = 0;
 export const decidePlanResponseWeightsEsgMax = 100;
 
+export const decidePlanResponseTasksItemNoticeVariantsCollectNowNoticeEnMax = 10000;
+
+export const decidePlanResponseTasksItemNoticeVariantsCollectNowNoticeMsMax = 10000;
+
+export const decidePlanResponseTasksItemNoticeVariantsExtensionNoticeEnMax = 10000;
+
+export const decidePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 10000;
+
 
 
 export const DecidePlanResponse = zod.object({
@@ -1369,6 +1527,7 @@ export const DecidePlanResponse = zod.object({
   "createdAt": zod.string()
 }).optional(),
   "customerReviews": zod.array(zod.object({
+  "noticeGenerationRequired": zod.boolean().optional(),
   "customerId": zod.string(),
   "decision": zod.enum(['collect_now', 'negotiable_extension']),
   "reason": zod.string(),
@@ -1378,6 +1537,7 @@ export const DecidePlanResponse = zod.object({
   "sedgSubmissionId": zod.string().optional()
 })).optional(),
   "tasks": zod.array(zod.object({
+  "recipientEmail": zod.string().email().nullish(),
   "id": zod.string(),
   "invoiceId": zod.string(),
   "invoiceNumber": zod.string(),
@@ -1422,10 +1582,48 @@ export const DecidePlanResponse = zod.object({
   "noticeMs": zod.string(),
   "status": zod.string(),
   "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeVariants": zod.object({
+  "model": zod.string().optional(),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "collectNow": zod.object({
+  "noticeEn": zod.string().min(1).max(decidePlanResponseTasksItemNoticeVariantsCollectNowNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(decidePlanResponseTasksItemNoticeVariantsCollectNowNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "extension": zod.object({
+  "noticeEn": zod.string().min(1).max(decidePlanResponseTasksItemNoticeVariantsExtensionNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(decidePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "generatedAt": zod.string(),
+  "reasonCode": zod.string(),
+  "contentPolicy": zod.enum(['contextual_paragraph_with_controlled_facts'])
+}).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()
+})
+
+
+
+
+
+export const GetPlanRecipientsParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const GetPlanRecipientsResponse = zod.object({
+  "signature": zod.string(),
+  "recipients": zod.array(zod.object({
+  "taskId": zod.string(),
+  "customerName": zod.string(),
+  "recipient": zod.string(),
+  "valid": zod.boolean(),
+  "noticeKind": zod.enum(['collectNow', 'extension'])
+}))
 })
 
 
@@ -1433,8 +1631,14 @@ export const ExecutePlanParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const executePlanBodyExpectedRecipientsSignatureMin = 64;
+export const executePlanBodyExpectedRecipientsSignatureMax = 64;
+
+
+
 export const ExecutePlanBody = zod.object({
-  "expectedSmtpEnabled": zod.boolean().optional().describe('Required for a new execution; must match the live server mode. Completed plans remain idempotent.')
+  "expectedSmtpEnabled": zod.boolean().optional().describe('Required for a new execution; must match the live server mode. Completed plans remain idempotent.'),
+  "expectedRecipientsSignature": zod.string().min(executePlanBodyExpectedRecipientsSignatureMin).max(executePlanBodyExpectedRecipientsSignatureMax).optional()
 })
 
 export const executePlanResponseWeightsLateFeeMin = 0;
@@ -1448,6 +1652,14 @@ export const executePlanResponseWeightsImportanceMax = 100;
 
 export const executePlanResponseWeightsEsgMin = 0;
 export const executePlanResponseWeightsEsgMax = 100;
+
+export const executePlanResponseTasksItemNoticeVariantsCollectNowNoticeEnMax = 10000;
+
+export const executePlanResponseTasksItemNoticeVariantsCollectNowNoticeMsMax = 10000;
+
+export const executePlanResponseTasksItemNoticeVariantsExtensionNoticeEnMax = 10000;
+
+export const executePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 10000;
 
 
 
@@ -1510,6 +1722,7 @@ export const ExecutePlanResponse = zod.object({
   "createdAt": zod.string()
 }).optional(),
   "customerReviews": zod.array(zod.object({
+  "noticeGenerationRequired": zod.boolean().optional(),
   "customerId": zod.string(),
   "decision": zod.enum(['collect_now', 'negotiable_extension']),
   "reason": zod.string(),
@@ -1519,6 +1732,7 @@ export const ExecutePlanResponse = zod.object({
   "sedgSubmissionId": zod.string().optional()
 })).optional(),
   "tasks": zod.array(zod.object({
+  "recipientEmail": zod.string().email().nullish(),
   "id": zod.string(),
   "invoiceId": zod.string(),
   "invoiceNumber": zod.string(),
@@ -1563,7 +1777,26 @@ export const ExecutePlanResponse = zod.object({
   "noticeMs": zod.string(),
   "status": zod.string(),
   "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
-  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional()
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeVariants": zod.object({
+  "model": zod.string().optional(),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "collectNow": zod.object({
+  "noticeEn": zod.string().min(1).max(executePlanResponseTasksItemNoticeVariantsCollectNowNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(executePlanResponseTasksItemNoticeVariantsCollectNowNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "extension": zod.object({
+  "noticeEn": zod.string().min(1).max(executePlanResponseTasksItemNoticeVariantsExtensionNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(executePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "generatedAt": zod.string(),
+  "reasonCode": zod.string(),
+  "contentPolicy": zod.enum(['contextual_paragraph_with_controlled_facts'])
+}).optional()
 })),
   "notes": zod.string(),
   "dataSignature": zod.string()

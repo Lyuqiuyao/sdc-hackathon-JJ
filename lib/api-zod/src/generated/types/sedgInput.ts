@@ -11,6 +11,31 @@ export interface SedgInput {
      * @minLength 1
      * @maxLength 2000
      */
+  repaymentWillingness: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  cashFlowAssessment: string;
+  /**
+     * @minimum 0
+     * @maximum 200
+     */
+  cooperationYears: number;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  overdueCount: number;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  businessAssessment: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
   environmental: string;
   /**
      * @minLength 1
