@@ -17,6 +17,7 @@ import { saveProfile, submitSedg } from "../lib/receivables/company";
 import { GetCompanyCorrespondenceParams, GetCompanyCorrespondenceResponse,
   UploadCompanyCorrespondenceParams, UploadCompanyCorrespondenceResponse } from "@workspace/api-zod";
 import { appendCorrespondence, listCorrespondence } from "../lib/receivables/correspondence";
+import { executeWithSmtpSwitch } from "../lib/receivables/smtp-execution";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
@@ -72,7 +73,7 @@ router.post("/plans/:id/decision", async (req, res): Promise<void> => {
 });
 router.post("/plans/:id/execute", async (req, res): Promise<void> => {
   const { id } = ExecutePlanParams.parse(req.params);
-  res.json(await changeState(state => ExecutePlanResponse.parse(service.execute(state, id))));
+  res.json(ExecutePlanResponse.parse(await executeWithSmtpSwitch(id)));
 });
 router.put("/settings", async (req, res): Promise<void> => {
   const input = SaveSettingsBody.parse(req.body);

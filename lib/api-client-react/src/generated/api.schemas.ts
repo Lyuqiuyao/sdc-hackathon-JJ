@@ -741,6 +741,7 @@ export type ExecutionRecordChannel = typeof ExecutionRecordChannel[keyof typeof 
 
 export const ExecutionRecordChannel = {
   Simulated_Email: 'Simulated Email',
+  SMTP_Email: 'SMTP Email',
 } as const;
 
 export interface ExecutionRecord {
@@ -771,6 +772,8 @@ export interface AuditLog {
   after: string;
   planVersion: string;
   result: string;
+  /** Present on new send audits; absent on historical or unrelated entries */
+  isRealSmtp?: boolean;
 }
 
 export interface StatusGroup {
@@ -809,6 +812,8 @@ export interface Workspace {
   source: string;
   aiAvailable: boolean;
   aiMessage: string;
+  /** True only when the server SMTP_ENABLED environment variable is true */
+  smtpEnabled?: boolean;
   customers: Customer[];
   invoices: Invoice[];
   documents: ESGDocument[];

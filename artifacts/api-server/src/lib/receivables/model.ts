@@ -6,6 +6,7 @@ import type {
   CorrespondenceRecord,
 } from "@workspace/api-zod";
 import type { GenerationLease } from "./ai-coordination";
+import type { SmtpDispatch } from "./smtp-execution";
 
 export const DEMO_WORKSPACE_ID = "synthetic-demo-admin";
 
@@ -25,6 +26,7 @@ export interface DemoState {
   adviceSnapshots?: AdviceSnapshot[];
   sedgSubmissions?: SedgSubmission[];
   correspondenceRecords?: CorrespondenceRecord[];
+  smtpDispatches?: Record<string, SmtpDispatch>;
 }
 
 export class BusinessError extends Error {

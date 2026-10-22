@@ -597,7 +597,7 @@ components:
         executedAt: { type: string }
         result: { type: string }
         noticeStatus: { type: string }
-        channel: { type: string, enum: [Simulated Email] }
+        channel: { type: string, enum: [Simulated Email, SMTP Email] }
         recipient: { type: string }
         noticeEn: { type: string }
         noticeMs: { type: string }
@@ -616,6 +616,7 @@ components:
         after: { type: string }
         planVersion: { type: string }
         result: { type: string }
+        isRealSmtp: { type: boolean, description: Present on new send audits; absent on historical or unrelated entries }
     StatusGroup:
       type: object
       required: [status, count, amountCents]
@@ -658,6 +659,7 @@ components:
         source: { type: string }
         aiAvailable: { type: boolean }
         aiMessage: { type: string }
+        smtpEnabled: { type: boolean, description: True only when the server SMTP_ENABLED environment variable is true }
         customers: { type: array, items: { $ref: "#/components/schemas/Customer" } }
         invoices: { type: array, items: { $ref: "#/components/schemas/Invoice" } }
         documents: { type: array, items: { $ref: "#/components/schemas/ESGDocument" } }

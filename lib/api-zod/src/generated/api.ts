@@ -260,6 +260,7 @@ export const GetWorkspaceResponse = zod.object({
   "source": zod.string(),
   "aiAvailable": zod.boolean(),
   "aiMessage": zod.string(),
+  "smtpEnabled": zod.boolean().optional().describe('True only when the server SMTP_ENABLED environment variable is true'),
   "customers": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -493,7 +494,7 @@ export const GetWorkspaceResponse = zod.object({
   "executedAt": zod.string(),
   "result": zod.string(),
   "noticeStatus": zod.string(),
-  "channel": zod.enum(['Simulated Email']).optional(),
+  "channel": zod.enum(['Simulated Email', 'SMTP Email']).optional(),
   "recipient": zod.string().optional(),
   "noticeEn": zod.string().optional(),
   "noticeMs": zod.string().optional(),
@@ -509,7 +510,8 @@ export const GetWorkspaceResponse = zod.object({
   "before": zod.string(),
   "after": zod.string(),
   "planVersion": zod.string(),
-  "result": zod.string()
+  "result": zod.string(),
+  "isRealSmtp": zod.boolean().optional().describe('Present on new send audits; absent on historical or unrelated entries')
 })),
   "settings": zod.object({
   "currency": zod.enum(['MYR']),

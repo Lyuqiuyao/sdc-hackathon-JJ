@@ -17,4 +17,6 @@ export interface AuditLog {
   after: string;
   planVersion: string;
   result: string;
+  /** Present on new send audits; absent on historical or unrelated entries */
+  isRealSmtp?: boolean;
 }

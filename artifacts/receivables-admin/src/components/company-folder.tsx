@@ -179,7 +179,7 @@ export function CompanyFolder({ customer: sel, ws }: { customer: Customer; ws: W
         {comms.length === 0 && execs.length === 0 ? <p className="text-sm text-muted-foreground">No communications recorded. Notices are drafts only; nothing is sent.</p> : (
           <ul className="space-y-2 text-sm">
             {comms.map((t) => <li key={t.id} className="rounded-md border p-2"><div className="flex justify-between"><span>{t.invoiceNumber} · {t.method}</span><Tag>{t.ps}</Tag></div><div className="text-xs text-muted-foreground">Plan v{t.v} · {fmtDate(t.scheduledAt)} · draft notice</div></li>)}
-            {execs.map((e) => <li key={e.id} className="rounded-md border border-dashed p-2 text-xs"><b>Simulated email:</b> {e.invoiceNumber} · {e.recipient ?? 'recipient not recorded'} · {e.noticeStatus} · {fmtDate(e.executedAt)}</li>)}
+            {execs.map((e) => <li key={e.id} className="rounded-md border border-dashed p-2 text-xs"><b>{e.channel === 'SMTP Email' ? 'SMTP email:' : 'Simulated email:'}</b> {e.invoiceNumber} · {e.recipient ?? 'recipient not recorded'} · {e.noticeStatus} · {fmtDate(e.executedAt)}</li>)}
           </ul>)}</section>
     </div>
   );

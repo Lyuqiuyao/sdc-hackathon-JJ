@@ -37,11 +37,11 @@ The final MVP replaces four-dimensional collection ranking with deterministic tw
 
 **How to apply:** Preserve historical versions and separate ranking from risk warnings. AI may explain and suggest communication only; it cannot change financial facts, weights, scores, rank or approval. Further parameter or automatic cross-queue ordering changes need explicit business confirmation; do not silently tune the approved demo.
 
-Provide administrator-only synthetic SEDG submission/import, company information folders and human collection review. SEDG review is not certification or verification of a company, file or ESG rating. NLP extraction from Excel/WhatsApp is deferred. Email execution must remain simulated, displaying recipient, final body, status, time and audit provenance.
+Provide administrator-only synthetic SEDG submission/import, company information folders and human collection review. SEDG review is not certification or verification of a company, file or ESG rating. NLP extraction from Excel/WhatsApp is deferred. Email execution defaults to simulation, displaying recipient, final body, status, time and audit provenance; the user subsequently authorized optional real SMTP behind an explicit environment switch.
 
 **Why:** The user specified these final MVP scope and trust boundaries.
 
-**How to apply:** Do not introduce a customer or certifier portal, NLP profile generation, real email integration, model calls, Secret changes or shared database operations under this implementation scope.
+**How to apply:** Do not introduce a customer or certifier portal, NLP profile generation, model calls, Secret changes or shared database operations under this implementation scope. The later explicit SMTP authorization supersedes the original simulated-email-only exclusion, not the other boundaries.
 
 ## Incremental enhancement constraints
 
@@ -49,5 +49,5 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **Why:** 用户明确规定后续增量开发的保护边界。
 
-**How to apply:** 增量功能不得顺带重构或改变核心业务规则。按单功能验收推进，不一次修改所有功能；未验收往来信息上传前，不开发 SMTP 开关。
+**How to apply:** 增量功能不得顺带重构或改变核心业务规则。按单功能验收推进，不一次修改所有功能。用户已要求执行 SMTP 开关集成，但禁止提前做 NLP、画像功能；完成后停止并等验收。本次 SMTP 步骤按用户要求不自动运行测试。
 

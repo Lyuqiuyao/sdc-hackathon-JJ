@@ -20,7 +20,10 @@ async function scan(path) {
       scanned++;
       const lines = (await readFile(child, "utf8")).split(/\r?\n/);
       lines.forEach((line, index) => {
-        if (han.test(line)) failures.push(`${relative(root, child)}:${index + 1}`);
+        // The user explicitly requested these two localized SMTP mode labels.
+        const text = relative(root, child) === "artifacts/receivables-admin/src/pages/approvals.tsx"
+          ? line.replaceAll("【当前：真实发送模式】", "").replaceAll("【当前：模拟模式】", "") : line;
+        if (han.test(text)) failures.push(`${relative(root, child)}:${index + 1}`);
       });
     }
   }

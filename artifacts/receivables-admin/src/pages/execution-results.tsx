@@ -21,7 +21,7 @@ export default function ExecutionResults() {
   const [ask, setAsk] = useState(false);
   const [err, setErr] = useState('');
   return (
-    <Page title="Execution Results" description="Simulated execution of approved plans only">
+    <Page title="Execution Results" description="Execution records for approved plans">
       {(ws) => {
         const plans = ws.plans.filter((p) => ['Approved', 'Executed'].includes(p.status)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         const plan = plans.find((p) => p.id === sel) ?? plans[0];
@@ -29,7 +29,15 @@ export default function ExecutionResults() {
         const approval = plan ? ws.approvals.filter((a) => a.planId === plan.id).slice(-1)[0] : undefined;
         const run = async () => {
           if (!plan) return; setAsk(false); setErr('');
-          try { await exec.mutateAsync({ id: plan.id }); await refresh(); toast({ title: 'Simulated execution recorded', description: 'No real notices were sent and no payments changed.' }); } catch (e) { setErr(errMsg(e)); }
+          try {
+            await exec.mutateAsync({ id: plan.id }); await refresh();
+            toast({ title: ws.smtpEnabled ? 'SMTP execution recorded' : 'Simulated execution recorded',
+              description: ws.smtpEnabled ? 'SMTP accepted the messages. Inbox delivery is not guaranteed. No payments changed.' : 'No real notices were sent and no payments changed.' });
+          } catch (e) {
+            setErr(errMsg(e));
+            // Earlier tasks may already have been accepted before a later SMTP failure.
+            await refresh();
+          }
         };
         const v2Blockers: string[] = [];
         if (plan?.scoringSnapshot) {
@@ -46,7 +54,7 @@ export default function ExecutionResults() {
         };
         return (
           <div className="space-y-4">
-            <Alert><AlertDescription>Execution is a demo simulation. It records tasks and marks notices as generated or simulated only; no email or message is sent and invoice payment records are not changed.</AlertDescription></Alert>
+            <Alert><AlertDescription>{ws.smtpEnabled ? 'Real SMTP mode: execution sends the approved English and Malay drafts to the configured SMTP_TO mailbox. SMTP acceptance does not guarantee inbox delivery. Invoice payment records are not changed.' : 'Execution is a demo simulation. It records tasks and marks notices as generated or simulated only; no email or message is sent and invoice payment records are not changed.'}</AlertDescription></Alert>
             {err && <Alert variant="destructive" data-testid="alert-exec-error"><AlertTitle>Execution failed</AlertTitle><AlertDescription>{err}</AlertDescription></Alert>}
             {!plan ? <EmptyState title="No approved plan yet" hint="Only approved plans can be executed. Approve a pending plan first." action={<Button asChild size="sm"><Link href="/approvals">Open Approval Center</Link></Button>} /> : (
               <>
@@ -65,7 +73,7 @@ export default function ExecutionResults() {
                 <ProviderDetails plan={plan} />
                 <Panel title={`Final collection order · ${plan.tasks.length} tasks`} bodyClass="p-0">
                   <div className="overflow-x-auto"><Table>
-                    <TableHeader><TableRow><TableHead>#</TableHead><TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead className="text-right">Outstanding</TableHead><TableHead>Method</TableHead><TableHead>Scheduled</TableHead><TableHead className="text-right">Score</TableHead><TableHead>Approval</TableHead><TableHead>Simulated execution</TableHead></TableRow></TableHeader>
+                    <TableHeader><TableRow><TableHead>#</TableHead><TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead className="text-right">Outstanding</TableHead><TableHead>Method</TableHead><TableHead>Scheduled</TableHead><TableHead className="text-right">Score</TableHead><TableHead>Approval</TableHead><TableHead>Execution</TableHead></TableRow></TableHeader>
                     <TableBody>{plan.tasks.map((t) => { const r = recs.find((x) => x.taskId === t.id); return (
                       <TableRow key={t.id} data-testid={`row-task-${t.id}`}>
                         <TableCell>{t.rank}</TableCell><TableCell className="font-mono text-xs">{t.invoiceNumber}</TableCell><TableCell>{t.customerName}</TableCell>
@@ -80,7 +88,7 @@ export default function ExecutionResults() {
                 </Panel>
                 <Panel title={`Execution records (${ws.executions.length})`} bodyClass="p-0">
                   {ws.executions.length === 0 ? <div className="p-4"><EmptyState title="Nothing executed yet" /></div> : (
-                    <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Executed</TableHead><TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead>Channel</TableHead><TableHead>Simulated recipient</TableHead><TableHead>Plan</TableHead><TableHead>Actor</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                    <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Executed</TableHead><TableHead>Invoice</TableHead><TableHead>Customer</TableHead><TableHead>Channel</TableHead><TableHead>Recipient</TableHead><TableHead>Plan</TableHead><TableHead>Actor</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
                       <TableBody>{[...ws.executions].sort((a, b) => b.executedAt.localeCompare(a.executedAt)).map((e) => {
                         const ap = ws.approvals.filter((a) => a.planId === e.planId && a.decision.toLowerCase().startsWith('approv')).slice(-1)[0];
                         return (
@@ -88,13 +96,13 @@ export default function ExecutionResults() {
                             <TableCell className="text-xs">{e.channel ?? 'Not recorded'}</TableCell><TableCell className="font-mono text-xs">{e.recipient ?? 'Not recorded'}</TableCell><TableCell className="text-xs">{e.planVersion !== undefined ? `v${e.planVersion}` : 'Not recorded'}</TableCell>
                             <TableCell>{e.actor}</TableCell>
                             <TableCell className="text-xs"><div>{e.result}</div><div className="text-muted-foreground">{e.noticeStatus}</div>{ap && <div className="text-muted-foreground">Approval: {ap.actor}, {fmtDateTime(ap.createdAt)}</div>}
-                              <details className="mt-1"><summary className="cursor-pointer text-primary">Simulated message</summary>
+                              <details className="mt-1"><summary className="cursor-pointer text-primary">{e.channel === 'SMTP Email' ? 'SMTP message' : 'Simulated message'}</summary>
                                 {e.noticeEn || e.noticeMs ? <div className="mt-1 grid min-w-[280px] gap-2 md:grid-cols-2"><div><div className="font-semibold">English</div><pre className="whitespace-pre-wrap rounded bg-muted/60 p-2 font-sans">{e.noticeEn ?? 'Not recorded'}</pre></div><div><div className="font-semibold">Bahasa Melayu</div><pre className="whitespace-pre-wrap rounded bg-muted/60 p-2 font-sans">{e.noticeMs ?? 'Not recorded'}</pre></div></div> : <p className="mt-1 text-muted-foreground">Message body not recorded (legacy record).</p>}
-                                <p className="mt-1 text-muted-foreground">Simulation only. Nothing was delivered to a real mailbox.</p></details></TableCell></TableRow>); })}</TableBody></Table></div>)}
+                                <p className="mt-1 text-muted-foreground">{e.channel === 'SMTP Email' ? 'Accepted by SMTP. Delivery to a real mailbox is not guaranteed.' : 'Simulation only. Nothing was delivered to a real mailbox.'}</p></details></TableCell></TableRow>); })}</TableBody></Table></div>)}
                 </Panel>
               </>)}
             <AlertDialog open={ask} onOpenChange={setAsk}>
-              <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Execute approved plan (simulation)?</AlertDialogTitle><AlertDialogDescription>Creates execution records for each task. No real message is sent and no invoice payment is modified.</AlertDialogDescription></AlertDialogHeader>
+              <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{ws.smtpEnabled ? 'Execute approved plan (real SMTP)?' : 'Execute approved plan (simulation)?'}</AlertDialogTitle><AlertDialogDescription>{ws.smtpEnabled ? 'Sends real email for each task to the configured SMTP_TO mailbox. Previously accepted tasks are not resent. No invoice payment is modified.' : 'Creates execution records for each task. No real message is sent and no invoice payment is modified.'}</AlertDialogDescription></AlertDialogHeader>
                 <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={run} data-testid="button-confirm-execute">Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
             </AlertDialog>
           </div>

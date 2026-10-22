@@ -12,12 +12,14 @@ import { rulesAdvisor, openaiConfigured, type AdvisorResult } from "./ai-provide
 import { communication } from "./communication";
 import { appendPlanSnapshot } from "./advice-snapshots";
 import { assertEnglishInput } from "./language";
+import { smtpEnabled } from "./smtp-config";
 
 export function audit(state: DemoState, type: string, content: string, related = "",
-  before = "", after = "", plan?: CollectionPlan) {
+  before = "", after = "", plan?: CollectionPlan, send?: { isRealSmtp: boolean; result?: string }) {
   const entry: AuditLog = {
     id: `LOG-${randomUUID().slice(0, 12)}`, type, createdAt: now(), actor: "Demo Admin",
-    related, content, before, after, planVersion: plan ? `${plan.id} v${plan.version}` : "", result: "Success",
+    related, content, before, after, planVersion: plan ? `${plan.id} v${plan.version}` : "", result: send?.result ?? "Success",
+    ...(send ? { isRealSmtp: send.isRealSmtp } : {}),
   };
   state.auditLogs.push(entry);
 }
@@ -25,7 +27,7 @@ export function audit(state: DemoState, type: string, content: string, related =
 export function workspace(state: DemoState): Workspace {
   const invoices = invoicesNow(state);
   return {
-    demo: true, today: today(), source: "Synthetic Demo Data · shared administrator sandbox",
+    demo: true, today: today(), source: "Synthetic Demo Data · shared administrator sandbox", smtpEnabled: smtpEnabled(),
     aiAvailable: openaiConfigured(),
     aiMessage: openaiConfigured()
       ? "OpenAI (Replit managed) configuration is present, not proof of connectivity. Runtime usage is billed through Replit credits. Only openai / success with replit_managed contains validated managed output. Errors use rules_fallback; no private-key fallback."
@@ -272,11 +274,11 @@ export function execute(state: DemoState, id: string) {
       noticeEn: task.noticeEn, noticeMs: task.noticeMs, planVersion: plan.version };
     state.executions.push(record);
     audit(state, "Simulated execution", `Simulated task ${task.rank}: ${task.method}. Notice marked simulated only; invoice payment is unchanged.`,
-      `${task.invoiceNumber} ${task.customerName}`, "Approved task", JSON.stringify(record), plan);
+      `${task.invoiceNumber} ${task.customerName}`, "Approved task", JSON.stringify(record), plan, { isRealSmtp: false });
   }
   plan.status = "Executed";
   audit(state, "Simulated execution", "Approved plan completed in Demo simulation. No actual dispatch, debit, transfer or invoice settlement.",
-    plan.id, before, JSON.stringify(plan), plan);
+    plan.id, before, JSON.stringify(plan), plan, { isRealSmtp: false });
   return plan;
 }
 

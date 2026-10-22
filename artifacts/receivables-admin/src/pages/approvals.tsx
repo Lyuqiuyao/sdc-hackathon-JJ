@@ -177,7 +177,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
         <Button variant="outline" onClick={save} disabled={!editable || !dirty || busy} data-testid="button-save-edits"><Save className="mr-1 h-4 w-4" />Save edits as new version</Button>
         {editable && blockers.length > 0 && <span className="text-xs text-orange-700" data-testid="text-approve-blockers">Approval blocked: {blockers.join('; ')}.</span>}
         <div className="ml-auto flex flex-wrap gap-2">
-          <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={() => setConfirm('approve')} disabled={!editable || blockers.length > 0 || busy} data-testid="button-approve"><CheckCircle2 className="mr-1 h-4 w-4" />Approve & Simulate Execution</Button>
+          <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={() => setConfirm('approve')} disabled={!editable || blockers.length > 0 || busy} data-testid="button-approve"><CheckCircle2 className="mr-1 h-4 w-4" />{ws.smtpEnabled ? 'Approve for SMTP execution' : 'Approve & Simulate Execution'}</Button>
           <Button variant="outline" onClick={() => setConfirm('defer')} disabled={!editable || dirty || busy} data-testid="button-defer"><Clock3 className="mr-1 h-4 w-4" />Defer & Recalculate</Button>
           <Button variant="destructive" onClick={() => setConfirm('reject')} disabled={!editable || dirty || busy} data-testid="button-reject"><XCircle className="mr-1 h-4 w-4" />Reject Plan</Button>
         </div>
@@ -192,7 +192,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>{confirm === 'approve' ? 'Approve this plan?' : confirm === 'defer' ? 'Defer and recalculate?' : 'Reject this plan?'}</AlertDialogTitle>
-            <AlertDialogDescription>{confirm === 'approve' ? 'The plan becomes Approved. Execution is a separate simulated step; no real notices are sent.' : confirm === 'defer' ? 'This version is deferred and a new pending version is recalculated.' : 'The plan is rejected and cannot be executed.'}</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogDescription>{confirm === 'approve' ? ws.smtpEnabled ? 'The plan becomes Approved. Execution is a separate step that sends real email through SMTP to the configured recipient.' : 'The plan becomes Approved. Execution is a separate simulated step; no real notices are sent.' : confirm === 'defer' ? 'This version is deferred and a new pending version is recalculated.' : 'The plan is rejected and cannot be executed.'}</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={doDecide} data-testid="button-confirm-decision">Confirm</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -214,10 +214,13 @@ export default function Approvals() {
     <Page title="Approval Center" description="Review, adjust and decide on AI collection plans">
       {(ws) => {
         const plans = [...ws.plans].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-        if (!plans.length) return <EmptyState title="No plans yet" hint="Generate a plan from a risk event." action={<Button asChild size="sm"><Link href="/risk-triggers">Go to Risk Triggers</Link></Button>} />;
         const plan = plans.find((p) => p.id === sel) ?? plans.find((p) => p.status === 'Pending') ?? plans[0];
         return (
           <div className="space-y-4">
+            <Alert data-testid="smtp-mode-status">
+              <AlertDescription>{ws.smtpEnabled ? '【当前：真实发送模式】' : '【当前：模拟模式】'}</AlertDescription>
+            </Alert>
+            {!plan ? <EmptyState title="No plans yet" hint="Generate a plan from a risk event." action={<Button asChild size="sm"><Link href="/risk-triggers">Go to Risk Triggers</Link></Button>} /> : <>
             <Panel bodyClass="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium">Plan / version</span>
               <Select value={plan.id} onValueChange={selectPlan}><SelectTrigger className="w-full sm:w-96" data-testid="select-plan"><SelectValue /></SelectTrigger>
@@ -226,6 +229,7 @@ export default function Approvals() {
               <span className="text-xs text-muted-foreground">{ws.plans.filter((p) => p.status === 'Pending').length} pending</span>
             </Panel>
             <Editor key={plan.id} ws={ws} plan={plan} onSelect={selectPlan} />
+            </>}
           </div>
         );
       }}

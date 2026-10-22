@@ -11,4 +11,5 @@ export type ExecutionRecordChannel = typeof ExecutionRecordChannel[keyof typeof 
 
 export const ExecutionRecordChannel = {
   Simulated_Email: 'Simulated Email',
+  SMTP_Email: 'SMTP Email',
 } as const;

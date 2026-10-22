@@ -60,7 +60,9 @@ export default function AuditLogs() {
               <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
                 {sel && <>
                   <DialogHeader><DialogTitle>{sel.type}</DialogTitle><DialogDescription>Read-only log entry {sel.id}</DialogDescription></DialogHeader>
-                  <dl data-testid="detail-log"><KV k="Time" v={fmtDateTime(sel.createdAt)} /><KV k="Actor" v={sel.actor} /><KV k="Related" v={sel.related || '-'} /><KV k="Content" v={safeHistorical(sel.content)} /><KV k="Plan version" v={sel.planVersion || '-'} /><KV k="Result (log action only)" v={sel.result} />{(() => { const a = deriveAiOutcome(sel); return a ? <KV k="AI outcome" v={<span data-testid="detail-ai-outcome">{a.label}{a.detail ? ` (${a.detail})` : ''}</span>} /> : null; })()}</dl>
+                  <dl data-testid="detail-log"><KV k="Time" v={fmtDateTime(sel.createdAt)} /><KV k="Actor" v={sel.actor} /><KV k="Related" v={sel.related || '-'} /><KV k="Content" v={safeHistorical(sel.content)} /><KV k="Plan version" v={sel.planVersion || '-'} /><KV k="Result (log action only)" v={sel.result} />
+                    {sel.isRealSmtp !== undefined && <KV k="Email mode" v={sel.isRealSmtp ? 'Real SMTP' : 'Simulation'} />}
+                    {(() => { const a = deriveAiOutcome(sel); return a ? <KV k="AI outcome" v={<span data-testid="detail-ai-outcome">{a.label}{a.detail ? ` (${a.detail})` : ''}</span>} /> : null; })()}</dl>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div><div className="mb-1 text-xs font-semibold">Before</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px]">{safeHistorical(sel.before) || '-'}</pre></div>
                     <div><div className="mb-1 text-xs font-semibold">After</div><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px]">{safeHistorical(sel.after) || '-'}</pre></div>

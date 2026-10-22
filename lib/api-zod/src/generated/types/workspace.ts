@@ -23,6 +23,8 @@ export interface Workspace {
   source: string;
   aiAvailable: boolean;
   aiMessage: string;
+  /** True only when the server SMTP_ENABLED environment variable is true */
+  smtpEnabled?: boolean;
   customers: Customer[];
   invoices: Invoice[];
   documents: ESGDocument[];
