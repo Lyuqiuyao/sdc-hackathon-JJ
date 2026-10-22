@@ -16,11 +16,12 @@ import { smtpEnabled } from "./smtp-config";
 import { companyPortraitFacts } from "./company-portrait-facts";
 
 export function audit(state: DemoState, type: string, content: string, related = "",
-  before = "", after = "", plan?: CollectionPlan, send?: { isRealSmtp: boolean; result?: string }) {
+  before = "", after = "", plan?: CollectionPlan,
+  outcome?: { isRealSmtp?: boolean; result: "Success" | "Pending" | "Failed" | "Rejected" | "Outcome uncertain" }) {
   const entry: AuditLog = {
     id: `LOG-${randomUUID().slice(0, 12)}`, type, createdAt: now(), actor: "Demo Admin",
-    related, content, before, after, planVersion: plan ? `${plan.id} v${plan.version}` : "", result: send?.result ?? "Success",
-    ...(send ? { isRealSmtp: send.isRealSmtp } : {}),
+    related, content, before, after, planVersion: plan ? `${plan.id} v${plan.version}` : "", result: outcome?.result ?? "Recorded",
+    ...(outcome?.isRealSmtp !== undefined ? { isRealSmtp: outcome.isRealSmtp } : {}),
   };
   state.auditLogs.push(entry);
 }
@@ -282,11 +283,11 @@ export function execute(state: DemoState, id: string) {
       noticeEn: task.noticeEn, noticeMs: task.noticeMs, planVersion: plan.version };
     state.executions.push(record);
     audit(state, "Simulated execution", `Simulated task ${task.rank}: ${task.method}. Notice marked simulated only; invoice payment is unchanged.`,
-      `${task.invoiceNumber} ${task.customerName}`, "Approved task", JSON.stringify(record), plan, { isRealSmtp: false });
+      `${task.invoiceNumber} ${task.customerName}`, "Approved task", JSON.stringify(record), plan, { isRealSmtp: false, result: "Success" });
   }
   plan.status = "Executed";
   audit(state, "Simulated execution", "Approved plan completed in Demo simulation. No actual dispatch, debit, transfer or invoice settlement.",
-    plan.id, before, JSON.stringify(plan), plan, { isRealSmtp: false });
+    plan.id, before, JSON.stringify(plan), plan, { isRealSmtp: false, result: "Success" });
   return plan;
 }
 

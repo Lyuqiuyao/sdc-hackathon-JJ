@@ -28,9 +28,12 @@ import type {
   CompanyProfileInput,
   CorrespondenceAnalysis,
   CorrespondenceInput,
+  CorrespondenceMetadata,
   CorrespondenceRecord,
   Customer,
   DocumentView,
+  ExecutionConfirmationInput,
+  GetExecutionMode200,
   HealthStatus,
   ImportInput,
   ImportResult,
@@ -70,6 +73,153 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetExecutionModeUrl = () => {
+
+
+
+
+  return `/api/execution-mode`
+}
+
+export const getExecutionMode = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetExecutionMode200> => {
+
+  return customFetch<GetExecutionMode200>(getGetExecutionModeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExecutionModeQueryKey = () => {
+    return [
+    `/api/execution-mode`
+    ] as const;
+    }
+
+
+export const getGetExecutionModeQueryOptions = <TData = Awaited<ReturnType<typeof getExecutionMode>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExecutionMode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExecutionModeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExecutionMode>>> = ({ signal }) => getExecutionMode({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExecutionMode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExecutionModeQueryResult = NonNullable<Awaited<ReturnType<typeof getExecutionMode>>>
+export type GetExecutionModeQueryError = ErrorType<unknown>
+
+
+
+export function useGetExecutionMode<TData = Awaited<ReturnType<typeof getExecutionMode>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExecutionMode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExecutionModeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCompanyCorrespondenceRecordUrl = (id: string,
+    recordId: string,) => {
+
+
+
+
+  return `/api/company/${id}/correspondence/${recordId}`
+}
+
+export const getCompanyCorrespondenceRecord = async (id: string,
+    recordId: string, options?: Parameters<typeof customFetch>[1]): Promise<CorrespondenceRecord> => {
+
+  return customFetch<CorrespondenceRecord>(getGetCompanyCorrespondenceRecordUrl(id,recordId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCompanyCorrespondenceRecordQueryKey = (id: string,
+    recordId: string,) => {
+    return [
+    `/api/company/${id}/correspondence/${recordId}`
+    ] as const;
+    }
+
+
+export const getGetCompanyCorrespondenceRecordQueryOptions = <TData = Awaited<ReturnType<typeof getCompanyCorrespondenceRecord>>, TError = ErrorType<unknown>>(id: string,
+    recordId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCompanyCorrespondenceRecord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCompanyCorrespondenceRecordQueryKey(id,recordId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompanyCorrespondenceRecord>>> = ({ signal }) => getCompanyCorrespondenceRecord(id,recordId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && recordId !== null && recordId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompanyCorrespondenceRecord>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCompanyCorrespondenceRecordQueryResult = NonNullable<Awaited<ReturnType<typeof getCompanyCorrespondenceRecord>>>
+export type GetCompanyCorrespondenceRecordQueryError = ErrorType<unknown>
+
+
+
+export function useGetCompanyCorrespondenceRecord<TData = Awaited<ReturnType<typeof getCompanyCorrespondenceRecord>>, TError = ErrorType<unknown>>(
+ id: string,
+    recordId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCompanyCorrespondenceRecord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCompanyCorrespondenceRecordQueryOptions(id,recordId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGenerateCompanyPortraitUrl = (id: string,) => {
 
@@ -217,9 +367,9 @@ export const getGetCompanyCorrespondenceUrl = (id: string,) => {
   return `/api/company/${id}/correspondence`
 }
 
-export const getCompanyCorrespondence = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CorrespondenceRecord[]> => {
+export const getCompanyCorrespondence = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CorrespondenceMetadata[]> => {
 
-  return customFetch<CorrespondenceRecord[]>(getGetCompanyCorrespondenceUrl(id),
+  return customFetch<CorrespondenceMetadata[]>(getGetCompanyCorrespondenceUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1134,14 +1284,29 @@ export const getExecutePlanUrl = (id: string,) => {
   return `/api/plans/${id}/execute`
 }
 
-export const executePlan = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CollectionPlan> => {
+export const executePlan = async (id: string,
+    executionConfirmationInput?: ExecutionConfirmationInput, options?: Parameters<typeof customFetch>[1]): Promise<CollectionPlan> => {
 
-  return customFetch<CollectionPlan>(getExecutePlanUrl(id),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CollectionPlan>(getExecutePlanUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(executionConfirmationInput)
   }
 );}
 
@@ -1166,9 +1331,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof executePlan>>, ExecutePlanMutationVariables> = (props) => {
-          const {id} = props ?? {};
+          const {id,data} = props ?? {};
 
-          return  executePlan(id,requestOptions)
+          return  executePlan(id,data,requestOptions)
         }
 
 
@@ -1179,9 +1344,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type ExecutePlanMutationResult = NonNullable<Awaited<ReturnType<typeof executePlan>>>
-
+    export type ExecutePlanMutationBody = BodyType<ExecutionConfirmationInput> | undefined
     export type ExecutePlanMutationError = ErrorType<unknown>
-    export type ExecutePlanMutationVariables = {id: string}
+    export type ExecutePlanMutationVariables = {id: string;data?: BodyType<ExecutionConfirmationInput>}
 
     export const useExecutePlan = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof executePlan>>, TError,ExecutePlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

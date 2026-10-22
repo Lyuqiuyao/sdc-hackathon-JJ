@@ -8,6 +8,31 @@
 import * as zod from 'zod';
 
 
+export const GetExecutionModeResponse = zod.object({
+  "smtpEnabled": zod.boolean()
+})
+
+
+
+
+
+
+export const GetCompanyCorrespondenceRecordParams = zod.object({
+  "id": zod.coerce.string().min(1),
+  "recordId": zod.coerce.string().min(1)
+})
+
+export const GetCompanyCorrespondenceRecordResponse = zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "fileType": zod.enum(['text', 'txt', 'csv']),
+  "rawText": zod.string(),
+  "filename": zod.string(),
+  "uploadedBy": zod.string(),
+  "uploadedAt": zod.string()
+})
+
+
 
 
 
@@ -108,7 +133,6 @@ export const GetCompanyCorrespondenceResponseItem = zod.object({
   "id": zod.string(),
   "companyId": zod.string(),
   "fileType": zod.enum(['text', 'txt', 'csv']),
-  "rawText": zod.string(),
   "filename": zod.string(),
   "uploadedBy": zod.string(),
   "uploadedAt": zod.string()
@@ -1407,6 +1431,10 @@ export const DecidePlanResponse = zod.object({
 
 export const ExecutePlanParams = zod.object({
   "id": zod.coerce.string()
+})
+
+export const ExecutePlanBody = zod.object({
+  "expectedSmtpEnabled": zod.boolean().optional().describe('Required for a new execution; must match the live server mode. Completed plans remain idempotent.')
 })
 
 export const executePlanResponseWeightsLateFeeMin = 0;

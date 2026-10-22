@@ -6,6 +6,31 @@ info:
 servers:
   - url: /api
 paths:
+  /execution-mode:
+    get:
+      operationId: getExecutionMode
+      responses:
+        "200":
+          description: Current server execution mode, never cached for confirmation
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [smtpEnabled]
+                properties:
+                  smtpEnabled: { type: boolean }
+  /company/{id}/correspondence/{recordId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
+      - { name: recordId, in: path, required: true, schema: { type: string, minLength: 1 } }
+    get:
+      operationId: getCompanyCorrespondenceRecord
+      responses:
+        "200":
+          description: Full text loaded only on an explicit detail request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CorrespondenceRecord" }
   /company/{id}/portrait:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
@@ -36,12 +61,12 @@ paths:
       operationId: getCompanyCorrespondence
       responses:
         "200":
-          description: Correspondence belonging to this company, newest first
+          description: At most five correspondence metadata entries, newest first; no raw text
           content:
             application/json:
               schema:
                 type: array
-                items: { $ref: "#/components/schemas/CorrespondenceRecord" }
+                items: { $ref: "#/components/schemas/CorrespondenceMetadata" }
     post:
       operationId: uploadCompanyCorrespondence
       requestBody:
@@ -187,6 +212,11 @@ paths:
       - { name: id, in: path, required: true, schema: { type: string } }
     post:
       operationId: executePlan
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExecutionConfirmationInput" }
       responses:
         "200":
           description: Idempotent simulated execution, never sends or collects money
@@ -354,6 +384,22 @@ components:
         fileType: { type: string, enum: [text, txt, csv] }
         rawText: { type: string, minLength: 1, maxLength: 10485760 }
         filename: { type: string, minLength: 1, maxLength: 255 }
+    ExecutionConfirmationInput:
+      type: object
+      properties:
+        expectedSmtpEnabled:
+          type: boolean
+          description: Required for a new execution; must match the live server mode. Completed plans remain idempotent.
+    CorrespondenceMetadata:
+      type: object
+      required: [id, companyId, fileType, filename, uploadedBy, uploadedAt]
+      properties:
+        id: { type: string }
+        companyId: { type: string }
+        fileType: { type: string, enum: [text, txt, csv] }
+        filename: { type: string }
+        uploadedBy: { type: string }
+        uploadedAt: { type: string }
     CorrespondenceRecord:
       type: object
       required: [id, companyId, fileType, rawText, filename, uploadedBy, uploadedAt]

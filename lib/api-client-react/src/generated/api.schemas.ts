@@ -209,6 +209,29 @@ export interface CorrespondenceInput {
   filename: string;
 }
 
+export interface ExecutionConfirmationInput {
+  /** Required for a new execution; must match the live server mode. Completed plans remain idempotent. */
+  expectedSmtpEnabled?: boolean;
+}
+
+export type CorrespondenceMetadataFileType = typeof CorrespondenceMetadataFileType[keyof typeof CorrespondenceMetadataFileType];
+
+
+export const CorrespondenceMetadataFileType = {
+  text: 'text',
+  txt: 'txt',
+  csv: 'csv',
+} as const;
+
+export interface CorrespondenceMetadata {
+  id: string;
+  companyId: string;
+  fileType: CorrespondenceMetadataFileType;
+  filename: string;
+  uploadedBy: string;
+  uploadedAt: string;
+}
+
 export type CorrespondenceRecordFileType = typeof CorrespondenceRecordFileType[keyof typeof CorrespondenceRecordFileType];
 
 
@@ -1058,4 +1081,8 @@ export interface DocumentView {
 export interface ResetInput {
   confirm: boolean;
 }
+
+export type GetExecutionMode200 = {
+  smtpEnabled: boolean;
+};
 

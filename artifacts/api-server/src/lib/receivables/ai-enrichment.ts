@@ -1,5 +1,4 @@
 import type { CollectionPlan } from "@workspace/api-zod";
-import type { DemoState } from "./model";
 import { BusinessError } from "./model";
 import { generateAdvice, openaiConfigured } from "./ai-provider";
 import { applyAdvice, humanAdjusted } from "./service";

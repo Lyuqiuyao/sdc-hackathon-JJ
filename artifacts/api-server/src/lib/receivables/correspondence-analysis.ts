@@ -21,13 +21,13 @@ export async function analyzeCompanyRecord(companyId: string, recordId: string) 
     const error = !companyExists || !record ? "Company or linked correspondence record not found."
       : previous && previous.expiresAtMs > time ? "This correspondence record is already being analyzed." : undefined;
     if (error) {
-      audit(state, "Correspondence NLP rejected", error, key, "", attemptId);
+      audit(state, "Correspondence NLP rejected", error, key, "", attemptId, undefined, { result: "Rejected" });
       return { error, status: companyExists && record ? 409 : 404 } as const;
     }
-    if (previous) audit(state, "Correspondence NLP expired", "Previous analysis lease expired; any late result will be discarded.", key, previous.attemptId, attemptId);
+    if (previous) audit(state, "Correspondence NLP expired", "Previous analysis lease expired; any late result will be discarded.", key, previous.attemptId, attemptId, undefined, { result: "Rejected" });
     (state.correspondenceAnalysisJobs ??= {})[key] = { attemptId, expiresAtMs: time + 90_000 };
     audit(state, "Correspondence NLP started", "Manual extraction requested. Uploaded text is unverified data, not instructions. No profile, financial facts or planner values will change.",
-      key, "", attemptId);
+      key, "", attemptId, undefined, { result: "Pending" });
     return { record: structuredClone(record!), hash: sourceHash(record!.rawText) } as const;
   });
   if ("error" in claim) throw new BusinessError(claim.error!, claim.status);
@@ -39,7 +39,7 @@ export async function analyzeCompanyRecord(companyId: string, recordId: string) 
       const record = state.correspondenceRecords?.find(row => row.companyId === companyId && row.id === recordId);
       if (job?.attemptId !== attemptId || job.expiresAtMs <= databaseNowMs! ||
         !record || sourceHash(record.rawText) !== claim.hash || !state.customers.some(company => company.id === companyId)) {
-        audit(state, "Correspondence NLP discarded", "Source association changed or analysis lease expired; result was not applied.", key, "", attemptId);
+        audit(state, "Correspondence NLP discarded", "Source association changed or analysis lease expired; result was not applied.", key, "", attemptId, undefined, { result: "Rejected" });
         if (job?.attemptId === attemptId) delete state.correspondenceAnalysisJobs![key];
         return { error: "Analysis expired or source changed. Retry the analysis manually." } as const;
       }
@@ -56,7 +56,7 @@ export async function analyzeCompanyRecord(companyId: string, recordId: string) 
         key, "", JSON.stringify({ analysisId: analysis.id, provider: analysis.provider, reasonCode: analysis.reasonCode,
           model: analysis.model, sourceHash: analysis.sourceHash,
           followUpCount: analysis.fields.followUpItems.length, promiseCount: analysis.fields.customerPromises.length,
-          disputeCount: analysis.fields.disputes.length }));
+          disputeCount: analysis.fields.disputes.length }), undefined, { result: "Success" });
       return { analysis } as const;
     });
     if ("error" in result) throw new BusinessError(result.error!, 409);
@@ -64,7 +64,8 @@ export async function analyzeCompanyRecord(companyId: string, recordId: string) 
   } catch (error) {
     await changeState(state => {
       if (state.correspondenceAnalysisJobs?.[key]?.attemptId === attemptId) delete state.correspondenceAnalysisJobs[key];
-      audit(state, "Correspondence NLP failed", "Analysis could not be applied. No raw model response was retained; no profile, financial facts or plans were changed.", key, "", attemptId);
+      audit(state, "Correspondence NLP failed", "Analysis could not be applied. No raw model response was retained; no profile, financial facts or plans were changed.", key, "", attemptId, undefined,
+        { result: error instanceof BusinessError ? "Rejected" : "Failed" });
     });
     if (error instanceof BusinessError) throw error;
     throw new BusinessError("Correspondence analysis could not be saved. Please retry manually.", 503);

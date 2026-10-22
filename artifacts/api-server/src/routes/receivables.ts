@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 import {
   GetWorkspaceResponse, DemoLoginResponse, RunRiskCheckResponse, GeneratePlanBody, GeneratePlanResponse,
   EditPlanParams, EditPlanBody, EditPlanResponse, DecidePlanParams, DecidePlanBody, DecidePlanResponse,
-  ExecutePlanParams, ExecutePlanResponse, SaveSettingsBody, SaveSettingsResponse, ImportInvoicesBody,
+  ExecutePlanParams, ExecutePlanBody, ExecutePlanResponse, SaveSettingsBody, SaveSettingsResponse, ImportInvoicesBody,
   ImportInvoicesResponse, ViewDocumentParams, ViewDocumentResponse, ResetDemoBody, ResetDemoResponse,
 } from "@workspace/api-zod";
 import { readState, changeState } from "../lib/receivables/repository";
@@ -16,15 +16,20 @@ import { SaveCompanyProfileParams, SaveCompanyProfileBody, SaveCompanyProfileRes
 import { saveProfile, submitSedg } from "../lib/receivables/company";
 import { GetCompanyCorrespondenceParams, GetCompanyCorrespondenceResponse,
   UploadCompanyCorrespondenceParams, UploadCompanyCorrespondenceResponse } from "@workspace/api-zod";
-import { appendCorrespondence, listCorrespondence } from "../lib/receivables/correspondence";
+import { correspondenceMetadata, correspondenceDetail, uploadCorrespondence } from "../lib/receivables/correspondence";
 import { executeWithSmtpSwitch } from "../lib/receivables/smtp-execution";
 import { AnalyzeCompanyCorrespondenceParams, AnalyzeCompanyCorrespondenceResponse } from "@workspace/api-zod";
 import { analyzeCompanyRecord } from "../lib/receivables/correspondence-analysis";
 import { GenerateCompanyPortraitParams, GenerateCompanyPortraitResponse } from "@workspace/api-zod";
 import { generatePortrait } from "../lib/receivables/company-portrait";
+import { GetCompanyCorrespondenceRecordParams, GetCompanyCorrespondenceRecordResponse, GetExecutionModeResponse } from "@workspace/api-zod";
+import { smtpEnabled } from "../lib/receivables/smtp-config";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
+router.get("/execution-mode", (_req, res): void => {
+  res.json(GetExecutionModeResponse.parse({ smtpEnabled: smtpEnabled() }));
+});
 router.post("/company/:id/portrait", async (req, res): Promise<void> => {
   const { id } = GenerateCompanyPortraitParams.parse(req.params);
   res.json(GenerateCompanyPortraitResponse.parse(await generatePortrait(id)));
@@ -35,12 +40,15 @@ router.post("/company/:id/correspondence/:recordId/analyze", async (req, res): P
 });
 router.get("/company/:id/correspondence", async (req, res): Promise<void> => {
   const { id } = GetCompanyCorrespondenceParams.parse(req.params);
-  res.json(GetCompanyCorrespondenceResponse.parse(listCorrespondence(await readState(), id)));
+  res.json(GetCompanyCorrespondenceResponse.parse(await correspondenceMetadata(id)));
+});
+router.get("/company/:id/correspondence/:recordId", async (req, res): Promise<void> => {
+  const { id, recordId } = GetCompanyCorrespondenceRecordParams.parse(req.params);
+  res.json(GetCompanyCorrespondenceRecordResponse.parse(await correspondenceDetail(id, recordId)));
 });
 router.post("/company/:id/correspondence", async (req, res): Promise<void> => {
   const { id } = UploadCompanyCorrespondenceParams.parse(req.params);
-  res.status(201).json(await changeState(state =>
-    UploadCompanyCorrespondenceResponse.parse(appendCorrespondence(state, id, req.body))));
+  res.status(201).json(UploadCompanyCorrespondenceResponse.parse(await uploadCorrespondence(id, req.body)));
 });
 router.put("/customers/:id/profile", async (req, res): Promise<void> => {
   const { id } = SaveCompanyProfileParams.parse(req.params), input = SaveCompanyProfileBody.parse(req.body);
@@ -85,7 +93,8 @@ router.post("/plans/:id/decision", async (req, res): Promise<void> => {
 });
 router.post("/plans/:id/execute", async (req, res): Promise<void> => {
   const { id } = ExecutePlanParams.parse(req.params);
-  res.json(ExecutePlanResponse.parse(await executeWithSmtpSwitch(id)));
+  const input = ExecutePlanBody.parse(req.body ?? {});
+  res.json(ExecutePlanResponse.parse(await executeWithSmtpSwitch(id, input.expectedSmtpEnabled)));
 });
 router.put("/settings", async (req, res): Promise<void> => {
   const input = SaveSettingsBody.parse(req.body);

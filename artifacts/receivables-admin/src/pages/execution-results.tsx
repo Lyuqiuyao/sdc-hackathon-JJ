@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
 import { Download, PlayCircle } from 'lucide-react';
-import { useExecutePlan } from '@workspace/api-client-react';
+import { getExecutionMode, useExecutePlan, type GetExecutionModeQueryResult } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState } from '@/components/kit';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { download, errMsg, fmtDate, fmtDateTime, fmtfix, rm, toCsv, useRefresh } from '@/lib/arus';
+import { download, errMsg, fmtDateTime, fmtfix, rm, toCsv, useRefresh } from '@/lib/arus';
 import { ProviderDetails } from '@/components/provider-details';
 import { ScoringSummary } from '@/components/plan';
 
@@ -19,6 +19,8 @@ export default function ExecutionResults() {
   const exec = useExecutePlan();
   const [sel, setSel] = useState('');
   const [ask, setAsk] = useState(false);
+  const [checkingMode, setCheckingMode] = useState(false);
+  const [confirmation, setConfirmation] = useState<(GetExecutionModeQueryResult & { planId: string }) | null>(null);
   const [err, setErr] = useState('');
   return (
     <Page title="Execution Results" description="Execution records for approved plans">
@@ -27,12 +29,24 @@ export default function ExecutionResults() {
         const plan = plans.find((p) => p.id === sel) ?? plans[0];
         const recs = plan ? ws.executions.filter((e) => e.planId === plan.id) : [];
         const approval = plan ? ws.approvals.filter((a) => a.planId === plan.id).slice(-1)[0] : undefined;
-        const run = async () => {
-          if (!plan) return; setAsk(false); setErr('');
+        const confirmExecution = async () => {
+          if (!plan) return;
+          setErr(''); setConfirmation(null); setCheckingMode(true);
           try {
-            await exec.mutateAsync({ id: plan.id }); await refresh();
-            toast({ title: ws.smtpEnabled ? 'SMTP execution recorded' : 'Simulated execution recorded',
-              description: ws.smtpEnabled ? 'SMTP accepted the messages. Inbox delivery is not guaranteed. No payments changed.' : 'No real notices were sent and no payments changed.' });
+            // Direct request for each confirmation, not a workspace/query cache.
+            const current = await getExecutionMode({ cache: 'no-store' });
+            setConfirmation({ ...current, planId: plan.id }); setAsk(true);
+          } catch (e) { setErr(errMsg(e)); }
+          finally { setCheckingMode(false); }
+        };
+        const run = async () => {
+          if (!confirmation) return;
+          const confirmed = confirmation;
+          setAsk(false); setConfirmation(null); setErr('');
+          try {
+            await exec.mutateAsync({ id: confirmed.planId, data: { expectedSmtpEnabled: confirmed.smtpEnabled } }); await refresh();
+            toast({ title: 'Execution state recorded',
+              description: 'Review the execution records for actual channels and outcomes. No invoice payment was changed.' });
           } catch (e) {
             setErr(errMsg(e));
             // Earlier tasks may already have been accepted before a later SMTP failure.
@@ -54,7 +68,7 @@ export default function ExecutionResults() {
         };
         return (
           <div className="space-y-4">
-            <Alert><AlertDescription>{ws.smtpEnabled ? 'Real SMTP mode: execution sends the approved English and Malay drafts to the configured SMTP_TO mailbox. SMTP acceptance does not guarantee inbox delivery. Invoice payment records are not changed.' : 'Execution is a demo simulation. It records tasks and marks notices as generated or simulated only; no email or message is sent and invoice payment records are not changed.'}</AlertDescription></Alert>
+            <Alert><AlertDescription>Execution mode is checked directly with the server before confirmation. Simulation sends no messages; real SMTP sends to the configured SMTP_TO mailbox. SMTP acceptance does not guarantee inbox delivery. Invoice payment records are not changed.</AlertDescription></Alert>
             {err && <Alert variant="destructive" data-testid="alert-exec-error"><AlertTitle>Execution failed</AlertTitle><AlertDescription>{err}</AlertDescription></Alert>}
             {!plan ? <EmptyState title="No approved plan yet" hint="Only approved plans can be executed. Approve a pending plan first." action={<Button asChild size="sm"><Link href="/approvals">Open Approval Center</Link></Button>} /> : (
               <>
@@ -65,7 +79,7 @@ export default function ExecutionResults() {
                   {approval && <span className="text-xs text-muted-foreground">Approved by {approval.actor} at {fmtDateTime(approval.createdAt)}</span>}
                   <div className="ml-auto flex flex-wrap gap-2">
                     <Button variant="outline" onClick={report} data-testid="button-export-report"><Download className="mr-1 h-4 w-4" />Export Report</Button>
-                    <Button onClick={() => setAsk(true)} disabled={plan.status !== 'Approved' || exec.isPending || v2Blockers.length > 0} data-testid="button-execute"><PlayCircle className="mr-1 h-4 w-4" />{exec.isPending ? 'Executing...' : 'Execute Approved Plan'}</Button>
+                    <Button onClick={confirmExecution} disabled={plan.status !== 'Approved' || exec.isPending || checkingMode || v2Blockers.length > 0} data-testid="button-execute"><PlayCircle className="mr-1 h-4 w-4" />{checkingMode ? 'Checking server mode...' : exec.isPending ? 'Executing...' : 'Execute Approved Plan'}</Button>
                   </div>
                 </Panel>
                 {v2Blockers.length > 0 && <Alert data-testid="alert-exec-blocked"><AlertDescription>Execution blocked: {v2Blockers.join('; ')}. Complete these in the Approval Center.</AlertDescription></Alert>}
@@ -101,9 +115,9 @@ export default function ExecutionResults() {
                                 <p className="mt-1 text-muted-foreground">{e.channel === 'SMTP Email' ? 'Accepted by SMTP. Delivery to a real mailbox is not guaranteed.' : 'Simulation only. Nothing was delivered to a real mailbox.'}</p></details></TableCell></TableRow>); })}</TableBody></Table></div>)}
                 </Panel>
               </>)}
-            <AlertDialog open={ask} onOpenChange={setAsk}>
-              <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{ws.smtpEnabled ? 'Execute approved plan (real SMTP)?' : 'Execute approved plan (simulation)?'}</AlertDialogTitle><AlertDialogDescription>{ws.smtpEnabled ? 'Sends real email for each task to the configured SMTP_TO mailbox. Previously accepted tasks are not resent. No invoice payment is modified.' : 'Creates execution records for each task. No real message is sent and no invoice payment is modified.'}</AlertDialogDescription></AlertDialogHeader>
-                <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={run} data-testid="button-confirm-execute">Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+            <AlertDialog open={ask} onOpenChange={open => { setAsk(open); if (!open) setConfirmation(null); }}>
+              <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{confirmation?.smtpEnabled ? 'Execute approved plan (real SMTP)?' : 'Execute approved plan (simulation)?'}</AlertDialogTitle><AlertDialogDescription>{confirmation?.smtpEnabled ? 'The server currently reports real SMTP mode. Sends email to the configured SMTP_TO mailbox. Previously accepted tasks are not resent. If the mode changes, execution is rejected and must be reconfirmed.' : 'The server currently reports simulation mode. No real message is sent. If the mode changes, execution is rejected and must be reconfirmed.'}</AlertDialogDescription></AlertDialogHeader>
+                <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction disabled={!confirmation || exec.isPending} onClick={run} data-testid="button-confirm-execute">Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
             </AlertDialog>
           </div>
         );

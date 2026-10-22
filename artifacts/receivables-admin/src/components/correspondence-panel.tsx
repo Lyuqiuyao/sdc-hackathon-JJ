@@ -5,6 +5,8 @@ import {
   getGetCompanyCorrespondenceQueryKey, useGetCompanyCorrespondence, useUploadCompanyCorrespondence,
   type CorrespondenceInput,
   useAnalyzeCompanyCorrespondence,
+  useGetCompanyCorrespondenceRecord,
+  getGetCompanyCorrespondenceRecordQueryKey,
 } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +15,17 @@ import { useToast } from '@/hooks/use-toast';
 import { errMsg, fmtDateTime, useRefresh } from '@/lib/arus';
 
 const MAX_BYTES = 10 * 1024 * 1024;
+
+function CorrespondenceFullText({ companyId, recordId }: { companyId: string; recordId: string }) {
+  const detail = useGetCompanyCorrespondenceRecord(companyId, recordId, {
+    query: { queryKey: getGetCompanyCorrespondenceRecordQueryKey(companyId, recordId),
+      retry: false, staleTime: 0, gcTime: 0, refetchOnWindowFocus: false },
+  });
+  if (detail.isLoading) return <p className="mt-2">Loading original text...</p>;
+  if (detail.isError) return <div className="mt-2" role="alert">Cannot load this record; it may have been removed by the five-record limit.
+    <Button size="sm" variant="outline" onClick={() => detail.refetch()}>Retry</Button></div>;
+  return <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/60 p-2 font-sans">{detail.data?.rawText}</pre>;
+}
 
 export function CorrespondencePanel({ companyId }: { companyId: string }) {
   const queryKey = getGetCompanyCorrespondenceQueryKey(companyId);
@@ -28,6 +41,7 @@ export function CorrespondencePanel({ companyId }: { companyId: string }) {
   const [error, setError] = useState('');
   const [draft, setDraft] = useState<CorrespondenceInput>({ fileType: 'text', filename: 'Pasted text', rawText: '' });
   const [analysisError, setAnalysisError] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const busy = reading || upload.isPending || analyze.isPending;
 
   const analyzeRecord = async (recordId: string) => {
@@ -82,7 +96,7 @@ export function CorrespondencePanel({ companyId }: { companyId: string }) {
       </Button>
     </div>
     {open && <div className="space-y-3 rounded-md border p-3">
-      <p className="text-xs text-muted-foreground">Shared synthetic demo only: do not upload real customer information. Paste WhatsApp chat or Excel-exported text, or choose a UTF-8 .txt/.csv file (maximum 10 MB). Upload stores raw text only. AI analysis requires a separate manual action.</p>
+      <p className="text-xs text-muted-foreground">Shared synthetic demo only: do not upload real customer information. Paste WhatsApp chat or Excel-exported text, or choose a UTF-8 .txt/.csv file (maximum 10 MB). Only the latest five records per company are retained; uploading another automatically deletes the oldest record and its original text. AI analysis requires a separate manual action.</p>
       <input ref={fileRef} type="file" accept=".txt,.csv,text/plain,text/csv" disabled={busy}
         aria-label="Correspondence file" data-testid="input-correspondence-file" className="block w-full text-xs"
         onChange={e => { void readFile(e.target.files?.[0]); }} />
@@ -107,8 +121,11 @@ export function CorrespondencePanel({ companyId }: { companyId: string }) {
           <div className="text-muted-foreground">{record.uploadedBy} · {fmtDateTime(record.uploadedAt)}</div>
           <Button size="sm" variant="outline" className="mt-2" disabled={busy} data-testid={`button-analyze-${record.id}`}
             onClick={() => analyzeRecord(record.id)}>{analyze.isPending && analyze.variables?.recordId === record.id ? 'Analyzing...' : 'Analyze communication'}</Button>
-          <details className="mt-1"><summary className="cursor-pointer">View original text</summary>
-            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/60 p-2 font-sans">{record.rawText}</pre>
+          <details className="mt-1" onToggle={event => {
+            const isOpen = event.currentTarget.open;
+            setExpanded(current => current[record.id] === isOpen ? current : { ...current, [record.id]: isOpen });
+          }}><summary className="cursor-pointer">View original text</summary>
+            {expanded[record.id] && <CorrespondenceFullText companyId={companyId} recordId={record.id} />}
           </details>
         </li>)}
       </ul>}
