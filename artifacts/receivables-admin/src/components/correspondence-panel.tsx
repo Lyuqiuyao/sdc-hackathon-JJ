@@ -5,6 +5,7 @@ import {
   getGetCompanyCorrespondenceQueryKey, useGetCompanyCorrespondence, useUploadCompanyCorrespondence,
   type CorrespondenceInput,
   useAnalyzeCompanyCorrespondence,
+  useGenerateCompanyPortrait,
   useGetCompanyCorrespondenceRecord,
   getGetCompanyCorrespondenceRecordQueryKey,
 } from '@workspace/api-client-react';
@@ -32,6 +33,7 @@ export function CorrespondencePanel({ companyId }: { companyId: string }) {
   const records = useGetCompanyCorrespondence(companyId, { query: { queryKey, refetchInterval: 15000 } });
   const upload = useUploadCompanyCorrespondence();
   const analyze = useAnalyzeCompanyCorrespondence();
+  const portrait = useGenerateCompanyPortrait();
   const qc = useQueryClient();
   const refresh = useRefresh();
   const { toast } = useToast();
@@ -42,16 +44,22 @@ export function CorrespondencePanel({ companyId }: { companyId: string }) {
   const [draft, setDraft] = useState<CorrespondenceInput>({ fileType: 'text', filename: 'Pasted text', rawText: '' });
   const [analysisError, setAnalysisError] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const busy = reading || upload.isPending || analyze.isPending;
+  const busy = reading || upload.isPending || analyze.isPending || portrait.isPending;
 
   const analyzeRecord = async (recordId: string) => {
     setAnalysisError('');
+    let stage = 'NLP analysis';
     try {
       const result = await analyze.mutateAsync({ id: companyId, recordId });
+      stage = 'Company portrait generation';
+      const saved = await portrait.mutateAsync({ id: companyId });
+      toast({ title: 'Communication extraction and company portrait saved',
+        description: `${result.provider === 'openai' ? 'OpenAI extraction' : 'Rules extraction fallback'}; ${saved.provider === 'openai' ? 'OpenAI-assisted portrait' : 'Rules portrait fallback'}. Source claims remain unverified.` });
+    } catch (e) {
+      setAnalysisError(`Correspondence is saved. ${stage} failed: ${errMsg(e)}. Retry analysis or portrait generation without uploading again.`);
+    } finally {
       await refresh();
-      toast({ title: 'Communication extraction saved',
-        description: result.provider === 'openai' ? 'OpenAI extraction saved as unverified source claims.' : `Rules fallback used (${result.reasonCode}). Review the extracted source claims.` });
-    } catch (e) { setAnalysisError(errMsg(e)); }
+    }
   };
 
   const readFile = async (file?: File) => {
@@ -79,13 +87,14 @@ export function CorrespondencePanel({ companyId }: { companyId: string }) {
     if (new TextEncoder().encode(draft.rawText).byteLength > MAX_BYTES) {
       setError('Correspondence exceeds the 10 MB limit.'); return;
     }
+    let record;
     try {
-      await upload.mutateAsync({ id: companyId, data: draft });
+      record = await upload.mutateAsync({ id: companyId, data: draft });
     } catch (e) { setError(errMsg(e)); return; }
     setDraft({ fileType: 'text', filename: 'Pasted text', rawText: '' });
     setOpen(false);
-    await Promise.all([qc.invalidateQueries({ queryKey }), refresh()]);
-    toast({ title: 'Correspondence uploaded', description: 'Saved with an audit entry. No AI processing was performed.' });
+    await qc.invalidateQueries({ queryKey });
+    await analyzeRecord(record.id);
   };
 
   return <section className="space-y-3" data-testid="panel-correspondence">
@@ -96,7 +105,7 @@ export function CorrespondencePanel({ companyId }: { companyId: string }) {
       </Button>
     </div>
     {open && <div className="space-y-3 rounded-md border p-3">
-      <p className="text-xs text-muted-foreground">Shared synthetic demo only: do not upload real customer information. Paste WhatsApp chat or Excel-exported text, or choose a UTF-8 .txt/.csv file (maximum 10 MB). Only the latest five records per company are retained; uploading another automatically deletes the oldest record and its original text. AI analysis requires a separate manual action.</p>
+      <p className="text-xs text-muted-foreground">Shared synthetic demo only: do not upload real customer information. Paste WhatsApp chat or Excel-exported text, or choose a UTF-8 .txt/.csv file (maximum 10 MB). Only the latest five records per company are retained; uploading another automatically deletes the oldest record and its original text. Saving automatically analyzes this record and then generates the company portrait.</p>
       <input ref={fileRef} type="file" accept=".txt,.csv,text/plain,text/csv" disabled={busy}
         aria-label="Correspondence file" data-testid="input-correspondence-file" className="block w-full text-xs"
         onChange={e => { void readFile(e.target.files?.[0]); }} />
@@ -110,7 +119,7 @@ export function CorrespondencePanel({ companyId }: { companyId: string }) {
         {upload.isPending ? 'Uploading...' : 'Save correspondence'}
       </Button>
     </div>}
-    <p className="text-xs text-muted-foreground">Analyze sends the selected record to the existing managed OpenAI service (Replit credit usage may apply). Missing configuration, errors or unsupported output use regex rules. Unknown values remain empty; no company profile is generated.</p>
+    <p className="text-xs text-muted-foreground">{analyze.isPending ? 'Analyzing communication...' : portrait.isPending ? 'Generating company portrait...' : 'Upload automatically runs NLP analysis followed by company portrait generation using the existing managed OpenAI service (Replit credit usage may apply). Missing configuration, errors or unsupported output use rules fallback. Manual buttons are optional retries.'}</p>
     {analysisError && <Alert variant="destructive" data-testid="alert-correspondence-analysis-error"><AlertDescription>{analysisError}</AlertDescription></Alert>}
     {records.isLoading ? <p className="text-xs">Loading correspondence...</p>
       : records.isError ? <div className="text-xs" role="alert">Could not load correspondence. <Button size="sm" variant="outline" onClick={() => records.refetch()}>Retry</Button></div>

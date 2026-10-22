@@ -31,7 +31,7 @@ export function CompanyPortraitPanel({ customer }: { customer: Customer }) {
     </div>
     <p className="text-xs text-muted-foreground">Advisory only. Based on structured invoices and prior NLP excerpts, not a credit score or certification. Generation uses the existing managed OpenAI service; credit usage may apply. Errors use rules fallback.</p>
     {error && <Alert variant="destructive" data-testid="portrait-error"><AlertDescription>{error}</AlertDescription></Alert>}
-    {!portrait ? <p className="text-xs text-muted-foreground">No portrait saved yet. Generate a portrait to show cooperation risk signals, ESG context and a payment-data summary here.</p> : <>
+    {!portrait ? <p className="text-xs text-muted-foreground">No portrait saved yet. Uploading correspondence automatically analyzes it and generates a portrait here. The generate button is also available for an optional retry or existing records.</p> : <>
       {portrait.isStale && <Alert data-testid="portrait-stale"><AlertDescription>Source invoices, NLP results, ESG context or the calendar day changed. This saved portrait may be out of date; regenerate before relying on it.</AlertDescription></Alert>}
       <p className="text-xs text-muted-foreground">{portrait.provider === 'openai' ? 'OpenAI-assisted · controlled facts' : 'Basic rules fallback'} · {portrait.reasonCode} · {fmtDateTime(portrait.generatedAt)}</p>
       <div><h4 className="mb-2 text-xs font-semibold">Cooperation risk signals</h4>

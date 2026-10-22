@@ -26,7 +26,7 @@ export async function analyzeCompanyRecord(companyId: string, recordId: string) 
     }
     if (previous) audit(state, "Correspondence NLP expired", "Previous analysis lease expired; any late result will be discarded.", key, previous.attemptId, attemptId, undefined, { result: "Rejected" });
     (state.correspondenceAnalysisJobs ??= {})[key] = { attemptId, expiresAtMs: time + 90_000 };
-    audit(state, "Correspondence NLP started", "Manual extraction requested. Uploaded text is unverified data, not instructions. No profile, financial facts or planner values will change.",
+    audit(state, "Correspondence NLP started", "Communication extraction requested. Uploaded text is unverified data, not instructions. This extraction does not change profile, financial facts or planner values.",
       key, "", attemptId, undefined, { result: "Pending" });
     return { record: structuredClone(record!), hash: sourceHash(record!.rawText) } as const;
   });

@@ -49,7 +49,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
       c.outstandingCents += t.outstandingCents; c.days = Math.max(c.days, t.daysOverdue); c.tasks += 1; c.firstRank = Math.min(c.firstRank, t.rank);
       m.set(t.customerId, c);
     }
-    return [...m.values()].filter((c) => c.queue === 'two_dimensional' || c.esg === 'unknown').sort((a, b) => a.firstRank - b.firstRank);
+    return [...m.values()].sort((a, b) => a.firstRank - b.firstRank);
   }, [plan]);
   const pendingReviews = reviewCustomers.filter((c) => !reviewsBy.has(c.id));
   const blockers: string[] = [];
@@ -121,7 +121,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
       {isV2 && <>
         <Panel title="Initial queues" bodyClass="space-y-2"><QueuesOverview tasks={plan.tasks} /></Panel>
         <Panel title={`Customer review (${reviewCustomers.length - pendingReviews.length}/${reviewCustomers.length} done)`} bodyClass="space-y-3" data-testid="panel-customer-reviews">
-          <p className="text-xs text-muted-foreground">Review every 2D-queue customer (including unknown ESG) before merging. Unknown or missing ESG is never treated as bad risk. A decision applies to all of that customer's tasks and saves a new Pending version.</p>
+          <p className="text-xs text-muted-foreground">Review every customer in both queues, with or without an ESG rating, before merging. Unknown or missing ESG is never treated as bad risk. A decision applies to all of that customer's tasks and saves a new Pending version.</p>
           {reviewCustomers.length === 0 && <p className="text-sm text-muted-foreground">No customers need review in this plan.</p>}
           {reviewCustomers.map((c) => {
             const cust = ws.customers.find((x) => x.id === c.id);
@@ -155,7 +155,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
             <Textarea rows={2} value={mergeReason} onChange={(e) => setMergeReason(e.target.value)} placeholder="Reason for the final order (required)" data-testid="input-merge-reason" />
             <Button onClick={confirmMerge} disabled={busy || !mergeReason.trim() || pendingReviews.length > 0} data-testid="button-confirm-merge"><ListChecks className="mr-1 h-4 w-4" />Confirm final order</Button>
           </div>}
-          {editable && pendingReviews.length > 0 && <p className="text-xs text-orange-700">Complete all 2D customer reviews first.</p>}
+          {editable && pendingReviews.length > 0 && <p className="text-xs text-orange-700">Complete all customer reviews first.</p>}
           {editable && dirty && <p className="text-xs text-muted-foreground">Confirming also saves the current order and edits as a new version.</p>}
         </Panel>
       </>}

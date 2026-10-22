@@ -206,14 +206,14 @@ export function edit(state: DemoState, id: string, input: PlanEdit) {
 
 export function assertCustomerReviews(state: DemoState, plan: CollectionPlan) {
   if (!plan.scoringSnapshot) return;
-  const ids = new Set(plan.tasks.filter(t => t.queue === "two_dimensional").map(t => t.customerId));
+  const ids = new Set(plan.tasks.map(t => t.customerId));
   for (const id of ids) {
     const reviews = (plan.customerReviews ?? []).filter(r => r.customerId === id);
     const customer = state.customers.find(c => c.id === id);
     const latest = [...(state.sedgSubmissions ?? [])].reverse().find(s => s.customerId === id);
     if (reviews.length !== 1 || !customer || !reviews[0]!.reason.trim() ||
       reviews[0]!.profileVersion !== (customer.profileVersion ?? 0) || reviews[0]!.sedgSubmissionId !== latest?.id)
-      throw new BusinessError("Complete current customer reviews for all 2D customers before merging or approving.", 409);
+      throw new BusinessError("Complete current customer reviews for all customers before merging or approving.", 409);
   }
 }
 function assertPlanningReview(state: DemoState, plan: CollectionPlan) {

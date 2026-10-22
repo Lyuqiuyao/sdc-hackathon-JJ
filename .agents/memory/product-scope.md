@@ -41,7 +41,7 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **Why:** The user specified these final MVP scope and trust boundaries.
 
-**How to apply:** Do not introduce a customer or certifier portal, unrelated model calls, Secret changes or shared database operations under this implementation scope. The later authorizations permit the SMTP switch, manual communication extraction and the specified advisory AI portrait through the existing ai-provider, not broader workflow changes.
+**How to apply:** Do not introduce a customer or certifier portal, unrelated model calls, Secret changes or shared database operations under this implementation scope. Later authorization permits the SMTP switch, communication extraction and the specified advisory AI portrait through the existing ai-provider, not broader workflow changes.
 
 ## Incremental enhancement constraints
 
@@ -56,4 +56,10 @@ Provide administrator-only synthetic SEDG submission/import, company information
 **Why:** 用户明确要求限制累计原文容量并避免列表轮询反复传输大段原文，且授权自动删除最早记录。
 
 **How to apply:** 保持元数据列表与全文详情分离；不要把上传容量上限当作无限制累计留存的授权。
+
+上传成功后自动串联该记录 NLP 与该公司画像生成；所有进入审核队列的客户，无论是否有 ESG 评级，都必须完成立即催收／可协商延期二选一。
+
+**Why:** 用户明确授权这两个流程变化，同时要求保留排程触发方式、标签夹手动打开、邮件发送流程及审核页现有结构。
+
+**How to apply:** 不再把手动 Analyze／Generate portrait 作为新上传的必要步骤；保留现有审计与规则兜底，不改变排程评分或金融事实。
 
