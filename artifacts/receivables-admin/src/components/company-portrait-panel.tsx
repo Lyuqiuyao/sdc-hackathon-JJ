@@ -18,7 +18,7 @@ export function CompanyPortraitPanel({ customer }: { customer: Customer }) {
       const saved = await generate.mutateAsync({ id: customer.id });
       await refresh();
       toast({ title: 'Company portrait saved', description: saved.provider === 'openai'
-        ? 'OpenAI-assisted arrangement of controlled facts. No scoring or planning changed.'
+        ? 'OpenAI-assisted cumulative portrait saved. Earlier versions, if any, remain saved; no scoring or planning changed.'
         : `Basic rules portrait saved (${saved.reasonCode}). No scoring or planning changed.` });
     } catch (e) { setError(errMsg(e)); }
   };
@@ -26,10 +26,10 @@ export function CompanyPortraitPanel({ customer }: { customer: Customer }) {
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-semibold">AI company portrait</h3>
       <Button size="sm" variant="outline" disabled={generate.isPending} onClick={run} data-testid="button-generate-portrait">
-        {generate.isPending ? 'Generating...' : portrait ? 'Regenerate portrait' : 'Generate portrait'}
+        {generate.isPending ? 'Integrating...' : portrait ? 'Update cumulative portrait' : 'Generate portrait'}
       </Button>
     </div>
-    <p className="text-xs text-muted-foreground">Advisory only. Based on structured invoices and prior NLP excerpts, not a credit score or certification. Generation uses the existing managed OpenAI service; credit usage may apply. Errors use rules fallback.</p>
+    <p className="text-xs text-muted-foreground">Advisory only. New correspondence is integrated with the previous portrait and cumulative NLP evidence for this company; earlier versions remain saved. Current invoices remain authoritative. This is not a credit score or certification. Managed OpenAI usage may apply; errors use cumulative rules fallback.</p>
     {error && <Alert variant="destructive" data-testid="portrait-error"><AlertDescription>{error}</AlertDescription></Alert>}
     {!portrait ? <p className="text-xs text-muted-foreground">No portrait saved yet. Uploading correspondence automatically analyzes it and generates a portrait here. The generate button is also available for an optional retry or existing records.</p> : <>
       {portrait.isStale && <Alert data-testid="portrait-stale"><AlertDescription>Source invoices, NLP results, ESG context or the calendar day changed. This saved portrait may be out of date; regenerate before relying on it.</AlertDescription></Alert>}
@@ -41,7 +41,7 @@ export function CompanyPortraitPanel({ customer }: { customer: Customer }) {
       <div><h4 className="text-xs font-semibold">ESG context</h4><p className="mt-1 text-xs">{portrait.esgHint}</p></div>
       <div><h4 className="text-xs font-semibold">Payment habit summary (available evidence only)</h4>
         <p className="mt-1 whitespace-pre-wrap text-xs">{portrait.paymentHabitSummary}</p></div>
-      <p className="break-all text-[11px] text-muted-foreground">{portrait.sourceAnalysisIds.length} NLP record result(s) referenced · {portrait.actor} · {portrait.id}</p>
+      <p className="break-all text-[11px] text-muted-foreground">{portrait.sourceAnalysisIds.length} cumulative NLP record(s) integrated, latest analysis per record · {portrait.actor} · {portrait.id}</p>
     </>}
   </section>;
 }

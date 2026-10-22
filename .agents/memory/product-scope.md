@@ -69,3 +69,9 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **How to apply:** 保持默认模拟、实时发送确认、幂等和结果不确定时禁止自动重试；缺失客户邮箱不得回退统一邮箱。历史 SEDG 缺字段应显示未提供，不补写历史。
 
+同一公司有多笔往来时，新增记录应由 AI 整合到之前的公司画像，而不是仅生成最新一笔的画像。
+
+**Why:** 用户明确要求公司画像持续整合。
+
+**How to apply:** 使用上一版画像、新增／重新解析的记录与累计证据生成新版，保留旧版本；同一记录重解析不重复计数，旧画像不得覆盖当前发票事实。
+

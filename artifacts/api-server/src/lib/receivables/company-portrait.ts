@@ -22,8 +22,9 @@ export async function generatePortrait(companyId: string) {
     if (previous) audit(state, "Company portrait expired", "Previous generation lease expired; late results will be discarded.", companyId, previous.attemptId, attemptId, undefined, { result: "Rejected" });
     const facts = companyPortraitFacts(state, companyId);
     (state.companyPortraitJobs ??= {})[companyId] = { attemptId, expiresAtMs: databaseNowMs! + 90_000 };
-    audit(state, "Company portrait started", "Requested an advisory portrait from structured invoices and prior unverified NLP results. No scoring or planner inputs will change.",
-      companyId, "", JSON.stringify({ attemptId, inputSignature: facts.inputSignature, sourceAnalysisIds: facts.sourceAnalysisIds }), undefined, { result: "Pending" });
+    audit(state, "Company portrait started", "Requested cumulative integration of the previous portrait, new/reanalyzed communication records and current invoice facts. No scoring or planner inputs will change.",
+      companyId, "", JSON.stringify({ attemptId, inputSignature: facts.inputSignature, sourceAnalysisIds: facts.sourceAnalysisIds,
+        previousPortraitId: facts.previousPortrait?.id ?? null, addedOrUpdatedAnalysisIds: facts.addedOrUpdatedAnalyses.map(row => row.id) }), undefined, { result: "Pending" });
     return { facts } as const;
   });
   if ("error" in claim) throw new BusinessError(claim.error!, claim.status);
@@ -33,7 +34,8 @@ export async function generatePortrait(companyId: string) {
     const result = await changeState((state, databaseNowMs) => {
       const job = state.companyPortraitJobs?.[companyId];
       const current = state.customers.some(row => row.id === companyId) ? companyPortraitFacts(state, companyId) : undefined;
-      if (job?.attemptId !== attemptId || job.expiresAtMs <= databaseNowMs! || current?.inputSignature !== claim.facts.inputSignature) {
+      if (job?.attemptId !== attemptId || job.expiresAtMs <= databaseNowMs! || current?.inputSignature !== claim.facts.inputSignature ||
+        current?.previousPortrait?.id !== claim.facts.previousPortrait?.id) {
         audit(state, "Company portrait discarded", "Generation expired or source data changed; portrait was not applied.", companyId, "", attemptId, undefined, { result: "Rejected" });
         if (job?.attemptId === attemptId) delete state.companyPortraitJobs![companyId];
         return { error: "Portrait sources changed or generation expired. Generate again manually." } as const;
@@ -46,9 +48,17 @@ export async function generatePortrait(companyId: string) {
       });
       ((state.companyPortraits ??= {})[companyId] ??= []).push(portrait);
       delete state.companyPortraitJobs![companyId];
-      audit(state, "Company portrait completed", "Saved advisory portrait with controlled facts. No customer profile text, financial data, scoring, planning or approval was changed.",
+      if (content.provider !== "openai") audit(state, "Company portrait AI fallback",
+        "AI cumulative integration was not completed. A cumulative rules portrait was saved instead; prior versions were retained.",
+        companyId, "", JSON.stringify({ attemptId, reasonCode: content.reasonCode,
+          previousPortraitId: claim.facts.previousPortrait?.id ?? null }), undefined,
+        { result: ["missing_managed_config", "cumulative_context_limit"].includes(content.reasonCode) ? "Rejected" : "Failed" });
+      audit(state, "Company portrait completed", "Appended a cumulative advisory portrait; the previous portrait remains in history. No customer profile text, financial data, scoring, planning or approval was changed.",
         companyId, "", JSON.stringify({ portraitId: portrait.id, provider: portrait.provider, model: portrait.model,
-          reasonCode: portrait.reasonCode, inputSignature: portrait.inputSignature, riskTagCodes: portrait.riskTags.map(tag => tag.code) }), undefined, { result: "Success" });
+          reasonCode: portrait.reasonCode, inputSignature: portrait.inputSignature, riskTagCodes: portrait.riskTags.map(tag => tag.code),
+          previousPortraitId: claim.facts.previousPortrait?.id ?? null,
+          addedOrUpdatedAnalysisIds: claim.facts.addedOrUpdatedAnalyses.map(row => row.id),
+          cumulativeRecordCount: portrait.sourceAnalysisIds.length }), undefined, { result: "Success" });
       return { portrait } as const;
     });
     if ("error" in result) throw new BusinessError(result.error!, 409);

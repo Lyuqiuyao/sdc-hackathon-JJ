@@ -4,6 +4,14 @@ import type { CompanyPortraitRiskTag, Invoice } from "@workspace/api-zod";
 import { BusinessError, collectible, myr, today, type DemoState } from "./model";
 import { canonicalJson, invoicesNow, validEsg } from "./compute";
 
+function cumulativeExcerpts(values: string[]) {
+  const unique = [...new Set(values.map(value => value.replace(/[\u0000-\u001f\u007f]/g, " ").trim()).filter(Boolean))];
+  // Show both older and recent evidence, rather than only the newest upload.
+  const selected = unique.length <= 6 ? unique : [...unique.slice(0, 3), ...unique.slice(-3)];
+  return `${selected.map(value => JSON.stringify(value.slice(0, 500))).join("; ")}${unique.length > selected.length
+    ? `; ${unique.length - selected.length} other distinct excerpt(s) are included in the cumulative counts.` : ""}`;
+}
+
 export function companyPortraitFacts(state: DemoState, companyId: string, invoices: Invoice[] = invoicesNow(state)) {
   const company = state.customers.find(row => row.id === companyId);
   if (!company) throw new BusinessError("Company not found.", 404);
@@ -16,6 +24,11 @@ export function companyPortraitFacts(state: DemoState, companyId: string, invoic
   // Use only the latest extraction for each record; do not double-count reanalysis.
   const latest = new Map((state.companyCorrespondenceAnalyses?.[companyId] ?? []).map(row => [row.recordId, row]));
   const analyses = [...latest.values()].sort((a, b) => a.recordId.localeCompare(b.recordId));
+  const previous = state.companyPortraits?.[companyId]?.at(-1);
+  const previousIds = new Set(previous?.sourceAnalysisIds ?? []);
+  const addedOrUpdatedAnalyses = analyses.filter(row => !previousIds.has(row.id))
+    .map(row => ({ id: row.id, recordId: row.recordId, extractedAt: row.extractedAt, fields: row.fields }));
+  const chronological = [...analyses].sort((a, b) => a.extractedAt.localeCompare(b.extractedAt) || a.recordId.localeCompare(b.recordId));
   const counts = analyses.reduce((sum, row) => ({
     disputes: sum.disputes + row.fields.disputes.length,
     promises: sum.promises + row.fields.customerPromises.length,
@@ -41,27 +54,45 @@ export function companyPortraitFacts(state: DemoState, companyId: string, invoic
   const esgHint = assigned === "unknown"
     ? `No assigned ESG rating. Missing ESG is neutral, not evidence of poor cooperation or bad debt. ${sedg.length} unverified SEDG submission(s); no rating is generated here.`
     : `Existing imported ESG rating: ${assigned}. ${matches ? "A matching synthetic reviewed record is present; this is not independent certification." : "Supporting reviewed evidence is unknown or does not match; do not treat the rating as verified."} ESG does not establish payment ability or alter collection ranking here.`;
-  const observations = {
+  const communicationObservations: Record<string, string> = {};
+  for (const [field, code, label] of [
+    ["customerPromises", "communication_promises", "Customer promises"],
+    ["disputes", "communication_disputes", "Disputes"],
+    ["followUpItems", "communication_follow_ups", "Follow-up items"],
+  ] as const) {
+    const values = chronological.flatMap(row => row.fields[field]);
+    if (values.length) communicationObservations[code] =
+      `${label}: ${values.length} unverified mention(s) across cumulative communication evidence. Source excerpts, not confirmed facts: ${cumulativeExcerpts(values)}`;
+  }
+  const observations: Record<string, string> = {
     invoice_summary: `${active.length} non-cancelled invoice(s): ${open.length} open and ${overdue.length} overdue.`,
     balances: `Recorded open balance: ${myr(outstanding)}. Recorded paid amount across non-cancelled invoices: ${myr(paid)}.`,
     aging: open.length ? `Maximum current overdue age among open invoices: ${maxOverdue} day(s).` : "There is no current open balance from which to describe overdue age.",
     communications: analyses.length ? `${analyses.length} record(s) have prior NLP results, with ${counts.promises} promise, ${counts.followUps} follow-up and ${counts.disputes} dispute excerpt(s). These are unverified text mentions, not confirmed conduct or fulfilled payments.` : "No prior NLP result is available; no communication-based payment habit is inferred.",
     history_limit: "Settlement timestamps and a verified historical payment timeline are not available. Historical on-time payment habits and promise fulfillment cannot be established.",
+    ...communicationObservations,
   };
+  const requiredObservationCodes = ["invoice_summary", "history_limit",
+    ...(analyses.length ? ["communications"] : []), ...Object.keys(communicationObservations)];
   const inputSignature = createHash("sha256").update(canonicalJson({
     companyId, date: today(), invoices: linked,
     analyses: analyses.map(row => ({ id: row.id, recordId: row.recordId, sourceHash: row.sourceHash, fields: row.fields })),
     esg: { assigned, documentId: document?.id, validUntil: document?.validUntil, matches, sedgIds: sedg.map(row => row.id) },
   })).digest("hex");
   return { companyId, riskTags, esgHintCode, esgHint, observations, inputSignature,
-    sourceAnalysisIds: analyses.map(row => row.id) };
+    sourceAnalysisIds: analyses.map(row => row.id), requiredObservationCodes, addedOrUpdatedAnalyses,
+    previousPortrait: previous ? {
+      id: previous.id, generatedAt: previous.generatedAt, riskTags: previous.riskTags,
+      paymentHabitSummary: previous.paymentHabitSummary, esgHint: previous.esgHint,
+      sourceAnalysisIds: previous.sourceAnalysisIds,
+    } : null };
 }
 export type CompanyPortraitFacts = ReturnType<typeof companyPortraitFacts>;
 
 const selectionSchema = z.object({
   riskTagCodes: z.array(z.string().min(1).max(64)).max(8),
   esgHintCode: z.string().min(1).max(64),
-  paymentObservationCodes: z.array(z.string().min(1).max(64)).min(2).max(5),
+  paymentObservationCodes: z.array(z.string().min(1).max(64)).min(2).max(8),
 }).strict();
 function wireSchema(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(wireSchema);
@@ -83,9 +114,9 @@ export function validatePortraitSelection(raw: string, facts: CompanyPortraitFac
   if (new Set(selection.riskTagCodes).size !== tags.size || selection.riskTagCodes.length !== tags.size ||
     selection.riskTagCodes.some(code => !tags.has(code)) || selection.esgHintCode !== facts.esgHintCode ||
     new Set(selection.paymentObservationCodes).size !== selection.paymentObservationCodes.length ||
-    !selection.paymentObservationCodes.includes("invoice_summary") || !selection.paymentObservationCodes.includes("history_limit") ||
+    facts.requiredObservationCodes.some(code => !selection.paymentObservationCodes.includes(code)) ||
     selection.paymentObservationCodes.some(code => !Object.hasOwn(facts.observations, code)))
     throw new Error("Unsupported portrait selection");
   return { riskTags: selection.riskTagCodes.map(code => tags.get(code)!), esgHint: facts.esgHint,
-    paymentHabitSummary: selection.paymentObservationCodes.map(code => facts.observations[code as keyof typeof facts.observations]).join("\n") };
+    paymentHabitSummary: selection.paymentObservationCodes.map(code => facts.observations[code]).join("\n") };
 }
