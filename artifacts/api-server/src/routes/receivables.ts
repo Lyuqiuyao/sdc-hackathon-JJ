@@ -14,9 +14,21 @@ import { GetPlanAdviceSnapshotsParams, GetPlanAdviceSnapshotsResponse } from "@w
 import { SaveCompanyProfileParams, SaveCompanyProfileBody, SaveCompanyProfileResponse,
   SubmitSedgParams, SubmitSedgBody, SubmitSedgResponse } from "@workspace/api-zod";
 import { saveProfile, submitSedg } from "../lib/receivables/company";
+import { GetCompanyCorrespondenceParams, GetCompanyCorrespondenceResponse,
+  UploadCompanyCorrespondenceParams, UploadCompanyCorrespondenceResponse } from "@workspace/api-zod";
+import { appendCorrespondence, listCorrespondence } from "../lib/receivables/correspondence";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
+router.get("/company/:id/correspondence", async (req, res): Promise<void> => {
+  const { id } = GetCompanyCorrespondenceParams.parse(req.params);
+  res.json(GetCompanyCorrespondenceResponse.parse(listCorrespondence(await readState(), id)));
+});
+router.post("/company/:id/correspondence", async (req, res): Promise<void> => {
+  const { id } = UploadCompanyCorrespondenceParams.parse(req.params);
+  res.status(201).json(await changeState(state =>
+    UploadCompanyCorrespondenceResponse.parse(appendCorrespondence(state, id, req.body))));
+});
 router.put("/customers/:id/profile", async (req, res): Promise<void> => {
   const { id } = SaveCompanyProfileParams.parse(req.params), input = SaveCompanyProfileBody.parse(req.body);
   res.json(await changeState(state => SaveCompanyProfileResponse.parse(saveProfile(state, id, input))));

@@ -4,6 +4,9 @@ import { seedState } from "./seed";
 import { DEMO_WORKSPACE_ID, BusinessError, type DemoState } from "./model";
 import { assertSnapshotsAppendOnly } from "./advice-snapshots";
 
+// Stored in the existing aggregate; no separate storage engine or migration.
+export type { CorrespondenceRecord } from "@workspace/api-zod";
+
 export function createWorkspaceRepository(database: typeof db, workspaceId = DEMO_WORKSPACE_ID) {
 async function readState(): Promise<DemoState> {
   const [row] = await database.select().from(demoWorkspaces).where(eq(demoWorkspaces.id, workspaceId));

@@ -8,6 +8,55 @@
 import * as zod from 'zod';
 
 
+
+
+
+export const GetCompanyCorrespondenceParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const GetCompanyCorrespondenceResponseItem = zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "fileType": zod.enum(['text', 'txt', 'csv']),
+  "rawText": zod.string(),
+  "filename": zod.string(),
+  "uploadedBy": zod.string(),
+  "uploadedAt": zod.string()
+})
+export const GetCompanyCorrespondenceResponse = zod.array(GetCompanyCorrespondenceResponseItem)
+
+
+
+
+
+export const UploadCompanyCorrespondenceParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const uploadCompanyCorrespondenceBodyRawTextMax = 10485760;
+
+export const uploadCompanyCorrespondenceBodyFilenameMax = 255;
+
+
+
+export const UploadCompanyCorrespondenceBody = zod.object({
+  "fileType": zod.enum(['text', 'txt', 'csv']),
+  "rawText": zod.string().min(1).max(uploadCompanyCorrespondenceBodyRawTextMax),
+  "filename": zod.string().min(1).max(uploadCompanyCorrespondenceBodyFilenameMax)
+})
+
+export const UploadCompanyCorrespondenceResponse = zod.object({
+  "id": zod.string(),
+  "companyId": zod.string(),
+  "fileType": zod.enum(['text', 'txt', 'csv']),
+  "rawText": zod.string(),
+  "filename": zod.string(),
+  "uploadedBy": zod.string(),
+  "uploadedAt": zod.string()
+})
+
+
 export const SaveCompanyProfileParams = zod.object({
   "id": zod.coerce.string()
 })

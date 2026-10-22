@@ -43,3 +43,11 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **How to apply:** Do not introduce a customer or certifier portal, NLP profile generation, real email integration, model calls, Secret changes or shared database operations under this implementation scope.
 
+## Incremental enhancement constraints
+
+用户要求绝对不要改动已经实现好的 13 个核心功能（仪表盘、现金流提醒、2D/3D 排程、SEDG 审核、AI 双语话术、审计日志等）的业务逻辑；不许引入 LangChain、Prisma、TypeORM 这类重型依赖；所有 AI 调用必须复用现有 ai-provider 模块；所有新增操作必须写审计日志。
+
+**Why:** 用户明确规定后续增量开发的保护边界。
+
+**How to apply:** 增量功能不得顺带重构或改变核心业务规则。按单功能验收推进，不一次修改所有功能；未验收往来信息上传前，不开发 SMTP 开关。
+

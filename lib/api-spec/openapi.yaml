@@ -6,6 +6,32 @@ info:
 servers:
   - url: /api
 paths:
+  /company/{id}/correspondence:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
+    get:
+      operationId: getCompanyCorrespondence
+      responses:
+        "200":
+          description: Correspondence belonging to this company, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CorrespondenceRecord" }
+    post:
+      operationId: uploadCompanyCorrespondence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CorrespondenceInput" }
+      responses:
+        "201":
+          description: Raw correspondence saved together with an audit entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CorrespondenceRecord" }
   /customers/{id}/profile:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
@@ -226,6 +252,24 @@ components:
         profileSummary: { type: string }
         profileVersion: { type: integer }
         profileSource: { type: string }
+    CorrespondenceInput:
+      type: object
+      required: [fileType, rawText, filename]
+      properties:
+        fileType: { type: string, enum: [text, txt, csv] }
+        rawText: { type: string, minLength: 1, maxLength: 10485760 }
+        filename: { type: string, minLength: 1, maxLength: 255 }
+    CorrespondenceRecord:
+      type: object
+      required: [id, companyId, fileType, rawText, filename, uploadedBy, uploadedAt]
+      properties:
+        id: { type: string }
+        companyId: { type: string }
+        fileType: { type: string, enum: [text, txt, csv] }
+        rawText: { type: string }
+        filename: { type: string }
+        uploadedBy: { type: string }
+        uploadedAt: { type: string }
     CompanyProfileInput:
       type: object
       required: [industry, paymentHistory, profileSummary, existingEsgRating, expectedVersion, syntheticConfirmed]

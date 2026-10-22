@@ -38,6 +38,48 @@ export interface Customer {
   profileSource?: string;
 }
 
+export type CorrespondenceInputFileType = typeof CorrespondenceInputFileType[keyof typeof CorrespondenceInputFileType];
+
+
+export const CorrespondenceInputFileType = {
+  text: 'text',
+  txt: 'txt',
+  csv: 'csv',
+} as const;
+
+export interface CorrespondenceInput {
+  fileType: CorrespondenceInputFileType;
+  /**
+     * @minLength 1
+     * @maxLength 10485760
+     */
+  rawText: string;
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  filename: string;
+}
+
+export type CorrespondenceRecordFileType = typeof CorrespondenceRecordFileType[keyof typeof CorrespondenceRecordFileType];
+
+
+export const CorrespondenceRecordFileType = {
+  text: 'text',
+  txt: 'txt',
+  csv: 'csv',
+} as const;
+
+export interface CorrespondenceRecord {
+  id: string;
+  companyId: string;
+  fileType: CorrespondenceRecordFileType;
+  rawText: string;
+  filename: string;
+  uploadedBy: string;
+  uploadedAt: string;
+}
+
 export type CompanyProfileInputExistingEsgRating = typeof CompanyProfileInputExistingEsgRating[keyof typeof CompanyProfileInputExistingEsgRating];
 
 

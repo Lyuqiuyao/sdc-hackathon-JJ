@@ -13,6 +13,7 @@ import { claimGeneration } from "../src/lib/receivables/ai-coordination";
 import { syntheticAdvice } from "./synthetic-advice";
 import { appendPlanSnapshot } from "../src/lib/receivables/advice-snapshots";
 import { seedState } from "../src/lib/receivables/seed";
+import { appendCorrespondence } from "../src/lib/receivables/correspondence";
 
 // The harness replaces the database URL in the CHILD ONLY and creates this
 // private Unix socket. No fallback to the workspace's database is permitted.
@@ -189,4 +190,63 @@ test("isolated real API round-trip: profile, SEDG, reviews, merge, approval and 
     assert.equal(history.status,200);assert.ok(history.body.some((s:any)=>s.status==="approved"));
     assert.ok(history.body.every((s:any)=>s.rawResponseRetained===false));
   } finally {await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
+test("isolated correspondence API: persistence, audit atomicity, company filtering and size validation", async () => {
+  const repo = createWorkspaceRepository(db), initial = await repo.readState();
+  const companyId = initial.customers[0]!.id, otherId = initial.customers[1]!.id;
+  const beforeRecords = initial.correspondenceRecords?.length ?? 0;
+  const app = (await import("../src/app")).default, server = createServer(app);
+  server.listen(0, "127.0.0.1"); await once(server, "listening");
+  const address = server.address(); assert.ok(address && typeof address !== "string");
+  const call = (method: string, path: string, data?: object) => new Promise<{ status: number; body: any }>((resolve, reject) => {
+    const body = data === undefined ? "" : JSON.stringify(data);
+    const req = request({ hostname: "127.0.0.1", port: address.port, method, path,
+      headers: body ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } : {} }, res => {
+      let text = ""; res.setEncoding("utf8"); res.on("data", chunk => { text += chunk; });
+      res.on("end", () => resolve({ status: res.statusCode!, body: JSON.parse(text) }));
+    });
+    req.on("error", reject); req.end(body);
+  });
+  const path = `/api/company/${companyId}/correspondence`;
+  try {
+    const uploaded: any[] = [];
+    for (const fileType of ["text", "txt", "csv"]) {
+      const data = { fileType, filename: fileType === "text" ? "Pasted text" : `SYNTHETIC.${fileType}`,
+        rawText: `  Synthetic ${fileType} export\r\nOriginal text, unchanged\n` };
+      const response = await call("POST", path, data);
+      assert.equal(response.status, 201);
+      assert.equal(response.body.rawText, data.rawText);
+      assert.equal(response.body.uploadedBy, "Demo Admin");
+      uploaded.push(response.body);
+    }
+    // Escaped JSON is >2 MiB, but raw text is below the 10 MiB upload limit.
+    const escaped = await call("POST", path, { fileType: "text", filename: "Pasted text", rawText: "Synthetic\n" + "\t".repeat(1_100_000) });
+    assert.equal(escaped.status, 201); uploaded.push(escaped.body);
+    assert.equal((await call("POST", path, { fileType: "txt", filename: "bad.csv", rawText: "Synthetic" })).status, 400);
+    assert.equal((await call("POST", path, { fileType: "text", filename: "Pasted text", rawText: "  " })).status, 400);
+    assert.equal((await call("POST", path, { fileType: "text", filename: "Pasted text", rawText: "\u4e2d".repeat(3_495_254) })).status, 413);
+    assert.equal((await call("POST", "/api/company/missing/correspondence", { fileType: "text", filename: "Pasted text", rawText: "Synthetic" })).status, 404);
+    assert.equal((await call("GET", "/api/company/missing/correspondence")).status, 404);
+    const listed = await call("GET", path);
+    assert.equal(listed.status, 200);
+    assert.ok(uploaded.every(row => listed.body.some((r: any) => r.id === row.id && r.rawText === row.rawText)));
+    const other = await call("GET", `/api/company/${otherId}/correspondence`);
+    assert.equal(other.status, 200);
+    assert.ok(other.body.every((r: any) => r.companyId === otherId));
+    const persisted = await createWorkspaceRepository(db).readState();
+    assert.equal(persisted.correspondenceRecords!.length, beforeRecords + uploaded.length);
+    assert.equal(persisted.auditLogs.length, initial.auditLogs.length + uploaded.length);
+    for (const row of uploaded)
+      assert.equal(persisted.auditLogs.filter(log => log.type === "Correspondence upload" && log.after.includes(row.id)).length, 1);
+    const { correspondenceRecords: _records, auditLogs: _logs, ...rest } = persisted;
+    const { correspondenceRecords: _oldRecords, auditLogs: _oldLogs, ...baseline } = initial;
+    assert.deepEqual(rest, baseline);
+    await assert.rejects(repo.changeState(state => {
+      appendCorrespondence(state, companyId, { fileType: "text", filename: "Pasted text", rawText: "Synthetic rolled back" });
+      throw new Error("Synthetic rollback");
+    }), /Synthetic rollback/);
+    assert.deepEqual(await repo.readState(), persisted, "Record and audit must roll back together");
+    assert.equal((await call("GET", "/api/workspace")).status, 200);
+  } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
 });

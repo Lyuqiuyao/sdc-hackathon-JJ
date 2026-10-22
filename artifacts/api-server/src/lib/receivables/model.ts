@@ -3,6 +3,7 @@ import type {
   ExecutionRecord, AuditLog, SystemSetting,
   AdviceSnapshot,
   SedgSubmission,
+  CorrespondenceRecord,
 } from "@workspace/api-zod";
 import type { GenerationLease } from "./ai-coordination";
 
@@ -23,6 +24,7 @@ export interface DemoState {
   aiLeases?: Record<string, GenerationLease>;
   adviceSnapshots?: AdviceSnapshot[];
   sedgSubmissions?: SedgSubmission[];
+  correspondenceRecords?: CorrespondenceRecord[];
 }
 
 export class BusinessError extends Error {

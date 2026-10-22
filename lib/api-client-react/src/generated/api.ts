@@ -25,6 +25,8 @@ import type {
   ApprovalInput,
   CollectionPlan,
   CompanyProfileInput,
+  CorrespondenceInput,
+  CorrespondenceRecord,
   Customer,
   DocumentView,
   HealthStatus,
@@ -66,6 +68,160 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetCompanyCorrespondenceUrl = (id: string,) => {
+
+
+
+
+  return `/api/company/${id}/correspondence`
+}
+
+export const getCompanyCorrespondence = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CorrespondenceRecord[]> => {
+
+  return customFetch<CorrespondenceRecord[]>(getGetCompanyCorrespondenceUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCompanyCorrespondenceQueryKey = (id: string,) => {
+    return [
+    `/api/company/${id}/correspondence`
+    ] as const;
+    }
+
+
+export const getGetCompanyCorrespondenceQueryOptions = <TData = Awaited<ReturnType<typeof getCompanyCorrespondence>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCompanyCorrespondence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCompanyCorrespondenceQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompanyCorrespondence>>> = ({ signal }) => getCompanyCorrespondence(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompanyCorrespondence>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCompanyCorrespondenceQueryResult = NonNullable<Awaited<ReturnType<typeof getCompanyCorrespondence>>>
+export type GetCompanyCorrespondenceQueryError = ErrorType<unknown>
+
+
+
+export function useGetCompanyCorrespondence<TData = Awaited<ReturnType<typeof getCompanyCorrespondence>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCompanyCorrespondence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCompanyCorrespondenceQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUploadCompanyCorrespondenceUrl = (id: string,) => {
+
+
+
+
+  return `/api/company/${id}/correspondence`
+}
+
+export const uploadCompanyCorrespondence = async (id: string,
+    correspondenceInput: CorrespondenceInput, options?: Parameters<typeof customFetch>[1]): Promise<CorrespondenceRecord> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CorrespondenceRecord>(getUploadCompanyCorrespondenceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(correspondenceInput)
+  }
+);}
+
+
+
+
+
+export const getUploadCompanyCorrespondenceMutationKey = () => ['uploadCompanyCorrespondence'] as const;
+
+export const getUploadCompanyCorrespondenceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCompanyCorrespondence>>, TError,UploadCompanyCorrespondenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadCompanyCorrespondence>>, TError,UploadCompanyCorrespondenceMutationVariables, TContext> => {
+
+const mutationKey = getUploadCompanyCorrespondenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadCompanyCorrespondence>>, UploadCompanyCorrespondenceMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  uploadCompanyCorrespondence(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadCompanyCorrespondenceMutationResult = NonNullable<Awaited<ReturnType<typeof uploadCompanyCorrespondence>>>
+    export type UploadCompanyCorrespondenceMutationBody = BodyType<CorrespondenceInput>
+    export type UploadCompanyCorrespondenceMutationError = ErrorType<unknown>
+    export type UploadCompanyCorrespondenceMutationVariables = {id: string;data: BodyType<CorrespondenceInput>}
+
+    export const useUploadCompanyCorrespondence = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCompanyCorrespondence>>, TError,UploadCompanyCorrespondenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadCompanyCorrespondence>>,
+        TError,
+        UploadCompanyCorrespondenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUploadCompanyCorrespondenceMutationOptions(options));
+    }
 
 export const getSaveCompanyProfileUrl = (id: string,) => {
 
