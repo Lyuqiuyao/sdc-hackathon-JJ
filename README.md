@@ -1,6 +1,6 @@
 # Project Name
 
-> A one-sentence description of what your project does and who it is for.
+> ESG-Aware Receivables Risk & Collection Prioritization for Malaysian SMEs
 
 ---
 
@@ -8,22 +8,21 @@
 
 | Field                  | Details                                     |
 | ---------------------- | ------------------------------------------- |
-| **Team Name**          | Your Team Name                              |
-| **Team Domain**        | Domain 1 / Domain 2 *(choose one)*          |
-| **SDG Track (1–17)**   | e.g. SDG 11 — Sustainable Cities and Communities |
-| **Team Leader**        | Leader Name                                 |
-| **University**         | University Name(s)                          |
-| **Number of Members**  | e.g. 4                                      |
+| **Team Name**          | JJ                             |
+| **Team Domain**        | Domain 2           |
+| **SDG Track (1–17)**   | SDG 8 |
+| **Team Leader**        | LYU QIUAYO                                |
+| **University**         | xiamen university malaysia                         |
+| **Number of Members**  | 2                                     |
 
 ## Links
 
 | Resource          | Link                                           |
 | ----------------- | ---------------------------------------------- |
 | GitHub Repository | https://github.com/your-username/your-project  |
-| Replit Project    | https://replit.com/@your-username/your-project |
+| Replit Project    | https://replit.com/@lwjishereee/ESG-AI-Advisor |
 | Live Demo         | https://your-project.replit.app                |
-| RunPod Endpoint   | https://api.runpod.ai/v2/your-endpoint-id      |
-| Slide Deck        | https://example.com/slides                     |
+| Slide Deck        | https://khsj.cn/pfwzpg5hbt12kgt                |
 | Demo Video        | https://example.com/demo-video                 |
 
 ---
