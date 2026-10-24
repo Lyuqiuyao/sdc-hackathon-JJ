@@ -129,7 +129,7 @@ export default function Dashboard() {
                 {[
                   { href: '/approvals', n: pending.length, t: 'AI collection plans awaiting approval', s: 'Nothing is executed until a human approves.', tone: 'orange' as const, id: 'approvals' },
                   { href: '/risk-triggers', n: r.level === 'Low' ? 0 : 1, t: `Cash-flow risk alert (${r.level})`, s: r.reasons[0] ?? 'No active alert', tone: r.level === 'High' ? ('red' as const) : ('orange' as const), id: 'risk' },
-                  { href: '/esg-documents', n: d.esgUpdates, t: 'ESG documents needing attention', s: 'Pending, expired or information requested', tone: 'orange' as const, id: 'esg' },
+                  { href: '/sedg-information', n: new Set(ws.sedgSubmissions?.map(submission => submission.customerId)).size, t: 'Customer SEDG information', s: 'Reference for manual ordering after pre-ranking; no separate approval', tone: 'blue' as const, id: 'esg' },
                 ].map((i) => (
                   <Link key={i.id} href={i.href} data-testid={`todo-${i.id}`} className="flex items-center justify-between gap-3 rounded-md border p-3 hover:bg-accent">
                     <div><div className="text-sm font-medium">{i.t}</div><div className="text-xs text-muted-foreground">{i.s}</div></div>

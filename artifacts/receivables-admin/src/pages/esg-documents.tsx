@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'wouter';
 import { Eye } from 'lucide-react';
 import { useViewDocument, type DocumentView } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState } from '@/components/kit';
@@ -9,8 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { errMsg, fmtDate, useRefresh } from '@/lib/arus';
+import { SedgReference } from '@/components/sedg-reference';
 
-export default function EsgDocuments() {
+export default function SedgInformation() {
   const view = useViewDocument();
   const refresh = useRefresh();
   const [q, setQ] = useState('');
@@ -23,13 +25,21 @@ export default function EsgDocuments() {
     try { setDoc(await view.mutateAsync({ id })); await refresh(); } catch (e) { setErr(errMsg(e)); } finally { setBusy(''); }
   };
   return (
-    <Page title="ESG Documents" description="Read-only view of certificate records and reviewer conclusions">
+    <Page title="SEDG Information" description="Customer declarations for manual ordering and collection decisions after 2D/3D pre-ranking">
       {(ws) => {
         const rows = ws.documents.filter((d) => (status === 'all' || d.status === status) && (!q.trim() || (d.customerName + d.type + d.number).toLowerCase().includes(q.trim().toLowerCase())));
         return (
           <div className="space-y-4">
-            <Alert><AlertDescription>Administrators view records only; certification review is performed elsewhere. Documents are clearly marked demo records, not official certificates. ESG is a supporting scheduling factor and never overrides amounts or due dates.</AlertDescription></Alert>
+            <Alert><AlertDescription>First generate the separate 3D queue for customers with an existing ESG rating and the 2D queue for customers without one. Then consult SEDG and company information to adjust the final order in the Approval Center and choose Collect now or Negotiable extension for every customer. There is no separate SEDG approval or rejection, and no ESG assessment here. SEDG does not automatically change scores or ratings.</AlertDescription></Alert>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline"><Link href="/ai-planner">View 2D / 3D pre-ranking</Link></Button>
+              <Button asChild><Link href="/approvals">Adjust final order and collection decisions</Link></Button>
+            </div>
+            <SedgReference ws={ws} />
             {err && <Alert variant="destructive" data-testid="alert-doc-error"><AlertDescription>{err}</AlertDescription></Alert>}
+            <details className="space-y-3 rounded-lg border p-4" data-testid="section-historical-esg">
+              <summary className="cursor-pointer text-sm font-semibold">Historical ESG documents (read-only)</summary>
+              <p className="text-xs text-muted-foreground">Recorded statuses and conclusions below are historical synthetic data, not approval tasks for this administrator. They are not SEDG decisions or verified certifications.</p>
             <Panel bodyClass="grid gap-3 sm:grid-cols-3">
               <Input placeholder="Search customer, type or number" value={q} onChange={(e) => setQ(e.target.value)} data-testid="input-search" />
               <Select value={status} onValueChange={setStatus}><SelectTrigger data-testid="select-status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{['Approved', 'Pending', 'Rejected', 'Expired', 'Needs information'].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
@@ -49,6 +59,7 @@ export default function EsgDocuments() {
                 </Table></div>
               )}
             </Panel>
+            </details>
             <Dialog open={!!doc} onOpenChange={(o) => !o && setDoc(null)}>
               <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
                 {doc && <>

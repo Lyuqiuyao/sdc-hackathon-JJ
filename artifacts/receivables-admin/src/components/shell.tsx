@@ -15,7 +15,7 @@ const NAV = [
   { href: '/', en: 'Dashboard', icon: LayoutDashboard },
   { href: '/receivables', en: 'Receivables', icon: ReceiptText },
   { href: '/customers', en: 'Customers', icon: Users },
-  { href: '/esg-documents', en: 'ESG Documents', icon: ShieldCheck },
+  { href: '/sedg-information', en: 'SEDG Information', icon: ShieldCheck },
   { href: '/risk-triggers', en: 'Risk Triggers', icon: ShieldAlert },
   { href: '/ai-planner', en: 'AI Collection Planner', icon: Sparkles },
   { href: '/approvals', en: 'Approval Center', icon: UserCheck },
@@ -96,12 +96,13 @@ function Notifications() {
   const { data } = useWs();
   const d = data?.dashboard;
   const pending = data?.plans.filter((p) => p.status === 'Pending') ?? [];
+  const sedgCustomers = new Set(data?.sedgSubmissions?.map(submission => submission.customerId)).size;
   const items = d
     ? [
         { href: '/approvals', label: `${pending.length} plan(s) awaiting approval`, sub: pending.map((p) => `v${p.version}`).join(', ') || 'None', n: pending.length, tone: 'orange' as const },
         { href: '/risk-triggers', label: `Cash-flow risk: ${d.risk.level}`, sub: d.risk.reasons[0] ?? 'No trigger reasons', n: d.risk.level === 'Low' ? 0 : 1, tone: d.risk.level === 'High' ? ('red' as const) : ('orange' as const) },
         { href: '/receivables', label: `${d.overdueCount} overdue invoice(s)`, sub: 'Review in Receivables', n: d.overdueCount, tone: 'red' as const },
-        { href: '/esg-documents', label: `${d.esgUpdates} ESG document(s) need attention`, sub: 'Pending, expired or needs information', n: d.esgUpdates, tone: 'orange' as const },
+        { href: '/sedg-information', label: `${sedgCustomers} customer SEDG submission(s) available`, sub: 'Reference for manual ordering; no SEDG approval required', n: sedgCustomers, tone: 'blue' as const },
       ]
     : [];
   const total = items.reduce((a, b) => a + (b.n > 0 ? 1 : 0), 0);

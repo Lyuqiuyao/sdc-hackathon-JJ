@@ -9,7 +9,7 @@ import Login from '@/pages/login';
 import Dashboard from '@/pages/dashboard';
 import Receivables from '@/pages/receivables';
 import Customers from '@/pages/customers';
-import EsgDocuments from '@/pages/esg-documents';
+import SedgInformation from '@/pages/esg-documents';
 import RiskTriggers from '@/pages/risk-triggers';
 import AiPlanner from '@/pages/ai-planner';
 import Approvals from '@/pages/approvals';
@@ -28,7 +28,8 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/receivables" component={Receivables} />
         <Route path="/customers" component={Customers} />
-        <Route path="/esg-documents" component={EsgDocuments} />
+        <Route path="/sedg-information" component={SedgInformation} />
+        <Route path="/esg-documents" component={SedgInformation} />
         <Route path="/risk-triggers" component={RiskTriggers} />
         <Route path="/ai-planner" component={AiPlanner} />
         <Route path="/approvals" component={Approvals} />
