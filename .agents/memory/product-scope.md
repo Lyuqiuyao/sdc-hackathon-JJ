@@ -55,6 +55,12 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **How to apply:** 两类视图内提供上下箭头调整人工顺序，点击公司名打开原有聚合档案（ESG/SEDG、欠款、逾期、画像与AI信息），与箭头独立，不丢弃未保存顺序。复用版本保存和审计，不重算或覆盖原始分数、队列归属或初始名次。最终合并顺序独立标识；历史方案缺快照时不伪造分组或重标评分。
 
+催收／延期英马话术应在审核中心对应公司的审核项下直接可见，不应只放在默认折叠的最终排序区。
+
+**Why:** 用户找不到原有画像关联话术，要求先恢复之前可见的方式试用；仅恢复入口，不授权切换 AI 或 SMTP 开关。
+
+**How to apply:** 保留现有保存客户决策后生成的时序、来源标签和人工编辑状态。展示已有草稿不能触发额外 AI 请求或发送，也不能把尚未生成的模板标为画像生成结果。
+
 ## Incremental enhancement constraints
 
 用户要求绝对不要改动已经实现好的 13 个核心功能（仪表盘、现金流提醒、2D/3D 排程、SEDG 审核、AI 双语话术、审计日志等）的业务逻辑；不许引入 LangChain、Prisma、TypeORM 这类重型依赖；所有 AI 调用必须复用现有 ai-provider 模块；所有新增操作必须写审计日志。

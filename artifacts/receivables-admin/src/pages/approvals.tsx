@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CompanyFolder } from '@/components/company-folder';
+import { CollectionNoticeEditor } from '@/components/collection-notice-editor';
 import { useToast } from '@/hooks/use-toast';
 import { useApprovalNavigationGuard } from '@/hooks/use-approval-navigation-guard';
 import { clearApprovalDrafts, readApprovalDrafts, retainApprovalDrafts, type ApprovalDraft } from '@/lib/approval-drafts';
@@ -254,6 +255,23 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
                   <Button size="sm" onClick={() => saveReview(c.id)} disabled={dirty || busy || !f.reason.trim()} data-testid={`button-save-review-${c.id}`}>{done ? 'Update review' : 'Save review'}</Button>
                 </div>}
                 {editable && dirty && <p className="mt-1 text-[11px] text-orange-700">Save or discard task edits before recording a review.</p>}
+                <section className="mt-4 space-y-3 border-t pt-3" aria-label={`Collection messages for ${c.name}`} data-testid={`customer-notices-${c.id}`}>
+                  <h4 className="text-sm font-semibold">Collection messages · English / Bahasa Melayu</h4>
+                  <p className="text-xs text-muted-foreground">Saving the customer review automatically generates immediate-collection and extension drafts using the company portrait, correspondence analysis and invoice facts. AI errors use rules fallback. Review both languages before approval; viewing drafts does not send email.</p>
+                  {drafts.map((draft, index) => {
+                    const task = byId.get(draft.id);
+                    if (task?.customerId !== c.id) return null;
+                    return <div key={draft.id} className="space-y-2 rounded-md border p-3">
+                      <h5 className="font-semibold">{task.invoiceNumber} · {rm(task.outstandingCents)} · {task.daysOverdue} days overdue</h5>
+                      {!draft.noticeVariants && <p className="text-xs text-orange-700">
+                        {done ? 'No bilingual variants saved yet. Save the customer review again to retry generation.' : 'Customer review not saved yet. Existing task drafts are shown below, not newly generated portrait-based messages.'}
+                      </p>}
+                      <CollectionNoticeEditor draft={draft} kind={viewKinds[draft.id] ?? selectedKind(draft.method)} editable={editable}
+                        onKindChange={kind => setViewKinds(current => ({ ...current, [draft.id]: kind }))}
+                        onChange={(kind, field, value) => patchNotice(index, kind, field, value)} />
+                    </div>;
+                  })}
+                </section>
               </div>);
           })}
         </Panel>
@@ -269,14 +287,13 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
         </Panel>
       </>}
       <details key={`final-editor-${plan.id}`} open={!isV2} className="rounded-lg border bg-card p-4" data-testid="section-final-order-editor">
-      <summary className="cursor-pointer text-sm font-semibold">{isV2 ? 'Final combined order and message editor (manual)' : 'Historical task order and messages'}</summary>
+      <summary className="cursor-pointer text-sm font-semibold">{isV2 ? 'Final combined order and task details (manual)' : 'Historical task order and messages'}</summary>
       <p className="my-2 text-xs text-muted-foreground">{isV2 ? 'This is the administrator-controlled final collection sequence, separate from the two initial rankings above. Moving tasks here does not recalculate either queue score.' : 'Original historical ranking and scoring are retained. This is not a 2D/3D plan.'}</p>
       <Panel title="Tasks (order = final collection sequence)" bodyClass="space-y-2">
         {drafts.length === 0 && <EmptyState title="Plan has no tasks" />}
         {drafts.map((d, i) => {
           const t = byId.get(d.id); if (!t) return null;
           const kind = viewKinds[d.id] ?? selectedKind(d.method);
-          const viewed = d.noticeVariants?.[kind];
           return (
             <details key={d.id} className="rounded-md border" data-testid={`approval-task-${d.id}`}>
               <summary className="flex cursor-pointer items-center gap-2 p-3 hover:bg-accent/50">
@@ -289,19 +306,10 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
                   <Select value={d.method} onValueChange={(v) => patch(i, { method: v })} disabled={!editable}><SelectTrigger className="sm:w-72" data-testid={`select-method-${d.id}`}><SelectValue /></SelectTrigger><SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
                 </Field>
                 {d.method !== t.method && <p className="text-xs text-orange-700">On save, unchanged EN/MS templates follow the new method. Custom wording is preserved; review both languages before approval.</p>}
-                {d.noticeVariants && <div className="space-y-2">
-                  <Field label="View / edit notice variant" hint="Viewing a variant does not change the collection decision. The collection method determines which approved variant is sent.">
-                    <Select value={kind} onValueChange={value => setViewKinds(current => ({ ...current, [d.id]: value as 'collectNow' | 'extension' }))}>
-                      <SelectTrigger className="sm:w-72" data-testid={`select-notice-variant-${d.id}`}><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="collectNow">Immediate collection</SelectItem><SelectItem value="extension">Negotiable extension</SelectItem></SelectContent>
-                    </Select>
-                  </Field>
-                  <p className="text-xs text-muted-foreground">Send: {selectedKind(d.method) === 'extension' ? 'Negotiable extension' : 'Immediate collection'} · EN: {viewed?.noticeEnSource} / MS: {viewed?.noticeMsSource} · {d.noticeVariants.reasonCode}. AI adds a validated contextual paragraph; invoice facts and proposed terms remain controlled.</p>
-                </div>}
-                <div className="grid gap-3 md:grid-cols-2">
-                  <Field label="Notice (English)"><Textarea rows={7} maxLength={10000} value={viewed?.noticeEn ?? d.noticeEn} onChange={(e) => patchNotice(i, kind, 'noticeEn', e.target.value)} disabled={!editable} data-testid={`input-notice-en-${d.id}`} /></Field>
-                  <Field label="Notis (Bahasa Melayu)"><Textarea rows={7} maxLength={10000} value={viewed?.noticeMs ?? d.noticeMs} onChange={(e) => patchNotice(i, kind, 'noticeMs', e.target.value)} disabled={!editable} data-testid={`input-notice-ms-${d.id}`} /></Field>
-                </div>
+                {!isV2 && <CollectionNoticeEditor draft={d} kind={kind} editable={editable}
+                  onKindChange={value => setViewKinds(current => ({ ...current, [d.id]: value }))}
+                  onChange={(noticeKind, field, value) => patchNotice(i, noticeKind, field, value)} />}
+                {isV2 && <p className="text-xs text-muted-foreground">View and edit this task&apos;s messages in its customer review above, under the matching ESG ranking tab.</p>}
                 <TaskDetail t={t} weights={plan.weights} snapshot={plan.scoringSnapshot} defaultLanguage={ws.settings.language} />
               </div>
             </details>
