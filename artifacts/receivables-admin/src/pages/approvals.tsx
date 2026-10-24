@@ -104,6 +104,11 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
 
   const persisted = useMemo(() => plan.tasks.map(asDraft), [plan]);
   const isV2 = !!plan.scoringSnapshot;
+  const editReasonError = isV2 && !notes.trim()
+    ? 'Enter an edit reason in English before saving this new plan version.'
+    : /\p{Script=Han}/u.test(notes)
+      ? 'Use English for the edit reason. Communication drafts support English and Malay.'
+      : '';
   const reviewsBy = useMemo(() => new Map((plan.customerReviews ?? []).map((r) => [r.customerId, r])), [plan]);
   const reviewCustomers = useMemo(() => {
     const m = new Map<string, { id: string; name: string; queue?: string; esg?: string; outstandingCents: number; days: number; tasks: number; firstRank: number }>();
@@ -131,6 +136,11 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
   };
   const save = async () => {
     setErr('');
+    if (editReasonError) {
+      setErr(editReasonError);
+      document.getElementById('plan-edit-reason')?.focus();
+      return;
+    }
     try {
       const np = await edit.mutateAsync({ id: plan.id, data: { tasks: drafts, notes, expectedVersion: plan.version } });
       await afterSave(np, `Saved as new version v${np.version}`, `v${plan.version} is now Superseded.${isV2 ? ' Customer reviews are kept; the final merge was reset.' : ''}`);
@@ -184,7 +194,18 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
           <ScoringSummary plan={plan} />
           <ProviderDetails plan={plan} /><div className="text-muted-foreground">Data signature <span className="font-mono">{plan.dataSignature.slice(0, 16)}</span></div>
         </Panel>
-        <Panel title="Notes"><Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editable} placeholder="Approval notes" data-testid="input-notes" /></Panel>
+        <Panel title={isV2 ? 'Edit reason / notes' : 'Notes'} bodyClass="space-y-2">
+          <Textarea id="plan-edit-reason" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)}
+            disabled={!editable} maxLength={5000} aria-label={isV2 ? 'Edit reason / notes' : 'Notes'}
+            aria-required={isV2} aria-invalid={editable && dirty && !!editReasonError}
+            aria-describedby="plan-edit-reason-hint"
+            placeholder={isV2 ? 'Explain why you are changing the order or messages (English required)' : 'Approval notes'}
+            data-testid="input-notes" />
+          <p id="plan-edit-reason-hint" className="text-xs text-muted-foreground">
+            {isV2 ? 'Required when saving task-order or message edits. Your reason is retained with the new version and its audit record. Customer decisions and final-order confirmation have their own reason fields.' : 'Optional notes for this historical plan.'}
+          </p>
+          {editable && dirty && editReasonError && <p className="text-xs text-orange-700" role="alert" data-testid="text-edit-reason-error">{editReasonError}</p>}
+        </Panel>
       </div>
       <Panel title="Separate rankings by ESG availability" bodyClass="space-y-2">
         <QueuesOverview tasks={plan.tasks} queue={queue} onQueueChange={onQueueChange}
@@ -278,7 +299,8 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
       </Panel>
       </details>
       <div className="sticky bottom-2 z-10 flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3 shadow-md">
-        <Button variant="outline" onClick={save} disabled={!editable || !dirty || busy} data-testid="button-save-edits"><Save className="mr-1 h-4 w-4" />Save edits as new version</Button>
+        <Button variant="outline" onClick={save} disabled={!editable || !dirty || busy || !!editReasonError} data-testid="button-save-edits"><Save className="mr-1 h-4 w-4" />Save edits as new version</Button>
+        {editable && dirty && editReasonError && <span className="text-xs text-orange-700">Add an English edit reason in Notes before saving.</span>}
         {editable && blockers.length > 0 && <span className="text-xs text-orange-700" data-testid="text-approve-blockers">Approval blocked: {blockers.join('; ')}.</span>}
         <div className="ml-auto flex flex-wrap gap-2">
           <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={() => setConfirm('approve')} disabled={!editable || blockers.length > 0 || busy} data-testid="button-approve"><CheckCircle2 className="mr-1 h-4 w-4" />{ws.smtpEnabled ? 'Approve for SMTP execution' : 'Approve & Simulate Execution'}</Button>
