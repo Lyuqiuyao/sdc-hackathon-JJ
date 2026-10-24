@@ -43,11 +43,11 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **How to apply:** Do not introduce a customer or certifier portal, unrelated model calls, Secret changes or shared database operations under this implementation scope. Later authorization permits the SMTP switch, communication extraction and the specified advisory AI portrait through the existing ai-provider, not broader workflow changes.
 
-审核对象是 SEDG 信息，不是已有 ESG 评级；催收策略选择与 ESG 评级认证不得混为一谈。
+不设置独立的 SEDG 通过／驳回审核，也不审核已有 ESG 评级。先对有 ESG 客户完成三维排序、对无 ESG 客户完成独立二维排序；商家在预排序后查看客户提交的 SEDG，手动调整最终排序，选择立即催收／可协商延期。
 
-**Why:** 用户明确纠正“审核的应该是 SEDG，ESG 不需要审核”。
+**Why:** 用户明确选择参考 SEDG 直接作催收决策，并补充可以取消独立 SEDG 审核；无 ESG 客户必须先二维排序再查看 SEDG 调整排序。
 
-**How to apply:** 保留 ESG 评级作为已有输入，不增加 ESG 审批；SEDG 的内部审核不声称完成独立认证。
+**How to apply:** SEDG 是人工决策参考，不是评级或认证审批，不改变评分公式、缺失值中性原则或两队列不自动合并的边界。保留所有进入催收队列客户的二选一决策和人工最终顺序确认；不因本次澄清取消已有必选动作。
 
 ## Incremental enhancement constraints
 
