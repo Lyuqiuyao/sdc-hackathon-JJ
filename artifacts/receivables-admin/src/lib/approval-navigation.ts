@@ -1,4 +1,12 @@
-const warning = 'You have unsaved queue order, notice or notes changes. Leave without saving? Changes are not saved to the plan and may be lost on refresh or close.';
+export function approvalDraftWarning(taskEdits: boolean, customerReviews: boolean, finalOrderReason: boolean) {
+  const drafts = [
+    taskEdits && 'queue order, notices or plan notes',
+    customerReviews && 'customer decision selections or reasons',
+    finalOrderReason && 'the final-order confirmation reason',
+  ].filter(Boolean).join('; ');
+  return `You have unsaved changes to: ${drafts}. Leave without saving? These drafts have not been submitted and may be lost on refresh or close.`;
+}
+const warning = approvalDraftWarning(true, true, true);
 
 // Queue tabs and hash changes keep the same mounted editor and its drafts.
 export function keepsApprovalDrafts(current: URL, destination: URL) {
@@ -10,10 +18,10 @@ export function keepsApprovalDrafts(current: URL, destination: URL) {
 type NavigationEvent = Event & { destination: { url: string }; downloadRequest: string | null };
 type NavigationWindow = Window & { navigation?: EventTarget };
 
-export function installApprovalNavigationGuard(win: Window, isDirty: () => boolean) {
+export function installApprovalNavigationGuard(win: Window, isDirty: () => boolean, getWarning = () => warning) {
   const canLeave = (destination: string) => !isDirty() ||
     keepsApprovalDrafts(new URL(win.location.href), new URL(destination, win.location.href)) ||
-    win.confirm(warning);
+    win.confirm(getWarning());
   const beforeUnload = (event: BeforeUnloadEvent) => {
     if (!isDirty()) return;
     event.preventDefault();

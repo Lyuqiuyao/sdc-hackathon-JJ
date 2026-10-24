@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { installApprovalNavigationGuard, keepsApprovalDrafts } from './approval-navigation.ts';
+import { approvalDraftWarning, installApprovalNavigationGuard, keepsApprovalDrafts } from './approval-navigation.ts';
 
 const current = 'https://example.test/admin/approvals?plan=p1&queue=two_dimensional';
 function fixture(modern = true) {
@@ -70,4 +70,37 @@ test('legacy Wouter history guards links and version selection, restoring origin
   f.cleanup();
   assert.equal(f.win.history.pushState, f.pushState);
   assert.equal(f.win.history.replaceState, f.replaceState);
+});
+
+test('English warnings identify customer drafts and final-order reason separately from task edits', () => {
+  const customer = approvalDraftWarning(false, true, false);
+  assert.match(customer, /customer decision selections or reasons/);
+  assert.doesNotMatch(customer, /queue order|final-order confirmation reason/);
+  const finalOrder = approvalDraftWarning(false, false, true);
+  assert.match(finalOrder, /final-order confirmation reason/);
+  assert.doesNotMatch(finalOrder, /customer decision|queue order/);
+  const all = approvalDraftWarning(true, true, true);
+  for (const label of ['queue order', 'customer decision', 'final-order confirmation reason'])
+    assert.ok(all.includes(label));
+  assert.match(all, /not been submitted/);
+});
+
+test('guard uses live draft wording without prompting on queues or company-folder hashes', () => {
+  const f = fixture();
+  f.cleanup();
+  let message = approvalDraftWarning(false, true, false), shown = '';
+  f.win.confirm = text => { shown = text ?? ''; return false; };
+  const cleanup = installApprovalNavigationGuard(f.win, () => true, () => message);
+  assert.equal(f.navigate('?plan=p1&queue=three_dimensional'), false);
+  assert.equal(f.navigate('#folder'), false);
+  assert.equal(shown, '');
+  assert.equal(f.navigate('/admin/settings'), true);
+  assert.equal(shown, message);
+  message = approvalDraftWarning(false, false, true);
+  assert.equal(f.navigate('?plan=p2'), true);
+  assert.equal(shown, message);
+  const unload = new Event('beforeunload', { cancelable: true });
+  f.win.dispatchEvent(unload);
+  assert.equal(unload.defaultPrevented, true);
+  cleanup();
 });

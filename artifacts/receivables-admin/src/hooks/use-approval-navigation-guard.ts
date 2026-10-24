@@ -1,13 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { installApprovalNavigationGuard } from '@/lib/approval-navigation';
 
-export function useApprovalNavigationGuard(dirty: boolean) {
+export function useApprovalNavigationGuard(dirty: boolean, warning?: string) {
   const dirtyRef = useRef(dirty);
+  const warningRef = useRef(warning);
   const savedNavigation = useRef(false);
   dirtyRef.current = dirty;
+  warningRef.current = warning;
   useEffect(() => {
     if (!dirty) return;
-    return installApprovalNavigationGuard(window, () => dirtyRef.current && !savedNavigation.current);
+    return installApprovalNavigationGuard(window, () => dirtyRef.current && !savedNavigation.current, () => warningRef.current ?? 'You have unsaved approval drafts. Leave without saving?');
   }, [dirty]);
 
   // Only the existing successful save/decision flow may switch versions

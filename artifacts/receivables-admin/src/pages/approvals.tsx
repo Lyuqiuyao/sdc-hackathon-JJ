@@ -15,7 +15,8 @@ import { CompanyFolder } from '@/components/company-folder';
 import { CollectionNoticeEditor } from '@/components/collection-notice-editor';
 import { useToast } from '@/hooks/use-toast';
 import { useApprovalNavigationGuard } from '@/hooks/use-approval-navigation-guard';
-import { clearApprovalDrafts, readApprovalDrafts, retainApprovalDrafts, type ApprovalDraft } from '@/lib/approval-drafts';
+import { clearApprovalDrafts, readApprovalDrafts, retainApprovalDrafts, remainingDecisionDrafts, unsavedReviewForms, type ApprovalDraft, type ReviewForms } from '@/lib/approval-drafts';
+import { approvalDraftWarning } from '@/lib/approval-navigation';
 import { METHODS, errMsg, fmtDate, fmtDateTime, rm, safeHistorical, useRefresh } from '@/lib/arus';
 
 type Draft = ApprovalDraft;
@@ -63,8 +64,10 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
   const [notes, setNotes] = useState(() => readApprovalDrafts(plan.id)?.notes ?? plan.notes);
   const [err, setErr] = useState('');
   const [confirm, setConfirm] = useState<'approve' | 'defer' | 'reject' | null>(null);
-  const [mergeReason, setMergeReason] = useState('');
-  const [reviewForms, setReviewForms] = useState<Record<string, { decision: CustomerReviewInput['decision']; reason: string }>>({});
+  const [mergeReason, setMergeReason] = useState(() => readApprovalDrafts(plan.id)?.mergeReason ?? '');
+  const [reviewForms, setReviewForms] = useState<ReviewForms>(() => readApprovalDrafts(plan.id)?.reviewForms ?? {});
+  const decisionDrafts = useRef({ reviewForms, mergeReason });
+  useLayoutEffect(() => { decisionDrafts.current = { reviewForms, mergeReason }; }, [reviewForms, mergeReason]);
   const [folderCustomerId, setFolderCustomerId] = useState<string | null>(null);
   const folderCompany = ws.customers.find(customer => customer.id === folderCustomerId);
   const planCompanies = ws.customers.filter(customer => plan.tasks.some(task =>
@@ -88,10 +91,14 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     });
   };
   const dirty = JSON.stringify(drafts) !== JSON.stringify(plan.tasks.map(asDraft)) || notes !== plan.notes;
-  const navigateAfterSave = useApprovalNavigationGuard(dirty);
+  const unsavedReviews = unsavedReviewForms(reviewForms, plan.customerReviews);
+  const reviewsDirty = Object.keys(unsavedReviews).length > 0;
+  const mergeReasonDirty = mergeReason !== '';
+  const anyDraftDirty = dirty || reviewsDirty || mergeReasonDirty;
+  const navigateAfterSave = useApprovalNavigationGuard(anyDraftDirty, approvalDraftWarning(dirty, reviewsDirty, mergeReasonDirty));
   useLayoutEffect(() => {
-    retainApprovalDrafts(plan.id, { tasks: drafts, notes }, dirty);
-  }, [plan.id, drafts, notes, dirty]);
+    retainApprovalDrafts(plan.id, { tasks: drafts, notes, reviewForms: unsavedReviews, mergeReason }, anyDraftDirty);
+  }, [plan.id, drafts, notes, reviewForms, mergeReason, plan.customerReviews, anyDraftDirty]);
   const event = ws.riskEvents.find((e) => e.id === plan.riskEventId);
   const records = ws.approvals.filter((a) => ws.plans.some((p) => p.id === a.planId && p.familyId === plan.familyId));
   const move = (i: number, d: -1 | 1) => setDrafts((a) => { const b = [...a]; const j = i + d; if (j < 0 || j >= b.length) return a; [b[i], b[j]] = [b[j], b[i]]; return b; });
@@ -137,9 +144,20 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
   if (isV2 && !plan.manualMerge) blockers.push('Final merged order not confirmed');
   if (dirty) blockers.push('Unsaved edits');
 
-  const afterSave = async (np: CollectionPlan, title: string, description: string) => {
+  const afterSave = async (np: CollectionPlan, title: string, description: string, submitted?: Parameters<typeof remainingDecisionDrafts>[2]) => {
+    const current = decisionDrafts.current;
+    const remaining = remainingDecisionDrafts(current.reviewForms, current.mergeReason, submitted);
+    remaining.reviewForms = unsavedReviewForms(remaining.reviewForms, np.customerReviews);
+    // Seed before refreshing: without an explicit ?plan=, the newest pending
+    // version can mount as soon as the workspace response arrives.
+    retainApprovalDrafts(np.id, { tasks: np.tasks.map(asDraft), notes: np.notes, ...remaining },
+      Object.keys(remaining.reviewForms).length > 0 || remaining.mergeReason !== '');
     await refresh();
-    clearApprovalDrafts(plan.id);
+    if (np.id !== plan.id) clearApprovalDrafts(plan.id);
+    if (np.id === plan.id) {
+      setReviewForms(remaining.reviewForms);
+      setMergeReason(remaining.mergeReason);
+    }
     navigateAfterSave(() => onSelect(np.id));
     toast({ title, description });
   };
@@ -161,7 +179,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     setErr('');
     try {
       const np = await edit.mutateAsync({ id: plan.id, data: { tasks: persisted, notes: plan.notes, expectedVersion: plan.version, customerReview: { customerId, decision: f.decision, reason: f.reason.trim() } } });
-      await afterSave(np, `Review saved as new version v${np.version}`, 'The decision was applied to all tasks of this customer. The final merge was reset.');
+      await afterSave(np, `Review saved as new version v${np.version}`, 'The decision was applied to all tasks of this customer. The final merge was reset.', { customerId, form: f });
     } catch (e) { setErr(errMsg(e)); }
   };
   const confirmMerge = async () => {
@@ -169,7 +187,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     setErr('');
     try {
       const np = await edit.mutateAsync({ id: plan.id, data: { tasks: drafts, notes, expectedVersion: plan.version, mergeReason: mergeReason.trim() } });
-      await afterSave(np, `Final order confirmed in v${np.version}`, 'Manual merge recorded. Any later edit or review resets it.');
+      await afterSave(np, `Final order confirmed in v${np.version}`, 'Manual merge recorded. Any later edit or review resets it.', { mergeReason });
     } catch (e) { setErr(errMsg(e)); }
   };
   const doDecide = async () => {
@@ -177,10 +195,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     const decision = confirm; setConfirm(null); setErr('');
     try {
       const np = await decide.mutateAsync({ id: plan.id, data: { decision, notes } });
-      await refresh();
-      clearApprovalDrafts(plan.id);
-      navigateAfterSave(() => onSelect(np.id));
-      toast({ title: decision === 'approve' ? 'Plan approved' : decision === 'reject' ? 'Plan rejected' : `Deferred, new pending v${np.version} created`, description: 'Recorded in the audit log.' });
+      await afterSave(np, decision === 'approve' ? 'Plan approved' : decision === 'reject' ? 'Plan rejected' : `Deferred, new pending v${np.version} created`, 'Recorded in the audit log.');
     } catch (e) { setErr(errMsg(e)); }
   };
   const busy = edit.isPending || decide.isPending;
@@ -195,6 +210,9 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
       </div>
       {err && <Alert variant="destructive" data-testid="alert-approval-error"><AlertTitle>Action failed</AlertTitle><AlertDescription>{err}</AlertDescription></Alert>}
       {dirty && <Alert data-testid="alert-unsaved-approval-changes"><AlertTitle>Unsaved changes</AlertTitle><AlertDescription>Your queue order, notices or notes have not been saved. Save edits as a new version before leaving. Switching ranking tabs or opening a company folder keeps these drafts. Drafts are also kept in this tab's memory when you return to this plan, but may be lost on refresh or close.</AlertDescription></Alert>}
+      {reviewsDirty && <Alert data-testid="alert-unsaved-customer-reviews"><AlertTitle>Unsaved customer decisions</AlertTitle><AlertDescription>You have unsubmitted customer decision selections or reasons, possibly in either ranking queue. Use Save review or Update review for each customer to submit them. Saving task edits or confirming the final order does not submit these customer drafts.</AlertDescription></Alert>}
+      {mergeReasonDirty && <Alert data-testid="alert-unsaved-merge-reason"><AlertTitle>Unsaved final-order reason</AlertTitle><AlertDescription>Your final-order confirmation reason has not been submitted. Use Confirm final order to submit it. Saving task edits or a customer review does not submit this reason.</AlertDescription></Alert>}
+      {(reviewsDirty || mergeReasonDirty) && <p className="text-xs text-muted-foreground">Switching ranking tabs or opening a company folder keeps these drafts. Unsubmitted drafts are kept in this tab's memory when you return, including after saving another item, but may be lost on refresh or close. Nothing is saved automatically.</p>}
       {!editable && <Alert><AlertDescription>This version is {plan.status} and read-only. {plan.status === 'Approved' ? 'Execute it from Execution Results.' : 'Changes require a new pending version.'}</AlertDescription></Alert>}
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel title="Risk event" bodyClass="space-y-1 text-xs">
