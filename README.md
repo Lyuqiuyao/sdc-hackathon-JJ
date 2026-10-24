@@ -218,7 +218,7 @@ Replit is the development and hosting environment used for this project.
 | Name | Role |
 |---|---|
 | Lyu Qiuyao | Team Leader |
-| Li Wenjei| Project Development |
+| Li Wenjie| Project Development |
 
 
 ---
