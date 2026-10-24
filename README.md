@@ -218,9 +218,8 @@ Replit is the development and hosting environment used for this project.
 | Name | Role |
 |---|---|
 | Lyu Qiuyao | Team Leader |
-| Team Member 2 | Project Development |
+| Li Wenjei| Project Development |
 
-*Replace “Team Member 2” with the second member's preferred name before submission.*
 
 ---
 
