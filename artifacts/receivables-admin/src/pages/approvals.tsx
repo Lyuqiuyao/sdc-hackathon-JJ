@@ -14,9 +14,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { CompanyFolder } from '@/components/company-folder';
 import { CollectionNoticeEditor } from '@/components/collection-notice-editor';
 import { useToast } from '@/hooks/use-toast';
-import { useApprovalNavigationGuard } from '@/hooks/use-approval-navigation-guard';
 import { clearApprovalDrafts, readApprovalDrafts, retainApprovalDrafts, remainingDecisionDrafts, unsavedReviewForms, type ApprovalDraft, type ReviewForms } from '@/lib/approval-drafts';
-import { approvalDraftWarning } from '@/lib/approval-navigation';
 import { METHODS, errMsg, fmtDate, fmtDateTime, rm, safeHistorical, useRefresh } from '@/lib/arus';
 
 type Draft = ApprovalDraft;
@@ -95,7 +93,6 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
   const reviewsDirty = Object.keys(unsavedReviews).length > 0;
   const mergeReasonDirty = mergeReason !== '';
   const anyDraftDirty = dirty || reviewsDirty || mergeReasonDirty;
-  const navigateAfterSave = useApprovalNavigationGuard(anyDraftDirty, approvalDraftWarning(dirty, reviewsDirty, mergeReasonDirty));
   useLayoutEffect(() => {
     retainApprovalDrafts(plan.id, { tasks: drafts, notes, reviewForms: unsavedReviews, mergeReason }, anyDraftDirty);
   }, [plan.id, drafts, notes, reviewForms, mergeReason, plan.customerReviews, anyDraftDirty]);
@@ -158,7 +155,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
       setReviewForms(remaining.reviewForms);
       setMergeReason(remaining.mergeReason);
     }
-    navigateAfterSave(() => onSelect(np.id));
+    onSelect(np.id);
     toast({ title, description });
   };
   const save = async () => {
@@ -209,10 +206,6 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
         </Select>
       </div>
       {err && <Alert variant="destructive" data-testid="alert-approval-error"><AlertTitle>Action failed</AlertTitle><AlertDescription>{err}</AlertDescription></Alert>}
-      {dirty && <Alert data-testid="alert-unsaved-approval-changes"><AlertTitle>Unsaved changes</AlertTitle><AlertDescription>Your queue order, notices or notes have not been saved. Save edits as a new version before leaving. Switching ranking tabs or opening a company folder keeps these drafts. Drafts are also kept in this tab's memory when you return to this plan, but may be lost on refresh or close.</AlertDescription></Alert>}
-      {reviewsDirty && <Alert data-testid="alert-unsaved-customer-reviews"><AlertTitle>Unsaved customer decisions</AlertTitle><AlertDescription>You have unsubmitted customer decision selections or reasons, possibly in either ranking queue. Use Save review or Update review for each customer to submit them. Saving task edits or confirming the final order does not submit these customer drafts.</AlertDescription></Alert>}
-      {mergeReasonDirty && <Alert data-testid="alert-unsaved-merge-reason"><AlertTitle>Unsaved final-order reason</AlertTitle><AlertDescription>Your final-order confirmation reason has not been submitted. Use Confirm final order to submit it. Saving task edits or a customer review does not submit this reason.</AlertDescription></Alert>}
-      {(reviewsDirty || mergeReasonDirty) && <p className="text-xs text-muted-foreground">Switching ranking tabs or opening a company folder keeps these drafts. Unsubmitted drafts are kept in this tab's memory when you return, including after saving another item, but may be lost on refresh or close. Nothing is saved automatically.</p>}
       {!editable && <Alert><AlertDescription>This version is {plan.status} and read-only. {plan.status === 'Approved' ? 'Execute it from Execution Results.' : 'Changes require a new pending version.'}</AlertDescription></Alert>}
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel title="Risk event" bodyClass="space-y-1 text-xs">
@@ -242,7 +235,6 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
           orderedTasks={isV2 ? orderedQueueTasks : undefined}
           onMoveTask={isV2 ? moveWithinQueue : undefined} onOpenCompany={setFolderCustomerId}
           canReorder={editable && !busy} />
-        {isV2 && dirty && <p className="text-xs text-orange-700" role="status">Unsaved changes. Save edits as a new version before recording customer decisions.</p>}
         {!isV2 && <Alert><AlertDescription>This historical plan has no recorded 2D/3D queues. Its original ranking is preserved below, not relabelled or recalculated. <Link href="/ai-planner" className="underline">Generate a new plan</Link> to use the separate rankings.</AlertDescription></Alert>}
       </Panel>
       {isV2 && <>
@@ -281,9 +273,6 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
                     if (task?.customerId !== c.id) return null;
                     return <div key={draft.id} className="space-y-2 rounded-md border p-3">
                       <h5 className="font-semibold">{task.invoiceNumber} · {rm(task.outstandingCents)} · {task.daysOverdue} days overdue</h5>
-                      {!draft.noticeVariants && <p className="text-xs text-orange-700">
-                        {done ? 'No bilingual variants saved yet. Save the customer review again to retry generation.' : 'Customer review not saved yet. Existing task drafts are shown below, not newly generated portrait-based messages.'}
-                      </p>}
                       <CollectionNoticeEditor draft={draft} kind={viewKinds[draft.id] ?? selectedKind(draft.method)} editable={editable}
                         onKindChange={kind => setViewKinds(current => ({ ...current, [draft.id]: kind }))}
                         onChange={(kind, field, value) => patchNotice(index, kind, field, value)} />

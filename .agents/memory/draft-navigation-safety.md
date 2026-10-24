@@ -1,13 +1,13 @@
 ---
-name: Draft navigation safety
-description: Constraints behind unsaved approval draft warnings and browser compatibility.
+name: Approval draft retention
+description: No departure prompts; preserve independent draft retention without autosaving.
 ---
 
-Unsaved-draft protection must not autosave, create plan versions, invoke AI, or add synthetic browser history entries. Queue switching and opening an inline company folder must retain local drafts without a discard prompt.
+Do not show departure/discard confirmations or the extra unsaved-draft banners in Approval Center. Keep in-tab draft retention and separate-submit semantics; do not autosave, create plan versions, invoke AI, or add synthetic history entries. Queue switching and company-folder opening must retain drafts without prompts.
 
-**Why:** Explicit saves are versioned and audited business actions. A warning must not trigger those actions or change browser history merely to simulate cancellation.
+**Why:** The user explicitly requested removing both the new unsaved-content warnings and the extra existing-draft/not-yet-generated notice. Explicit saves remain versioned and audited business actions; removing prompts does not authorize silent saves or changes to approval requirements.
 
-**How to apply:** Use cancellable navigation when supported and native unload warnings for refresh/close. Without the browser Navigation API, History API wrappers cannot cancel native Back/Forward before the router unmounts: retain unsaved drafts in tab memory across route unmounts and restore them on return instead. This is not a server save and must not create versions or audit records. Do not claim universal traversal cancellation or introduce history-repair tricks. Browser unload-dialog wording is browser-controlled.
+**How to apply:** Do not install navigation or unload guards for these drafts or reintroduce warning banners. Preserve tab-memory retention on route unmounts and independent drafts across successful version saves. Refresh/close may lose unsaved content without warning. Keep real validation errors and approval blockers; source provenance must remain truthful without the removed explanatory banner.
 
 Treat task edits, customer review submissions, and the final-order reason as independent drafts. A successful save consumes only what that action submitted; carry other drafts into the resulting version without submitting them.
 
