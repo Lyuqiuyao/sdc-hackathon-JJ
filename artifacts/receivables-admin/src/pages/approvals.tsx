@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'wouter';
 import { ArrowDown, ArrowUp, CheckCircle2, Clock3, ExternalLink, ListChecks, Save, XCircle } from 'lucide-react';
 import { useDecidePlan, useEditPlan, type CollectionPlan, type CollectionTask, type CustomerReviewInput, type Workspace } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState, Field } from '@/components/kit';
-import { QueuesOverview, ScoringSummary, TaskDetail, TaskHead } from '@/components/plan';
+import { QueuesOverview, ScoringSummary, TaskDetail, TaskHead, type RankingQueue } from '@/components/plan';
 import { ProviderDetails } from '@/components/provider-details';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,7 +21,10 @@ const asDraft = (task: CollectionTask): Draft => ({
 });
 const selectedKind = (method: string) => method === 'Extension negotiation' ? 'extension' as const : 'collectNow' as const;
 
-function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; onSelect: (id: string) => void }) {
+function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
+  ws: Workspace; plan: CollectionPlan; onSelect: (id: string) => void;
+  queue: RankingQueue; onQueueChange: (queue: RankingQueue) => void;
+}) {
   const { toast } = useToast();
   const refresh = useRefresh();
   const edit = useEditPlan();
@@ -61,7 +64,8 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
   const [reviewForms, setReviewForms] = useState<Record<string, { decision: CustomerReviewInput['decision']; reason: string }>>({});
   const [folderCustomerId, setFolderCustomerId] = useState<string | null>(null);
   const folderCompany = ws.customers.find(customer => customer.id === folderCustomerId);
-  const planCompanies = ws.customers.filter(customer => plan.tasks.some(task => task.customerId === customer.id));
+  const planCompanies = ws.customers.filter(customer => plan.tasks.some(task =>
+    task.customerId === customer.id && (!plan.scoringSnapshot || task.queue === queue)));
   const editable = plan.status === 'Pending';
   const byId = useMemo(() => new Map(plan.tasks.map((t) => [t.id, t])), [plan]);
   const dirty = JSON.stringify(drafts) !== JSON.stringify(plan.tasks.map(asDraft)) || notes !== plan.notes;
@@ -95,6 +99,8 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
     return [...m.values()].sort((a, b) => a.firstRank - b.firstRank);
   }, [plan]);
   const pendingReviews = reviewCustomers.filter((c) => !reviewsBy.has(c.id));
+  const visibleReviewCustomers = reviewCustomers.filter(customer => customer.queue === queue);
+  const visiblePendingReviews = visibleReviewCustomers.filter(customer => !reviewsBy.has(customer.id));
   const blockers: string[] = [];
   if (isV2 && pendingReviews.length) blockers.push(`${pendingReviews.length} customer review(s) pending`);
   if (isV2 && plan.customerReviews?.some(review => review.noticeGenerationRequired &&
@@ -164,13 +170,17 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
         </Panel>
         <Panel title="Notes"><Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editable} placeholder="Approval notes" data-testid="input-notes" /></Panel>
       </div>
+      <Panel title="Separate rankings by ESG availability" bodyClass="space-y-2">
+        <QueuesOverview tasks={plan.tasks} queue={queue} onQueueChange={onQueueChange} />
+        {!isV2 && <Alert><AlertDescription>This historical plan has no recorded 2D/3D queues. Its original ranking is preserved below, not relabelled or recalculated. <Link href="/ai-planner" className="underline">Generate a new plan</Link> to use the separate rankings.</AlertDescription></Alert>}
+      </Panel>
       {isV2 && <>
-        <Panel title="Initial queues" bodyClass="space-y-2"><QueuesOverview tasks={plan.tasks} /></Panel>
-        <Panel title={`Customer review (${reviewCustomers.length - pendingReviews.length}/${reviewCustomers.length} done)`} bodyClass="space-y-3" data-testid="panel-customer-reviews">
+        <Panel title={`${queue === 'three_dimensional' ? 'With ESG · 3D' : 'Without ESG · 2D'} customer decisions (${visibleReviewCustomers.length - visiblePendingReviews.length}/${visibleReviewCustomers.length} done)`} bodyClass="space-y-3" data-testid="panel-customer-reviews">
           {edit.isPending && <p className="text-xs" role="status">Saving changes and, for a customer decision, generating both bilingual notice variants...</p>}
-          <p className="text-xs text-muted-foreground">Review every customer in both queues, with or without an ESG rating, before merging. Unknown or missing ESG is never treated as bad risk. A decision applies to all of that customer's tasks and saves a new Pending version.</p>
-          {reviewCustomers.length === 0 && <p className="text-sm text-muted-foreground">No customers need review in this plan.</p>}
-          {reviewCustomers.map((c) => {
+          <p className="text-xs text-muted-foreground">This section follows the selected ranking tab. Consult SEDG and company information, then choose Collect now or Negotiable extension; there is no ESG or SEDG approval. Every customer in both queues needs a decision before the final order can be confirmed. Unknown or missing ESG is neutral. Saving creates a new Pending version.</p>
+          <p className="text-xs text-muted-foreground" data-testid="text-all-queue-review-progress">Across both queues: {reviewCustomers.length - pendingReviews.length}/{reviewCustomers.length} customers completed; {pendingReviews.length} pending.</p>
+          {visibleReviewCustomers.length === 0 && <p className="text-sm text-muted-foreground">No customers in this queue. Select the other ranking tab.</p>}
+          {visibleReviewCustomers.map((c) => {
             const cust = ws.customers.find((x) => x.id === c.id);
             const sedg = (ws.sedgSubmissions ?? []).filter((x) => x.customerId === c.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
             const done = reviewsBy.get(c.id);
@@ -197,7 +207,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
         </Panel>
         <Panel title="Final merged order" bodyClass="space-y-2" data-testid="panel-merge">
           {plan.manualMerge ? <Alert><AlertDescription data-testid="text-merge-confirmed">Final order confirmed by {plan.manualMerge.actor} at {fmtDateTime(plan.manualMerge.createdAt)}: {plan.manualMerge.reason}</AlertDescription></Alert>
-            : <Alert><AlertDescription>Final order not confirmed. The initial order is the 2D queue followed by the 3D queue. Reorder tasks below, give a reason, then confirm. Approval and execution stay blocked until then.</AlertDescription></Alert>}
+            : <Alert><AlertDescription>Final order not confirmed. The initial order is the 2D queue followed by the 3D queue, not an automatic comparison of scores. Open the final-order editor below to adjust tasks using SEDG and company information, give a reason, then confirm. Approval and execution stay blocked until then.</AlertDescription></Alert>}
           {editable && <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
             <Textarea rows={2} value={mergeReason} onChange={(e) => setMergeReason(e.target.value)} placeholder="Reason for the final order (required)" data-testid="input-merge-reason" />
             <Button onClick={confirmMerge} disabled={busy || !mergeReason.trim() || pendingReviews.length > 0} data-testid="button-confirm-merge"><ListChecks className="mr-1 h-4 w-4" />Confirm final order</Button>
@@ -206,7 +216,10 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
           {editable && dirty && <p className="text-xs text-muted-foreground">Confirming also saves the current order and edits as a new version.</p>}
         </Panel>
       </>}
-      <Panel title="Tasks (order = collection sequence)" bodyClass="space-y-2">
+      <details key={`final-editor-${plan.id}`} open={!isV2} className="rounded-lg border bg-card p-4" data-testid="section-final-order-editor">
+      <summary className="cursor-pointer text-sm font-semibold">{isV2 ? 'Final combined order and message editor (manual)' : 'Historical task order and messages'}</summary>
+      <p className="my-2 text-xs text-muted-foreground">{isV2 ? 'This is the administrator-controlled final collection sequence, separate from the two initial rankings above. Moving tasks here does not recalculate either queue score.' : 'Original historical ranking and scoring are retained. This is not a 2D/3D plan.'}</p>
+      <Panel title="Tasks (order = final collection sequence)" bodyClass="space-y-2">
         {drafts.length === 0 && <EmptyState title="Plan has no tasks" />}
         {drafts.map((d, i) => {
           const t = byId.get(d.id); if (!t) return null;
@@ -243,6 +256,7 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
           );
         })}
       </Panel>
+      </details>
       <div className="sticky bottom-2 z-10 flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3 shadow-md">
         <Button variant="outline" onClick={save} disabled={!editable || !dirty || busy} data-testid="button-save-edits"><Save className="mr-1 h-4 w-4" />Save edits as new version</Button>
         {editable && blockers.length > 0 && <span className="text-xs text-orange-700" data-testid="text-approve-blockers">Approval blocked: {blockers.join('; ')}.</span>}
@@ -281,6 +295,14 @@ function Editor({ ws, plan, onSelect }: { ws: Workspace; plan: CollectionPlan; o
 export default function Approvals() {
   const [params, setParams] = useSearchParams();
   const sel = params.get('plan') ?? '';
+  const queue: RankingQueue = params.get('queue') === 'three_dimensional' ? 'three_dimensional' : 'two_dimensional';
+  const selectQueue = (value: RankingQueue) => {
+    setParams(previous => {
+      const next = new URLSearchParams(previous);
+      next.set('queue', value);
+      return next;
+    }, { replace: true });
+  };
   const selectPlan = (id: string) => {
     setParams(previous => {
       const next = new URLSearchParams(previous);
@@ -306,7 +328,7 @@ export default function Approvals() {
               <Tag>{plan.status}</Tag>
               <span className="text-xs text-muted-foreground">{ws.plans.filter((p) => p.status === 'Pending').length} pending</span>
             </Panel>
-            <Editor key={plan.id} ws={ws} plan={plan} onSelect={selectPlan} />
+            <Editor key={plan.id} ws={ws} plan={plan} onSelect={selectPlan} queue={queue} onQueueChange={selectQueue} />
             </>}
           </div>
         );

@@ -49,6 +49,12 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **How to apply:** SEDG 是人工决策参考，不是评级或认证审批，不改变评分公式、缺失值中性原则或两队列不自动合并的边界。保留所有进入催收队列客户的二选一决策和人工最终顺序确认；不因本次澄清取消已有必选动作。
 
+排序展示需区分有 ESG 与无 ESG 两个视图，不能以混合列表代替两条预排序队列。
+
+**Why:** 用户明确要求审核中心的排序页面分为有 ESG 和无 ESG 两类。
+
+**How to apply:** 分开展示三维／二维原始队列，最终人工合并顺序应明确独立标识；历史方案缺少队列快照时不伪造分组或重标评分。
+
 ## Incremental enhancement constraints
 
 用户要求绝对不要改动已经实现好的 13 个核心功能（仪表盘、现金流提醒、2D/3D 排程、SEDG 审核、AI 双语话术、审计日志等）的业务逻辑；不许引入 LangChain、Prisma、TypeORM 这类重型依赖；所有 AI 调用必须复用现有 ai-provider 模块；所有新增操作必须写审计日志。

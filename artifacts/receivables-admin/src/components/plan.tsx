@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fmtDate, fmtDateTime, rm } from '@/lib/arus';
 
 export const QUEUE_LABEL = { two_dimensional: '2D queue', three_dimensional: '3D queue' } as const;
+export type RankingQueue = NonNullable<CollectionTask['queue']>;
 
 export function ScoreBar({ label, value, weight, note }: { label: string; value: number | null; weight?: number; note?: string }) {
   return (
@@ -31,11 +32,14 @@ export function ScoringSummary({ plan }: { plan: CollectionPlan }) {
   </div>;
 }
 
-/** Shows the two initial queues side by side; scores are never compared across queues. */
-export function QueuesOverview({ tasks }: { tasks: CollectionTask[] }) {
+/** Keeps the recorded initial queues separate; scores are never compared across queues. */
+export function QueuesOverview({ tasks, queue, onQueueChange }: {
+  tasks: CollectionTask[];
+  queue?: RankingQueue;
+  onQueueChange?: (queue: RankingQueue) => void;
+}) {
   const q2 = tasks.filter((t) => t.queue === 'two_dimensional').sort((a, b) => (a.queueRank ?? 0) - (b.queueRank ?? 0));
   const q3 = tasks.filter((t) => t.queue === 'three_dimensional').sort((a, b) => (a.queueRank ?? 0) - (b.queueRank ?? 0));
-  if (!q2.length && !q3.length) return null;
   const col = (title: string, sub: string, list: CollectionTask[], id: string) => (
     <div className="rounded-md border p-3" data-testid={`queue-${id}`}>
       <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">{title}</h3><Tag tone="gray">{list.length} tasks</Tag></div>
@@ -47,11 +51,22 @@ export function QueuesOverview({ tasks }: { tasks: CollectionTask[] }) {
   );
   return (
     <div className="space-y-2">
-      <div className="grid gap-3 md:grid-cols-2">
-        {col('2D queue: overdue + amount', 'Includes customers with unknown ESG. Needs per-customer human review.', q2, '2d')}
-        {col('3D queue: overdue + amount + ESG', 'Customers with an existing A/B/C rating (unverified).', q3, '3d')}
-      </div>
-      <p className="text-[11px] text-muted-foreground">Scores come from different formulas and must not be compared across queues. The initial order is the 2D queue followed by the 3D queue and is not merged automatically.</p>
+      <Tabs value={queue} defaultValue={q3.length ? 'three_dimensional' : 'two_dimensional'}
+        onValueChange={value => {
+          if (value === 'two_dimensional' || value === 'three_dimensional') onQueueChange?.(value);
+        }}>
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1" aria-label="Rankings by ESG availability">
+          <TabsTrigger value="three_dimensional" data-testid="tab-ranking-with-esg">With ESG · 3D ({q3.length})</TabsTrigger>
+          <TabsTrigger value="two_dimensional" data-testid="tab-ranking-without-esg">Without ESG · 2D ({q2.length})</TabsTrigger>
+        </TabsList>
+        <TabsContent value="three_dimensional">
+          {col('With ESG: three-dimensional ranking', 'Overdue days + outstanding amount + recorded ESG rating. An existing A/B/C rating is an input, not assessed here.', q3, '3d')}
+        </TabsContent>
+        <TabsContent value="two_dimensional">
+          {col('Without ESG: two-dimensional ranking', 'Overdue days + outstanding amount. Consult customer SEDG after pre-ranking when deciding the final order and collection strategy.', q2, '2d')}
+        </TabsContent>
+      </Tabs>
+      <p className="text-[11px] text-muted-foreground">These are recorded initial rankings, not the final collection order. Scores use different formulas and must not be compared across queues. Final ordering requires manual confirmation.</p>
     </div>
   );
 }
