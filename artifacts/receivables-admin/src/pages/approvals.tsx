@@ -189,7 +189,8 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
       <Panel title="Separate rankings by ESG availability" bodyClass="space-y-2">
         <QueuesOverview tasks={plan.tasks} queue={queue} onQueueChange={onQueueChange}
           orderedTasks={isV2 ? orderedQueueTasks : undefined}
-          onMoveTask={isV2 ? moveWithinQueue : undefined} canReorder={editable && !busy} />
+          onMoveTask={isV2 ? moveWithinQueue : undefined} onOpenCompany={setFolderCustomerId}
+          canReorder={editable && !busy} />
         {isV2 && dirty && <p className="text-xs text-orange-700" role="status">Unsaved changes. Save edits as a new version before recording customer decisions.</p>}
         {!isV2 && <Alert><AlertDescription>This historical plan has no recorded 2D/3D queues. Its original ranking is preserved below, not relabelled or recalculated. <Link href="/ai-planner" className="underline">Generate a new plan</Link> to use the separate rankings.</AlertDescription></Alert>}
       </Panel>

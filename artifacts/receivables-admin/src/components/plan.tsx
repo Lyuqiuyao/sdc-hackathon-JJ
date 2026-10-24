@@ -34,12 +34,13 @@ export function ScoringSummary({ plan }: { plan: CollectionPlan }) {
 }
 
 /** Keeps queue membership and original scores intact while optionally showing a human draft order. */
-export function QueuesOverview({ tasks, queue, onQueueChange, orderedTasks, onMoveTask, canReorder = false }: {
+export function QueuesOverview({ tasks, queue, onQueueChange, orderedTasks, onMoveTask, onOpenCompany, canReorder = false }: {
   tasks: CollectionTask[];
   queue?: RankingQueue;
   onQueueChange?: (queue: RankingQueue) => void;
   orderedTasks?: CollectionTask[];
   onMoveTask?: (taskId: string, direction: -1 | 1) => void;
+  onOpenCompany?: (customerId: string) => void;
   canReorder?: boolean;
 }) {
   const queueTasks = (value: RankingQueue) => {
@@ -63,7 +64,14 @@ export function QueuesOverview({ tasks, queue, onQueueChange, orderedTasks, onMo
               data-testid={`button-queue-down-${t.id}`}><ArrowDown className="h-3.5 w-3.5" /></button>
           </span>}
           <span className="w-6 shrink-0 font-mono text-muted-foreground">#{orderedTasks ? index + 1 : t.queueRank}</span>
-          <span className="min-w-0 flex-1"><span className="block truncate">{t.customerName} · {t.invoiceNumber}</span>
+          <span className="min-w-0 flex-1"><span className="flex min-w-0 items-center gap-1">
+            {onOpenCompany ? <button type="button" onClick={() => onOpenCompany(t.customerId)}
+              className="min-w-0 truncate rounded text-left font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`Open company folder for ${t.customerName}`} title={`Open company folder: ${t.customerName}`}
+              data-testid={`button-queue-company-${t.id}`}>{t.customerName}</button>
+              : <span className="min-w-0 truncate">{t.customerName}</span>}
+            <span className="shrink-0">· {t.invoiceNumber}</span>
+          </span>
             {orderedTasks && <span className="text-[10px] text-muted-foreground">Initial rank #{t.queueRank} · {rm(t.outstandingCents)} · {t.daysOverdue} days overdue</span>}
           </span>
           <span className="font-mono" title="Original score (unchanged)">{t.score.toFixed(1)}</span>

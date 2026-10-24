@@ -184,6 +184,8 @@ export function CompanyFolder({ customer: sel, ws }: { customer: Customer; ws: W
   const invs = ws.invoices.filter((i) => i.customerId === sel.id);
   const maxDaysOverdue = invs.reduce((max, invoice) => Math.max(max, invoice.daysOverdue), 0);
   const docs = ws.documents.filter((d) => d.customerId === sel.id);
+  const latestSedg = (ws.sedgSubmissions ?? []).filter(submission => submission.customerId === sel.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   const comms = ws.plans.flatMap((p) => p.tasks.filter((t) => t.customerId === sel.id).map((t) => ({ ...t, v: p.version, ps: p.status })));
   const execs = ws.executions.filter((e) => e.customerName === sel.name);
   const reviews = ws.plans.flatMap((p) => (p.customerReviews ?? []).filter((r) => r.customerId === sel.id).map((r) => ({ ...r, v: p.version })));
@@ -195,6 +197,9 @@ export function CompanyFolder({ customer: sel, ws }: { customer: Customer; ws: W
           <Button size="sm" variant="outline" onClick={() => setEditing((x) => !x)} data-testid="button-edit-profile">{editing ? 'Close editor' : 'Edit profile'}</Button></div>
         <dl>
           <KV k="Business importance" v={<Tag>{sel.importance}</Tag>} /><KV k="Existing ESG rating (imported, unverified)" v={<Tag>{sel.esgRating || 'Uncertified'}</Tag>} />
+          <KV k="SEDG declaration" v={latestSedg
+            ? <><Tag tone="gray">{latestSedg.status}</Tag><span className="ml-2 text-xs text-muted-foreground">{fmtDateTime(latestSedg.createdAt)}</span></>
+            : 'Not submitted (neutral)'} />
           <KV k="Collection email" v={sel.collectionEmail || 'Not configured'} />
           <KV k="Outstanding" v={rm(sel.outstandingCents)} /><KV k="Overdue" v={rm(sel.overdueCents)} /><KV k="Max days overdue" v={maxDaysOverdue} /><KV k="Earliest due" v={sel.earliestDue ? fmtDate(sel.earliestDue) : '-'} /><KV k="Risk status" v={<Tag>{sel.risk}</Tag>} />
           <KV k="Profile version" v={`v${sel.profileVersion ?? 0}${sel.profileSource ? ` · ${safeHistorical(sel.profileSource)}` : ''}`} />
