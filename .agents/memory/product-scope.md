@@ -43,6 +43,12 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 **How to apply:** Do not introduce a customer or certifier portal, unrelated model calls, Secret changes or shared database operations under this implementation scope. Later authorization permits the SMTP switch, communication extraction and the specified advisory AI portrait through the existing ai-provider, not broader workflow changes.
 
+审核对象是 SEDG 信息，不是已有 ESG 评级；催收策略选择与 ESG 评级认证不得混为一谈。
+
+**Why:** 用户明确纠正“审核的应该是 SEDG，ESG 不需要审核”。
+
+**How to apply:** 保留 ESG 评级作为已有输入，不增加 ESG 审批；SEDG 的内部审核不声称完成独立认证。
+
 ## Incremental enhancement constraints
 
 用户要求绝对不要改动已经实现好的 13 个核心功能（仪表盘、现金流提醒、2D/3D 排程、SEDG 审核、AI 双语话术、审计日志等）的业务逻辑；不许引入 LangChain、Prisma、TypeORM 这类重型依赖；所有 AI 调用必须复用现有 ai-provider 模块；所有新增操作必须写审计日志。
