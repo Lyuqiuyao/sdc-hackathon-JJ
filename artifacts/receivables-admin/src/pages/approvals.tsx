@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'wouter';
 import { ArrowDown, ArrowUp, CheckCircle2, Clock3, ExternalLink, ListChecks, Save, XCircle } from 'lucide-react';
 import { useDecidePlan, useEditPlan, type CollectionPlan, type CollectionTask, type CustomerReviewInput, type Workspace } from '@workspace/api-client-react';
@@ -13,9 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CompanyFolder } from '@/components/company-folder';
 import { useToast } from '@/hooks/use-toast';
+import { useApprovalNavigationGuard } from '@/hooks/use-approval-navigation-guard';
+import { clearApprovalDrafts, readApprovalDrafts, retainApprovalDrafts, type ApprovalDraft } from '@/lib/approval-drafts';
 import { METHODS, errMsg, fmtDate, fmtDateTime, rm, safeHistorical, useRefresh } from '@/lib/arus';
 
-type Draft = Pick<CollectionTask, 'id' | 'method' | 'noticeEn' | 'noticeMs' | 'noticeVariants'>;
+type Draft = ApprovalDraft;
 const asDraft = (task: CollectionTask): Draft => ({
   id: task.id, method: task.method, noticeEn: task.noticeEn, noticeMs: task.noticeMs, noticeVariants: task.noticeVariants,
 });
@@ -29,7 +31,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
   const refresh = useRefresh();
   const edit = useEditPlan();
   const decide = useDecidePlan();
-  const [drafts, setDrafts] = useState<Draft[]>(() => plan.tasks.map(asDraft));
+  const [drafts, setDrafts] = useState<Draft[]>(() => readApprovalDrafts(plan.id)?.tasks ?? plan.tasks.map(asDraft));
   const serverDrafts = useRef(plan.tasks.map(asDraft));
   useEffect(() => {
     const previous = serverDrafts.current, next = plan.tasks.map(asDraft);
@@ -57,7 +59,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     }));
   }, [plan.tasks]);
   const [viewKinds, setViewKinds] = useState<Record<string, 'collectNow' | 'extension'>>({});
-  const [notes, setNotes] = useState(plan.notes);
+  const [notes, setNotes] = useState(() => readApprovalDrafts(plan.id)?.notes ?? plan.notes);
   const [err, setErr] = useState('');
   const [confirm, setConfirm] = useState<'approve' | 'defer' | 'reject' | null>(null);
   const [mergeReason, setMergeReason] = useState('');
@@ -85,6 +87,10 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     });
   };
   const dirty = JSON.stringify(drafts) !== JSON.stringify(plan.tasks.map(asDraft)) || notes !== plan.notes;
+  const navigateAfterSave = useApprovalNavigationGuard(dirty);
+  useLayoutEffect(() => {
+    retainApprovalDrafts(plan.id, { tasks: drafts, notes }, dirty);
+  }, [plan.id, drafts, notes, dirty]);
   const event = ws.riskEvents.find((e) => e.id === plan.riskEventId);
   const records = ws.approvals.filter((a) => ws.plans.some((p) => p.id === a.planId && p.familyId === plan.familyId));
   const move = (i: number, d: -1 | 1) => setDrafts((a) => { const b = [...a]; const j = i + d; if (j < 0 || j >= b.length) return a; [b[i], b[j]] = [b[j], b[i]]; return b; });
@@ -131,7 +137,9 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
   if (dirty) blockers.push('Unsaved edits');
 
   const afterSave = async (np: CollectionPlan, title: string, description: string) => {
-    await refresh(); onSelect(np.id);
+    await refresh();
+    clearApprovalDrafts(plan.id);
+    navigateAfterSave(() => onSelect(np.id));
     toast({ title, description });
   };
   const save = async () => {
@@ -168,7 +176,9 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     const decision = confirm; setConfirm(null); setErr('');
     try {
       const np = await decide.mutateAsync({ id: plan.id, data: { decision, notes } });
-      await refresh(); onSelect(np.id);
+      await refresh();
+      clearApprovalDrafts(plan.id);
+      navigateAfterSave(() => onSelect(np.id));
       toast({ title: decision === 'approve' ? 'Plan approved' : decision === 'reject' ? 'Plan rejected' : `Deferred, new pending v${np.version} created`, description: 'Recorded in the audit log.' });
     } catch (e) { setErr(errMsg(e)); }
   };
@@ -183,6 +193,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
         </Select>
       </div>
       {err && <Alert variant="destructive" data-testid="alert-approval-error"><AlertTitle>Action failed</AlertTitle><AlertDescription>{err}</AlertDescription></Alert>}
+      {dirty && <Alert data-testid="alert-unsaved-approval-changes"><AlertTitle>Unsaved changes</AlertTitle><AlertDescription>Your queue order, notices or notes have not been saved. Save edits as a new version before leaving. Switching ranking tabs or opening a company folder keeps these drafts. Drafts are also kept in this tab's memory when you return to this plan, but may be lost on refresh or close.</AlertDescription></Alert>}
       {!editable && <Alert><AlertDescription>This version is {plan.status} and read-only. {plan.status === 'Approved' ? 'Execute it from Execution Results.' : 'Changes require a new pending version.'}</AlertDescription></Alert>}
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel title="Risk event" bodyClass="space-y-1 text-xs">
