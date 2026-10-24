@@ -1,4 +1,5 @@
 import { type CollectionPlan, type CollectionTask, type ScoringSnapshot } from '@workspace/api-client-react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Tag } from '@/components/kit';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fmtDate, fmtDateTime, rm } from '@/lib/arus';
@@ -32,20 +33,41 @@ export function ScoringSummary({ plan }: { plan: CollectionPlan }) {
   </div>;
 }
 
-/** Keeps the recorded initial queues separate; scores are never compared across queues. */
-export function QueuesOverview({ tasks, queue, onQueueChange }: {
+/** Keeps queue membership and original scores intact while optionally showing a human draft order. */
+export function QueuesOverview({ tasks, queue, onQueueChange, orderedTasks, onMoveTask, canReorder = false }: {
   tasks: CollectionTask[];
   queue?: RankingQueue;
   onQueueChange?: (queue: RankingQueue) => void;
+  orderedTasks?: CollectionTask[];
+  onMoveTask?: (taskId: string, direction: -1 | 1) => void;
+  canReorder?: boolean;
 }) {
-  const q2 = tasks.filter((t) => t.queue === 'two_dimensional').sort((a, b) => (a.queueRank ?? 0) - (b.queueRank ?? 0));
-  const q3 = tasks.filter((t) => t.queue === 'three_dimensional').sort((a, b) => (a.queueRank ?? 0) - (b.queueRank ?? 0));
+  const queueTasks = (value: RankingQueue) => {
+    const list = (orderedTasks ?? tasks).filter(task => task.queue === value);
+    return orderedTasks ? list : list.sort((a, b) => (a.queueRank ?? 0) - (b.queueRank ?? 0));
+  };
+  const q2 = queueTasks('two_dimensional');
+  const q3 = queueTasks('three_dimensional');
   const col = (title: string, sub: string, list: CollectionTask[], id: string) => (
     <div className="rounded-md border p-3" data-testid={`queue-${id}`}>
       <div className="flex items-center justify-between"><h3 className="text-sm font-semibold">{title}</h3><Tag tone="gray">{list.length} tasks</Tag></div>
       <p className="mb-2 text-[11px] text-muted-foreground">{sub}</p>
       {list.length === 0 ? <p className="text-xs text-muted-foreground">No tasks in this queue.</p> : <ol className="space-y-1 text-xs">
-        {list.map((t) => <li key={t.id} className="flex items-center gap-2"><span className="w-6 font-mono text-muted-foreground">#{t.queueRank}</span><span className="flex-1 truncate">{t.customerName} · {t.invoiceNumber}</span><span className="font-mono">{t.score.toFixed(1)}</span></li>)}
+        {list.map((t, index) => <li key={t.id} className="flex items-center gap-2 rounded border p-2" data-testid={`queue-task-${t.id}`}>
+          {onMoveTask && <span className="flex shrink-0 flex-col">
+            <button type="button" disabled={!canReorder || index === 0} onClick={() => onMoveTask(t.id, -1)}
+              className="rounded p-1 hover:bg-muted disabled:opacity-30" aria-label={`Move ${t.invoiceNumber} up within queue`}
+              data-testid={`button-queue-up-${t.id}`}><ArrowUp className="h-3.5 w-3.5" /></button>
+            <button type="button" disabled={!canReorder || index === list.length - 1} onClick={() => onMoveTask(t.id, 1)}
+              className="rounded p-1 hover:bg-muted disabled:opacity-30" aria-label={`Move ${t.invoiceNumber} down within queue`}
+              data-testid={`button-queue-down-${t.id}`}><ArrowDown className="h-3.5 w-3.5" /></button>
+          </span>}
+          <span className="w-6 shrink-0 font-mono text-muted-foreground">#{orderedTasks ? index + 1 : t.queueRank}</span>
+          <span className="min-w-0 flex-1"><span className="block truncate">{t.customerName} · {t.invoiceNumber}</span>
+            {orderedTasks && <span className="text-[10px] text-muted-foreground">Initial rank #{t.queueRank} · {rm(t.outstandingCents)} · {t.daysOverdue} days overdue</span>}
+          </span>
+          <span className="font-mono" title="Original score (unchanged)">{t.score.toFixed(1)}</span>
+        </li>)}
       </ol>}
     </div>
   );
@@ -66,7 +88,9 @@ export function QueuesOverview({ tasks, queue, onQueueChange }: {
           {col('Without ESG: two-dimensional ranking', 'Overdue days + outstanding amount. Consult customer SEDG after pre-ranking when deciding the final order and collection strategy.', q2, '2d')}
         </TabsContent>
       </Tabs>
-      <p className="text-[11px] text-muted-foreground">These are recorded initial rankings, not the final collection order. Scores use different formulas and must not be compared across queues. Final ordering requires manual confirmation.</p>
+      <p className="text-[11px] text-muted-foreground">{orderedTasks
+        ? 'Use the arrows to adjust the order within this queue, then save edits as a new version. Changes also appear in the final-order editor. Initial ranks and scores remain unchanged; the final combined order still requires manual confirmation.'
+        : 'These are recorded initial rankings, not the final collection order. Scores use different formulas and must not be compared across queues. Final ordering requires manual confirmation.'}</p>
     </div>
   );
 }

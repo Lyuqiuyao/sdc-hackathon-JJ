@@ -68,6 +68,22 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     task.customerId === customer.id && (!plan.scoringSnapshot || task.queue === queue)));
   const editable = plan.status === 'Pending';
   const byId = useMemo(() => new Map(plan.tasks.map((t) => [t.id, t])), [plan]);
+  const orderedQueueTasks = useMemo(() => drafts.map(draft => byId.get(draft.id))
+    .filter((task): task is CollectionTask => task !== undefined), [drafts, byId]);
+  const moveWithinQueue = (taskId: string, direction: -1 | 1) => {
+    if (!editable || edit.isPending || decide.isPending) return;
+    const taskQueue = byId.get(taskId)?.queue;
+    if (!taskQueue) return;
+    setDrafts(current => {
+      const indices = current.flatMap((draft, index) => byId.get(draft.id)?.queue === taskQueue ? [index] : []);
+      const position = indices.findIndex(index => current[index].id === taskId);
+      const nextPosition = position + direction;
+      if (position < 0 || nextPosition < 0 || nextPosition >= indices.length) return current;
+      const next = [...current], from = indices[position], to = indices[nextPosition];
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+  };
   const dirty = JSON.stringify(drafts) !== JSON.stringify(plan.tasks.map(asDraft)) || notes !== plan.notes;
   const event = ws.riskEvents.find((e) => e.id === plan.riskEventId);
   const records = ws.approvals.filter((a) => ws.plans.some((p) => p.id === a.planId && p.familyId === plan.familyId));
@@ -171,7 +187,10 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
         <Panel title="Notes"><Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editable} placeholder="Approval notes" data-testid="input-notes" /></Panel>
       </div>
       <Panel title="Separate rankings by ESG availability" bodyClass="space-y-2">
-        <QueuesOverview tasks={plan.tasks} queue={queue} onQueueChange={onQueueChange} />
+        <QueuesOverview tasks={plan.tasks} queue={queue} onQueueChange={onQueueChange}
+          orderedTasks={isV2 ? orderedQueueTasks : undefined}
+          onMoveTask={isV2 ? moveWithinQueue : undefined} canReorder={editable && !busy} />
+        {isV2 && dirty && <p className="text-xs text-orange-700" role="status">Unsaved changes. Save edits as a new version before recording customer decisions.</p>}
         {!isV2 && <Alert><AlertDescription>This historical plan has no recorded 2D/3D queues. Its original ranking is preserved below, not relabelled or recalculated. <Link href="/ai-planner" className="underline">Generate a new plan</Link> to use the separate rankings.</AlertDescription></Alert>}
       </Panel>
       {isV2 && <>

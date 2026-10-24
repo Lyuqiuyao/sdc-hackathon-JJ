@@ -51,9 +51,9 @@ Provide administrator-only synthetic SEDG submission/import, company information
 
 排序展示需区分有 ESG 与无 ESG 两个视图，不能以混合列表代替两条预排序队列。
 
-**Why:** 用户明确要求审核中心的排序页面分为有 ESG 和无 ESG 两类。
+**Why:** 用户明确要求审核中心的排序页面分为有 ESG 和无 ESG 两类，并确认保留两类视图后仍要原有上下移动调序方式。
 
-**How to apply:** 分开展示三维／二维原始队列，最终人工合并顺序应明确独立标识；历史方案缺少队列快照时不伪造分组或重标评分。
+**How to apply:** 两类视图内提供上下箭头调整人工顺序，复用版本保存和审计；不重算或覆盖原始分数、队列归属或初始队列名次。最终人工合并顺序独立标识；历史方案缺少队列快照时不伪造分组或重标评分。
 
 ## Incremental enhancement constraints
 
