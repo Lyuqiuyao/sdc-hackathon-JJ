@@ -21,7 +21,7 @@
 | ----------------- | ---------------------------------------------- |
 | GitHub Repository | https://github.com/your-username/your-project  |
 | Replit Project    | https://replit.com/@lwjishereee/ESG-AI-Advisor |
-| Live Demo         | https://your-project.replit.app                |
+| Live Demo         | esg-ai-advisor.replit.app               |
 | Slide Deck        | https://khsj.cn/pfwzpg5hbt12kgt                |
 | Demo Video        | https://example.com/demo-video                 |
 
