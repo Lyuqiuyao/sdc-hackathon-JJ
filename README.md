@@ -23,7 +23,7 @@ An AI-powered receivables management solution designed to help Malaysian small a
 | Replit Project | [ESG AI Advisor](https://replit.com/@lwjishereee/ESG-AI-Advisor) |
 | Live Demo | [Launch ESG AI Advisor](https://esg-ai-advisor.replit.app) |
 | Slide Deck | [View Presentation](https://khsj.cn/pfwzpg5hbt12kgt) |
-| Demo Video | To be added |
+| Demo Video | [To be added](https://youtu.be/uoJu1BRrbKI?feature=shared) |
 
 ---
 
