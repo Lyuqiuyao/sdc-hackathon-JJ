@@ -4,7 +4,7 @@ import type {
   SystemSetting, Workspace, ImportInput,
 } from "@workspace/api-zod";
 import { type DemoState, BusinessError, now, today, collectible } from "./model";
-import { calculateRisk, customersNow, dashboard, invoicesNow, signature, validateWeights } from "./compute";
+import { calculateRisk, canonicalJson, customersNow, dashboard, invoicesNow, signature, validateWeights } from "./compute";
 import { buildPlan, METHODS } from "./planner";
 import { importCsv } from "./csv";
 import { seedState } from "./seed";
@@ -136,6 +136,20 @@ export function findPlan(state: DemoState, id: string) {
 export function edit(state: DemoState, id: string, input: PlanEdit) {
   assertEnglishInput(input);
   const original = findPlan(state, id);
+  if (original.dispatchSourcePlanId)
+    throw new BusinessError("Customer sending batches are immutable. Review the source plan instead.", 409);
+  const frozenCustomers = new Set(state.plans.filter(batch => batch.dispatchSourcePlanId &&
+    state.plans.find(parent => parent.id === batch.dispatchSourcePlanId)?.familyId === original.familyId)
+    .map(batch => batch.dispatchCustomerId));
+  if (input.customerReview && frozenCustomers.has(input.customerReview.customerId))
+    throw new BusinessError("This customer already has an immutable sending batch. Other customers may still be reviewed.", 409);
+  for (const edited of input.tasks) {
+    const old = original.tasks.find(task => task.id === edited.id);
+    if (old && frozenCustomers.has(old.customerId) &&
+      canonicalJson({ method: old.method, noticeEn: old.noticeEn, noticeMs: old.noticeMs, noticeVariants: old.noticeVariants }) !==
+      canonicalJson({ method: edited.method, noticeEn: edited.noticeEn, noticeMs: edited.noticeMs, noticeVariants: edited.noticeVariants }))
+      throw new BusinessError("Approved customer messages are frozen. Only unapproved customers may be edited.", 409);
+  }
   if (!["Pending", "Approved"].includes(original.status)) throw new BusinessError("This version is immutable. Select a current pending or approved version.", 409);
   if (input.expectedVersion !== undefined && input.expectedVersion !== original.version)
     throw new BusinessError("Plan version changed. Reload before editing.", 409);
@@ -224,9 +238,17 @@ export function assertCustomerReviews(state: DemoState, plan: CollectionPlan) {
 }
 function assertPlanningReview(state: DemoState, plan: CollectionPlan) {
   if (!plan.scoringSnapshot) return;
+  if (!plan.dispatchSourcePlanId && state.plans.some(batch => batch.dispatchSourcePlanId &&
+    state.plans.find(parent => parent.id === batch.dispatchSourcePlanId)?.familyId === plan.familyId))
+    throw new BusinessError("This family has individual customer approvals. Approve remaining customers separately to avoid duplicate sends.", 409);
   if (Object.keys(state.noticeGenerationJobs ?? {}).some(key => key.startsWith(`${plan.id}:`)))
     throw new BusinessError("Notice generation is pending. Wait for completion, or save the customer review again if the attempt stalled.", 409);
   assertCustomerReviews(state, plan);
+  if (plan.dispatchSourcePlanId) {
+    if (!plan.dispatchCustomerId || !plan.tasks.length || plan.tasks.some(task => task.customerId !== plan.dispatchCustomerId))
+      throw new BusinessError("Invalid customer sending scope.", 409);
+    return;
+  }
   if (!plan.manualMerge?.reason.trim() || plan.manualMerge.actor !== "Demo Admin")
     throw new BusinessError("Human confirmation of the final merged order is required.", 409);
 }

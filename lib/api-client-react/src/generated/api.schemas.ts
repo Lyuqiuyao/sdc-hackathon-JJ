@@ -1068,6 +1068,10 @@ export const CollectionPlanProviderMode = {
 export interface CollectionPlan {
   id: string;
   familyId: string;
+  /** Source review plan for an independent customer-only sending batch. */
+  dispatchSourcePlanId?: string;
+  /** The only customer approved in this sending batch. */
+  dispatchCustomerId?: string;
   version: number;
   riskEventId: string;
   createdAt: string;
@@ -1211,6 +1215,11 @@ export interface TaskEdit {
      * @maxLength 10000
      */
   noticeMs: string;
+}
+
+export interface CustomerDispatchInput {
+  /** @minimum 1 */
+  expectedVersion: number;
 }
 
 export interface PlanEdit {

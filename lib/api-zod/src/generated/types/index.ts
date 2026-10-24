@@ -64,6 +64,7 @@ export * from './correspondenceMetadataFileType';
 export * from './correspondenceRecord';
 export * from './correspondenceRecordFileType';
 export * from './customer';
+export * from './customerDispatchInput';
 export * from './customerImportance';
 export * from './customerReview';
 export * from './customerReviewDecision';

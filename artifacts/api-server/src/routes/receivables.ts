@@ -29,6 +29,8 @@ import { planRecipients } from "../lib/receivables/email-recipients";
 import { GetPlanRecipientsParams, GetPlanRecipientsResponse } from "@workspace/api-zod";
 import { ArchiveCorrespondenceGroupParams } from "@workspace/api-zod";
 import { identifyCorrespondence, archiveCorrespondenceGroup } from "../lib/receivables/correspondence-intake";
+import { ApprovePlanCustomerParams, ApprovePlanCustomerBody, ApprovePlanCustomerResponse } from "@workspace/api-zod";
+import { approveCustomerDispatch } from "../lib/receivables/customer-dispatch";
 
 const router: IRouter = Router();
 router.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
@@ -97,6 +99,26 @@ router.patch("/plans/:id", async (req, res): Promise<void> => {
   const plan = await changeState(state => EditPlanResponse.parse(service.edit(state, id, input)));
   res.json(EditPlanResponse.parse(input.customerReview
     ? await generateReviewedCustomerNotices(plan.id, input.customerReview.customerId) : plan));
+});
+router.post("/plans/:id/customers/:customerId/approval", async (req, res): Promise<void> => {
+  const { id, customerId } = ApprovePlanCustomerParams.parse(req.params);
+  const input = ApprovePlanCustomerBody.parse(req.body);
+  const result = await changeState(state => {
+    try {
+      const candidate = structuredClone(state);
+      const plan = approveCustomerDispatch(candidate, id, customerId, input.expectedVersion);
+      Object.assign(state, candidate);
+      return { plan };
+    }
+    catch (error) {
+      // Discard any tentative batch/approval before persisting the rejection audit.
+      if (!(error instanceof BusinessError)) throw error;
+      service.audit(state, "Customer approval rejected", error.message, customerId, id, "", undefined, { result: "Rejected" });
+      return { error: error.message, status: error.status };
+    }
+  });
+  if ("error" in result) throw new BusinessError(result.error!, result.status);
+  res.json(ApprovePlanCustomerResponse.parse(result.plan));
 });
 router.get("/plans/:id/recipients", async (req, res): Promise<void> => {
   const { id } = GetPlanRecipientsParams.parse(req.params);

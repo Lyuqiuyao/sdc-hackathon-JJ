@@ -29,8 +29,8 @@ export default function AiPlanner() {
   function inner(ws: Workspace) {
     const events = [...ws.riskEvents].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     const evId = eventId || events[0]?.id || '';
-    const plans = [...ws.plans].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    const plan = ws.plans.find((p) => p.id === planId) ?? plans[0];
+    const plans = ws.plans.filter(plan => !plan.dispatchSourcePlanId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const plan = plans.find((p) => p.id === planId) ?? plans[0];
     const generate = async () => {
       setErr('');
       try {

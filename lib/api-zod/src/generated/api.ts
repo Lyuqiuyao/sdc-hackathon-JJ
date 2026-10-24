@@ -717,6 +717,8 @@ export const GetWorkspaceResponse = zod.object({
   "plans": zod.array(zod.object({
   "id": zod.string(),
   "familyId": zod.string(),
+  "dispatchSourcePlanId": zod.string().optional().describe('Source review plan for an independent customer-only sending batch.'),
+  "dispatchCustomerId": zod.string().optional().describe('The only customer approved in this sending batch.'),
   "version": zod.number().int(),
   "riskEventId": zod.string(),
   "createdAt": zod.string(),
@@ -1100,6 +1102,8 @@ export const generatePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 1
 export const GeneratePlanResponse = zod.object({
   "id": zod.string(),
   "familyId": zod.string(),
+  "dispatchSourcePlanId": zod.string().optional().describe('Source review plan for an independent customer-only sending batch.'),
+  "dispatchCustomerId": zod.string().optional().describe('The only customer approved in this sending batch.'),
   "version": zod.number().int(),
   "riskEventId": zod.string(),
   "createdAt": zod.string(),
@@ -1325,6 +1329,8 @@ export const editPlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 10000
 export const EditPlanResponse = zod.object({
   "id": zod.string(),
   "familyId": zod.string(),
+  "dispatchSourcePlanId": zod.string().optional().describe('Source review plan for an independent customer-only sending batch.'),
+  "dispatchCustomerId": zod.string().optional().describe('The only customer approved in this sending batch.'),
   "version": zod.number().int(),
   "riskEventId": zod.string(),
   "createdAt": zod.string(),
@@ -1536,6 +1542,8 @@ export const decidePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 100
 export const DecidePlanResponse = zod.object({
   "id": zod.string(),
   "familyId": zod.string(),
+  "dispatchSourcePlanId": zod.string().optional().describe('Source review plan for an independent customer-only sending batch.'),
+  "dispatchCustomerId": zod.string().optional().describe('The only customer approved in this sending batch.'),
   "version": zod.number().int(),
   "riskEventId": zod.string(),
   "createdAt": zod.string(),
@@ -1676,6 +1684,186 @@ export const DecidePlanResponse = zod.object({
 
 
 
+
+export const ApprovePlanCustomerParams = zod.object({
+  "id": zod.coerce.string().min(1),
+  "customerId": zod.coerce.string().min(1)
+})
+
+
+
+
+export const ApprovePlanCustomerBody = zod.object({
+  "expectedVersion": zod.number().int().min(1)
+})
+
+export const approvePlanCustomerResponseWeightsLateFeeMin = 0;
+export const approvePlanCustomerResponseWeightsLateFeeMax = 100;
+
+export const approvePlanCustomerResponseWeightsUrgencyMin = 0;
+export const approvePlanCustomerResponseWeightsUrgencyMax = 100;
+
+export const approvePlanCustomerResponseWeightsImportanceMin = 0;
+export const approvePlanCustomerResponseWeightsImportanceMax = 100;
+
+export const approvePlanCustomerResponseWeightsEsgMin = 0;
+export const approvePlanCustomerResponseWeightsEsgMax = 100;
+
+export const approvePlanCustomerResponseTasksItemNoticeVariantsCollectNowNoticeEnMax = 10000;
+
+export const approvePlanCustomerResponseTasksItemNoticeVariantsCollectNowNoticeMsMax = 10000;
+
+export const approvePlanCustomerResponseTasksItemNoticeVariantsExtensionNoticeEnMax = 10000;
+
+export const approvePlanCustomerResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 10000;
+
+
+
+export const ApprovePlanCustomerResponse = zod.object({
+  "id": zod.string(),
+  "familyId": zod.string(),
+  "dispatchSourcePlanId": zod.string().optional().describe('Source review plan for an independent customer-only sending batch.'),
+  "dispatchCustomerId": zod.string().optional().describe('The only customer approved in this sending batch.'),
+  "version": zod.number().int(),
+  "riskEventId": zod.string(),
+  "createdAt": zod.string(),
+  "status": zod.enum(['Pending', 'Approved', 'Rejected', 'Deferred', 'Superseded', 'Executed']),
+  "mode": zod.string(),
+  "providerMode": zod.enum(['openai', 'gemini', 'rules_fallback']).optional(),
+  "aiRiskExplanation": zod.string().optional(),
+  "aiGeneration": zod.object({
+  "requestedProvider": zod.enum(['rules', 'openai', 'gemini']),
+  "generatedAt": zod.string(),
+  "durationMs": zod.number().int(),
+  "status": zod.enum(['success', 'fallback']),
+  "reasonCode": zod.string(),
+  "attemptId": zod.string().optional(),
+  "model": zod.string(),
+  "diagnostics": zod.array(zod.object({
+  "stage": zod.enum(['preflight', 'transport', 'json', 'schema', 'business', 'safety', 'projection']),
+  "path": zod.string().describe('Server-allowlisted field path, never model-supplied keys or values.'),
+  "outcome": zod.enum(['passed', 'rejected', 'replaced', 'not_run']),
+  "reasonCode": zod.string(),
+  "taskId": zod.string().optional()
+})).optional(),
+  "connectionMode": zod.enum(['replit_managed']).optional().describe('Present for new managed OpenAI attempts; absent on legacy records. Never infer or relabel historical connections.'),
+  "contentPolicy": zod.enum(['server_controlled_v1']).optional().describe('New outputs use server-controlled notices and ESG prose; unknown-ESG task prose and global risk explanation are projected from rules. Absent on historical records.')
+}).optional(),
+  "weights": zod.object({
+  "lateFee": zod.number().int().min(approvePlanCustomerResponseWeightsLateFeeMin).max(approvePlanCustomerResponseWeightsLateFeeMax),
+  "urgency": zod.number().int().min(approvePlanCustomerResponseWeightsUrgencyMin).max(approvePlanCustomerResponseWeightsUrgencyMax),
+  "importance": zod.number().int().min(approvePlanCustomerResponseWeightsImportanceMin).max(approvePlanCustomerResponseWeightsImportanceMax),
+  "esg": zod.number().int().min(approvePlanCustomerResponseWeightsEsgMin).max(approvePlanCustomerResponseWeightsEsgMax)
+}),
+  "scoringSnapshot": zod.object({
+  "version": zod.enum(['split_v2']),
+  "overdueCapDays": zod.number().int(),
+  "amountCapCents": zod.number().int(),
+  "twoDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int()
+}),
+  "threeDimensional": zod.object({
+  "overdue": zod.number().int(),
+  "amount": zod.number().int(),
+  "esg": zod.number().int()
+}),
+  "esgMapping": zod.object({
+  "A": zod.number().int(),
+  "B": zod.number().int(),
+  "C": zod.number().int()
+})
+}).optional(),
+  "manualMerge": zod.object({
+  "actor": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.string()
+}).optional(),
+  "customerReviews": zod.array(zod.object({
+  "noticeGenerationRequired": zod.boolean().optional(),
+  "customerId": zod.string(),
+  "decision": zod.enum(['collect_now', 'negotiable_extension']),
+  "reason": zod.string(),
+  "actor": zod.string(),
+  "createdAt": zod.string(),
+  "profileVersion": zod.number().int(),
+  "sedgSubmissionId": zod.string().optional()
+})).optional(),
+  "tasks": zod.array(zod.object({
+  "recipientEmail": zod.string().email().nullish(),
+  "id": zod.string(),
+  "invoiceId": zod.string(),
+  "invoiceNumber": zod.string(),
+  "customerId": zod.string(),
+  "customerName": zod.string(),
+  "outstandingCents": zod.number().int(),
+  "dueDate": zod.string(),
+  "daysOverdue": zod.number().int(),
+  "rank": zod.number().int(),
+  "lateFeeScore": zod.number(),
+  "urgencyScore": zod.number(),
+  "importanceScore": zod.number(),
+  "esgScore": zod.number().nullable(),
+  "queue": zod.enum(['two_dimensional', 'three_dimensional']).optional(),
+  "queueRank": zod.number().int().optional(),
+  "overdueScore": zod.number().optional(),
+  "amountScore": zod.number().optional(),
+  "assignedEsgRating": zod.enum(['A', 'B', 'C', 'unknown']).optional(),
+  "score": zod.number(),
+  "method": zod.string(),
+  "scheduledAt": zod.string(),
+  "negotiation": zod.string(),
+  "reason": zod.string(),
+  "uncertainty": zod.string(),
+  "esgNote": zod.string(),
+  "aiAdvice": zod.object({
+  "reasoning": zod.string(),
+  "assumptions": zod.array(zod.string()),
+  "uncertainties": zod.array(zod.string()),
+  "esgEvidence": zod.enum(['verified', 'unknown']),
+  "esgRating": zod.enum(['A', 'B', 'C', 'unknown']),
+  "esgConsiderations": zod.string(),
+  "strategies": zod.array(zod.object({
+  "kind": zod.enum(['payment_full', 'installments', 'extension']),
+  "proposal": zod.string(),
+  "conditions": zod.string()
+})),
+  "noticeEn": zod.string(),
+  "noticeMs": zod.string()
+}).optional(),
+  "noticeEn": zod.string(),
+  "noticeMs": zod.string(),
+  "status": zod.string(),
+  "noticeEnSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeMsSource": zod.enum(['openai', 'gemini', 'rules_fallback', 'human']).optional(),
+  "noticeVariants": zod.object({
+  "model": zod.string().optional(),
+  "connectionMode": zod.enum(['replit_managed']).optional(),
+  "collectNow": zod.object({
+  "noticeEn": zod.string().min(1).max(approvePlanCustomerResponseTasksItemNoticeVariantsCollectNowNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(approvePlanCustomerResponseTasksItemNoticeVariantsCollectNowNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "extension": zod.object({
+  "noticeEn": zod.string().min(1).max(approvePlanCustomerResponseTasksItemNoticeVariantsExtensionNoticeEnMax),
+  "noticeMs": zod.string().min(1).max(approvePlanCustomerResponseTasksItemNoticeVariantsExtensionNoticeMsMax),
+  "noticeEnSource": zod.enum(['openai', 'rules_fallback', 'human']),
+  "noticeMsSource": zod.enum(['openai', 'rules_fallback', 'human'])
+}),
+  "generatedAt": zod.string(),
+  "reasonCode": zod.string(),
+  "contentPolicy": zod.enum(['contextual_paragraph_with_controlled_facts'])
+}).optional()
+})),
+  "notes": zod.string(),
+  "dataSignature": zod.string()
+})
+
+
+
+
+
 export const GetPlanRecipientsParams = zod.object({
   "id": zod.coerce.string().min(1)
 })
@@ -1731,6 +1919,8 @@ export const executePlanResponseTasksItemNoticeVariantsExtensionNoticeMsMax = 10
 export const ExecutePlanResponse = zod.object({
   "id": zod.string(),
   "familyId": zod.string(),
+  "dispatchSourcePlanId": zod.string().optional().describe('Source review plan for an independent customer-only sending batch.'),
+  "dispatchCustomerId": zod.string().optional().describe('The only customer approved in this sending batch.'),
   "version": zod.number().int(),
   "riskEventId": zod.string(),
   "createdAt": zod.string(),

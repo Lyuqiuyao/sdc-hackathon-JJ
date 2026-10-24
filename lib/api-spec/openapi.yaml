@@ -237,6 +237,23 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CollectionPlan" }
+  /plans/{id}/customers/{customerId}/approval:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
+      - { name: customerId, in: path, required: true, schema: { type: string, minLength: 1 } }
+    post:
+      operationId: approvePlanCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerDispatchInput" }
+      responses:
+        "200":
+          description: Independently approved immutable customer dispatch batch; sending requires separate confirmation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CollectionPlan" }
   /plans/{id}/recipients:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, minLength: 1 } }
@@ -828,6 +845,8 @@ components:
       properties:
         id: { type: string }
         familyId: { type: string }
+        dispatchSourcePlanId: { type: string, description: "Source review plan for an independent customer-only sending batch." }
+        dispatchCustomerId: { type: string, description: "The only customer approved in this sending batch." }
         version: { type: integer }
         riskEventId: { type: string }
         createdAt: { type: string }
@@ -957,6 +976,11 @@ components:
         method: { type: string, minLength: 1, maxLength: 100 }
         noticeEn: { type: string, minLength: 1, maxLength: 10000 }
         noticeMs: { type: string, minLength: 1, maxLength: 10000 }
+    CustomerDispatchInput:
+      type: object
+      required: [expectedVersion]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
     PlanEdit:
       type: object
       required: [tasks, notes]

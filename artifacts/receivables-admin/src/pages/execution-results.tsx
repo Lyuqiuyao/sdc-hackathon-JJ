@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useSearchParams } from 'wouter';
 import { Download, PlayCircle } from 'lucide-react';
 import { getExecutionMode, getPlanRecipients, useExecutePlan, type GetExecutionModeQueryResult, type PlanRecipients } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState } from '@/components/kit';
@@ -17,7 +17,13 @@ export default function ExecutionResults() {
   const { toast } = useToast();
   const refresh = useRefresh();
   const exec = useExecutePlan();
-  const [sel, setSel] = useState('');
+  const [params, setParams] = useSearchParams();
+  const sel = params.get('plan') ?? '';
+  const setSel = (id: string) => setParams(previous => {
+    const next = new URLSearchParams(previous);
+    next.set('plan', id);
+    return next;
+  }, { replace: true });
   const [ask, setAsk] = useState(false);
   const [checkingMode, setCheckingMode] = useState(false);
   const [confirmation, setConfirmation] = useState<(GetExecutionModeQueryResult & PlanRecipients & { planId: string }) | null>(null);
@@ -61,7 +67,7 @@ export default function ExecutionResults() {
           const done = new Set((plan.customerReviews ?? []).map((r) => r.customerId));
           const missing = [...need].filter((id) => !done.has(id)).length;
           if (missing) v2Blockers.push(`${missing} customer review(s) pending`);
-          if (!plan.manualMerge) v2Blockers.push('final merged order not confirmed');
+          if (!plan.dispatchSourcePlanId && !plan.manualMerge) v2Blockers.push('final merged order not confirmed');
         }
         const report = () => {
           if (!plan) return;
@@ -76,7 +82,7 @@ export default function ExecutionResults() {
               <>
                 <Panel bodyClass="flex flex-wrap items-center gap-3">
                   <Select value={plan.id} onValueChange={setSel}><SelectTrigger className="w-full sm:w-96" data-testid="select-plan"><SelectValue /></SelectTrigger>
-                    <SelectContent>{plans.map((p) => <SelectItem key={p.id} value={p.id}>v{p.version} · {p.status} · {fmtDateTime(p.createdAt)}</SelectItem>)}</SelectContent></Select>
+                    <SelectContent>{plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.dispatchCustomerId ? `${p.tasks[0]?.customerName} · ` : ''}v{p.version} · {p.status} · {fmtDateTime(p.createdAt)}</SelectItem>)}</SelectContent></Select>
                   <Tag>{plan.status}</Tag>
                   {approval && <span className="text-xs text-muted-foreground">Approved by {approval.actor} at {fmtDateTime(approval.createdAt)}</span>}
                   <div className="ml-auto flex flex-wrap gap-2">

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'wouter';
 import { ArrowDown, ArrowUp, CheckCircle2, Clock3, ExternalLink, ListChecks, Save, XCircle } from 'lucide-react';
-import { useDecidePlan, useEditPlan, type CollectionPlan, type CollectionTask, type CustomerReviewInput, type Workspace } from '@workspace/api-client-react';
+import { useApprovePlanCustomer, useDecidePlan, useEditPlan, type CollectionPlan, type CollectionTask, type CustomerReviewInput, type Workspace } from '@workspace/api-client-react';
 import { Page, Panel, Tag, EmptyState, Field } from '@/components/kit';
 import { QueuesOverview, ScoringSummary, TaskDetail, TaskHead, type RankingQueue } from '@/components/plan';
 import { ProviderDetails } from '@/components/provider-details';
@@ -31,6 +31,10 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
   const refresh = useRefresh();
   const edit = useEditPlan();
   const decide = useDecidePlan();
+  const approveCustomer = useApprovePlanCustomer();
+  const [confirmCustomerId, setConfirmCustomerId] = useState<string | null>(null);
+  const customerBatches = ws.plans.filter(batch => batch.dispatchCustomerId &&
+    ws.plans.find(source => source.id === batch.dispatchSourcePlanId)?.familyId === plan.familyId);
   const [drafts, setDrafts] = useState<Draft[]>(() => readApprovalDrafts(plan.id)?.tasks ?? plan.tasks.map(asDraft));
   const serverDrafts = useRef(plan.tasks.map(asDraft));
   useEffect(() => {
@@ -140,6 +144,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
     blockers.push('Bilingual variants missing; save the customer review again to retry');
   if (isV2 && !plan.manualMerge) blockers.push('Final merged order not confirmed');
   if (dirty) blockers.push('Unsaved edits');
+  if (customerBatches.length) blockers.push('Individual customer sending is in use; approve remaining customers separately above');
 
   const afterSave = async (np: CollectionPlan, title: string, description: string, submitted?: Parameters<typeof remainingDecisionDrafts>[2]) => {
     const current = decisionDrafts.current;
@@ -195,7 +200,17 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
       await afterSave(np, decision === 'approve' ? 'Plan approved' : decision === 'reject' ? 'Plan rejected' : `Deferred, new pending v${np.version} created`, 'Recorded in the audit log.');
     } catch (e) { setErr(errMsg(e)); }
   };
-  const busy = edit.isPending || decide.isPending;
+  const busy = edit.isPending || decide.isPending || approveCustomer.isPending;
+  const approveOne = async () => {
+    if (!confirmCustomerId) return;
+    const customerId = confirmCustomerId;
+    setConfirmCustomerId(null); setErr('');
+    try {
+      await approveCustomer.mutateAsync({ id: plan.id, customerId, data: { expectedVersion: plan.version } });
+      await refresh();
+      toast({ title: 'Customer approved for sending', description: 'Only this customer was approved. Use Send approved customer to confirm execution; other customers can remain pending.' });
+    } catch (error) { setErr(errMsg(error)); }
+  };
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -240,13 +255,17 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
       {isV2 && <>
         <Panel title={`${queue === 'three_dimensional' ? 'With ESG · 3D' : 'Without ESG · 2D'} customer decisions (${visibleReviewCustomers.length - visiblePendingReviews.length}/${visibleReviewCustomers.length} done)`} bodyClass="space-y-3" data-testid="panel-customer-reviews">
           {edit.isPending && <p className="text-xs" role="status">Saving changes and, for a customer decision, generating both bilingual notice variants...</p>}
-          <p className="text-xs text-muted-foreground">This section follows the selected ranking tab. Consult SEDG and company information, then choose Collect now or Negotiable extension; there is no ESG or SEDG approval. Every customer in both queues needs a decision before the final order can be confirmed. Unknown or missing ESG is neutral. Saving creates a new Pending version.</p>
+          <p className="text-xs text-muted-foreground">Review and approve customers independently in either ranking tab. Save a customer's decision and bilingual messages, then approve that customer for sending; other customers do not need to be reviewed first. ESG and SEDG remain references, not certification approvals. Whole-plan approval is an optional separate workflow.</p>
           <p className="text-xs text-muted-foreground" data-testid="text-all-queue-review-progress">Across both queues: {reviewCustomers.length - pendingReviews.length}/{reviewCustomers.length} customers completed; {pendingReviews.length} pending.</p>
           {visibleReviewCustomers.length === 0 && <p className="text-sm text-muted-foreground">No customers in this queue. Select the other ranking tab.</p>}
           {visibleReviewCustomers.map((c) => {
             const cust = ws.customers.find((x) => x.id === c.id);
             const sedg = (ws.sedgSubmissions ?? []).filter((x) => x.customerId === c.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
             const done = reviewsBy.get(c.id);
+            const customerBatch = customerBatches.find(batch => batch.dispatchCustomerId === c.id);
+            const customerTasksDirty = JSON.stringify(drafts.filter(draft => byId.get(draft.id)?.customerId === c.id)) !==
+              JSON.stringify(plan.tasks.filter(task => task.customerId === c.id).map(asDraft));
+            const noticesReady = plan.tasks.filter(task => task.customerId === c.id).every(task => !!task.noticeVariants);
             const f = reviewForms[c.id] ?? { decision: done?.decision ?? 'collect_now', reason: '' };
             return (
               <div key={c.id} className="rounded-md border p-3 text-xs" data-testid={`review-customer-${c.id}`}>
@@ -259,12 +278,25 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
                   <div>SEDG: {sedg ? `${sedg.status}, ${fmtDate(sedg.createdAt)}` : 'Not submitted (neutral, not a risk signal)'}</div>
                 </div>
                 {done && <div className="mt-1 text-muted-foreground">Last review by {done.actor} at {fmtDateTime(done.createdAt)}: {done.reason} (profile v{done.profileVersion}{done.sedgSubmissionId ? `, SEDG ${done.sedgSubmissionId.slice(-6)}` : ', no SEDG'})</div>}
-                {editable && <div className="mt-2 grid gap-2 sm:grid-cols-[200px_1fr_auto] sm:items-end">
+                {editable && !customerBatch && <div className="mt-2 grid gap-2 sm:grid-cols-[200px_1fr_auto] sm:items-end">
                   <Select value={f.decision} onValueChange={(v) => setReviewForms((x) => ({ ...x, [c.id]: { ...f, decision: v as CustomerReviewInput['decision'] } }))}><SelectTrigger data-testid={`select-review-decision-${c.id}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="collect_now">Collect now</SelectItem><SelectItem value="negotiable_extension">Negotiable extension</SelectItem></SelectContent></Select>
                   <Textarea rows={2} value={f.reason} onChange={(e) => setReviewForms((x) => ({ ...x, [c.id]: { ...f, reason: e.target.value } }))} placeholder="Reason for this decision (required)" data-testid={`input-review-reason-${c.id}`} />
                   <Button size="sm" onClick={() => saveReview(c.id)} disabled={dirty || busy || !f.reason.trim()} data-testid={`button-save-review-${c.id}`}>{done ? 'Update review' : 'Save review'}</Button>
                 </div>}
                 {editable && dirty && <p className="mt-1 text-[11px] text-orange-700">Save or discard task edits before recording a review.</p>}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {customerBatch ? <>
+                    <Tag tone="green">{customerBatch.status === 'Executed' ? 'Customer execution recorded' : 'Customer approved for sending'}</Tag>
+                    <Button size="sm" variant="outline" asChild data-testid={`button-send-customer-${c.id}`}>
+                      <Link href={`/execution-results?plan=${encodeURIComponent(customerBatch.id)}`}>
+                        {customerBatch.status === 'Executed' ? 'View customer execution' : 'Send approved customer'}
+                      </Link>
+                    </Button>
+                  </> : editable && <Button size="sm" disabled={!done || !noticesReady || customerTasksDirty || !!unsavedReviews[c.id] || busy}
+                    onClick={() => setConfirmCustomerId(c.id)} data-testid={`button-approve-customer-${c.id}`}>
+                    Approve this customer for sending
+                  </Button>}
+                </div>
                 <section className="mt-4 space-y-3 border-t pt-3" aria-label={`Collection messages for ${c.name}`} data-testid={`customer-notices-${c.id}`}>
                   <h4 className="text-sm font-semibold">Collection messages · English / Bahasa Melayu</h4>
                   <p className="text-xs text-muted-foreground">Saving the customer review automatically generates immediate-collection and extension drafts using the company portrait, correspondence analysis and invoice facts. AI errors use rules fallback. Review both languages before approval; viewing drafts does not send email.</p>
@@ -273,7 +305,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
                     if (task?.customerId !== c.id) return null;
                     return <div key={draft.id} className="space-y-2 rounded-md border p-3">
                       <h5 className="font-semibold">{task.invoiceNumber} · {rm(task.outstandingCents)} · {task.daysOverdue} days overdue</h5>
-                      <CollectionNoticeEditor draft={draft} kind={viewKinds[draft.id] ?? selectedKind(draft.method)} editable={editable}
+                      <CollectionNoticeEditor draft={draft} kind={viewKinds[draft.id] ?? selectedKind(draft.method)} editable={editable && !customerBatch}
                         onKindChange={kind => setViewKinds(current => ({ ...current, [draft.id]: kind }))}
                         onChange={(kind, field, value) => patchNotice(index, kind, field, value)} />
                     </div>;
@@ -300,6 +332,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
         {drafts.length === 0 && <EmptyState title="Plan has no tasks" />}
         {drafts.map((d, i) => {
           const t = byId.get(d.id); if (!t) return null;
+          const customerFrozen = customerBatches.some(batch => batch.dispatchCustomerId === t.customerId);
           const kind = viewKinds[d.id] ?? selectedKind(d.method);
           return (
             <details key={d.id} className="rounded-md border" data-testid={`approval-task-${d.id}`}>
@@ -310,7 +343,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
               </summary>
               <div className="space-y-3 border-t p-3">
                 <Field label="Collection method">
-                  <Select value={d.method} onValueChange={(v) => patch(i, { method: v })} disabled={!editable}><SelectTrigger className="sm:w-72" data-testid={`select-method-${d.id}`}><SelectValue /></SelectTrigger><SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
+                  <Select value={d.method} onValueChange={(v) => patch(i, { method: v })} disabled={!editable || customerFrozen}><SelectTrigger className="sm:w-72" data-testid={`select-method-${d.id}`}><SelectValue /></SelectTrigger><SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
                 </Field>
                 {d.method !== t.method && <p className="text-xs text-orange-700">On save, unchanged EN/MS templates follow the new method. Custom wording is preserved; review both languages before approval.</p>}
                 {!isV2 && <CollectionNoticeEditor draft={d} kind={kind} editable={editable}
@@ -327,7 +360,7 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
       <div className="sticky bottom-2 z-10 flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3 shadow-md">
         <Button variant="outline" onClick={save} disabled={!editable || !dirty || busy || !!editReasonError} data-testid="button-save-edits"><Save className="mr-1 h-4 w-4" />Save edits as new version</Button>
         {editable && dirty && editReasonError && <span className="text-xs text-orange-700">Add an English edit reason in Notes before saving.</span>}
-        {editable && blockers.length > 0 && <span className="text-xs text-orange-700" data-testid="text-approve-blockers">Approval blocked: {blockers.join('; ')}.</span>}
+        {editable && blockers.length > 0 && <span className="text-xs text-orange-700" data-testid="text-approve-blockers">Whole-plan approval blocked: {blockers.join('; ')}. Customer approval above is independent.</span>}
         <div className="ml-auto flex flex-wrap gap-2">
           <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={() => setConfirm('approve')} disabled={!editable || blockers.length > 0 || busy} data-testid="button-approve"><CheckCircle2 className="mr-1 h-4 w-4" />{ws.smtpEnabled ? 'Approve for SMTP execution' : 'Approve & Simulate Execution'}</Button>
           <Button variant="outline" onClick={() => setConfirm('defer')} disabled={!editable || dirty || busy} data-testid="button-defer"><Clock3 className="mr-1 h-4 w-4" />Defer & Recalculate</Button>
@@ -349,6 +382,16 @@ function Editor({ ws, plan, onSelect, queue, onQueueChange }: {
           </div>}
         </SheetContent>
       </Sheet>
+      <AlertDialog open={!!confirmCustomerId} onOpenChange={open => !open && setConfirmCustomerId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Approve only {ws.customers.find(customer => customer.id === confirmCustomerId)?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Approve this customer's saved decision and bilingual messages in the displayed task order. This freezes only this customer's tasks for sending; other customers remain unchanged. No email is sent by approval. Use Send approved customer for a separate confirmation of the live server mode and recipients.
+            </AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={approveOne}
+            disabled={busy} data-testid="button-confirm-customer-approval">Approve customer</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>{confirm === 'approve' ? 'Approve this plan?' : confirm === 'defer' ? 'Defer and recalculate?' : 'Reject this plan?'}</AlertDialogTitle>
@@ -381,7 +424,7 @@ export default function Approvals() {
   return (
     <Page title="Approval Center" description="Review, adjust and decide on AI collection plans">
       {(ws) => {
-        const plans = [...ws.plans].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        const plans = ws.plans.filter(plan => !plan.dispatchSourcePlanId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         const plan = plans.find((p) => p.id === sel) ?? plans.find((p) => p.status === 'Pending') ?? plans[0];
         return (
           <div className="space-y-4">

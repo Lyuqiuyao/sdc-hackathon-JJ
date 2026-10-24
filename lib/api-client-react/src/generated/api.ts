@@ -33,6 +33,7 @@ import type {
   CorrespondenceMetadata,
   CorrespondenceRecord,
   Customer,
+  CustomerDispatchInput,
   DocumentView,
   ExecutionConfirmationInput,
   GetExecutionMode200,
@@ -1442,6 +1443,91 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDecidePlanMutationOptions(options));
+    }
+
+export const getApprovePlanCustomerUrl = (id: string,
+    customerId: string,) => {
+
+
+
+
+  return `/api/plans/${id}/customers/${customerId}/approval`
+}
+
+export const approvePlanCustomer = async (id: string,
+    customerId: string,
+    customerDispatchInput: CustomerDispatchInput, options?: Parameters<typeof customFetch>[1]): Promise<CollectionPlan> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CollectionPlan>(getApprovePlanCustomerUrl(id,customerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(customerDispatchInput)
+  }
+);}
+
+
+
+
+
+export const getApprovePlanCustomerMutationKey = () => ['approvePlanCustomer'] as const;
+
+export const getApprovePlanCustomerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approvePlanCustomer>>, TError,ApprovePlanCustomerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approvePlanCustomer>>, TError,ApprovePlanCustomerMutationVariables, TContext> => {
+
+const mutationKey = getApprovePlanCustomerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approvePlanCustomer>>, ApprovePlanCustomerMutationVariables> = (props) => {
+          const {id,customerId,data} = props ?? {};
+
+          return  approvePlanCustomer(id,customerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApprovePlanCustomerMutationResult = NonNullable<Awaited<ReturnType<typeof approvePlanCustomer>>>
+    export type ApprovePlanCustomerMutationBody = BodyType<CustomerDispatchInput>
+    export type ApprovePlanCustomerMutationError = ErrorType<unknown>
+    export type ApprovePlanCustomerMutationVariables = {id: string;customerId: string;data: BodyType<CustomerDispatchInput>}
+
+    export const useApprovePlanCustomer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approvePlanCustomer>>, TError,ApprovePlanCustomerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approvePlanCustomer>>,
+        TError,
+        ApprovePlanCustomerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getApprovePlanCustomerMutationOptions(options));
     }
 
 export const getGetPlanRecipientsUrl = (id: string,) => {
