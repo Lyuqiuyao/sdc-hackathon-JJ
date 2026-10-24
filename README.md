@@ -1,29 +1,29 @@
-# Project Name
+# ESG-Aware Receivables Risk & Collection Prioritization for Malaysian SMEs
 
-> ESG-Aware Receivables Risk & Collection Prioritization for Malaysian SMEs
+An AI-powered receivables management solution designed to help Malaysian small and medium-sized enterprises (SMEs) understand payment risks, prioritize collection activities, and make more informed financial decisions.
 
 ---
 
 ## Team Information
 
-| Field                  | Details                                     |
-| ---------------------- | ------------------------------------------- |
-| **Team Name**          | JJ                             |
-| **Team Domain**        | Domain 2           |
-| **SDG Track (1–17)**   | SDG 8 |
-| **Team Leader**        | LYU QIUAYO                                |
-| **University**         | xiamen university malaysia                         |
-| **Number of Members**  | 2                                     |
+| Field | Details |
+|---|---|
+| **Team Name** | JJ |
+| **Team Domain** | Domain 2 |
+| **SDG Track** | SDG 8 – Decent Work and Economic Growth |
+| **Team Leader** | Lyu Qiuyao |
+| **University** | Xiamen University Malaysia |
+| **Number of Members** | 2 |
 
-## Links
+## Project Links
 
-| Resource          | Link                                           |
-| ----------------- | ---------------------------------------------- |
-| GitHub Repository | https://github.com/your-username/your-project  |
-| Replit Project    | https://replit.com/@lwjishereee/ESG-AI-Advisor |
-| Live Demo         | esg-ai-advisor.replit.app               |
-| Slide Deck        | https://khsj.cn/pfwzpg5hbt12kgt                |
-| Demo Video        | https://example.com/demo-video                 |
+| Resource | Link |
+|---|---|
+| GitHub Repository | [sdc-hackathon-JJ](https://github.com/Lyuqiuyao/sdc-hackathon-JJ) |
+| Replit Project | [ESG AI Advisor](https://replit.com/@lwjishereee/ESG-AI-Advisor) |
+| Live Demo | [Launch ESG AI Advisor](https://esg-ai-advisor.replit.app) |
+| Slide Deck | [View Presentation](https://khsj.cn/pfwzpg5hbt12kgt) |
+| Demo Video | To be added |
 
 ---
 
@@ -31,165 +31,215 @@
 
 ### Problem
 
-Describe the real-world problem you are solving in 2–4 sentences. Who is affected, and why does it matter?
+Malaysian SMEs often face cash-flow uncertainty caused by delayed payments, limited visibility into customer payment behaviour, and resource constraints in managing accounts receivable. Without effective risk assessment and collection prioritization, businesses may struggle to identify which outstanding invoices require attention first. These challenges can affect working capital, operational stability, and sustainable business growth.
 
 ### Solution
 
-Explain how your project uses AI to solve the problem and what makes it valuable.
+ESG AI Advisor is an AI-assisted receivables management system designed to help SMEs organize receivables information, assess payment-related risks, and prioritize collection activities.
+
+The platform combines receivables management workflows with AI-assisted analysis and advisory capabilities. It aims to support more informed collection decisions, improve operational efficiency, and encourage responsible, sustainable financial management.
+
+The project aligns with **United Nations Sustainable Development Goal 8 (SDG 8)** by supporting SME resilience, productivity, and sustainable economic growth.
 
 ### Key Features
 
-- **Feature 1** — Short description.
-- **Feature 2** — Short description.
-- **Feature 3** — Short description.
+- **Receivables Risk Assessment** — Support the review of receivables and payment-related risk information to help users identify accounts requiring attention.
+- **AI-Assisted Advisory** — Generate analytical insights and advisory snapshots to support financial review and collection planning.
+- **AI-Driven Correspondence Analysis** — Assist users in interpreting customer correspondence and extracting information relevant to receivables management.
+- **Collection Prioritization** — Help users organize collection activities based on available receivables information and risk-related insights.
+- **Approval and Review Workflows** — Support customer-review decisions, approval status updates, draft preservation, and review navigation.
+- **Collection Notice Management** — Provide a collection notice editor to support the preparation and management of collection communications.
+- **Administrative Dashboard** — Bring receivables information and operational workflows together in an administrative interface.
 
-### Tech Stack
+### Technology Stack
 
-| Layer         | Technology                   |
-| ------------- | ---------------------------- |
-| Frontend      | e.g. HTML, React             |
-| Backend       | e.g. Python, Flask / FastAPI |
-| Database      | e.g. PostgreSQL, SQLite      |
-| AI / Compute  | RunPod (GPU)                 |
-| Hosting / Dev | Replit                       |
+| Layer | Technology |
+|---|---|
+| Frontend | TypeScript-based web application |
+| Backend | Node.js, TypeScript, Express |
+| AI Integration | OpenAI API |
+| Database / Data Access | Drizzle ORM |
+| Package Management | pnpm |
+| Development and Hosting | Replit |
+
+*The stack above reflects the current repository structure and known dependencies. Specific database providers and deployment configurations depend on the project's environment settings.*
+
+---
+
+## System Architecture
+
+The project separates the administrative interface, API service, and shared application logic.
+
+```text
+                 Users
+                   |
+                   v
+       Receivables Admin Interface
+                   |
+                   v
+          API Server (Express)
+                   |
+          +--------+--------+
+          |                 |
+          v                 v
+   Receivables Logic    AI Integration
+          |                 |
+          v                 v
+   Data / ORM Layer    OpenAI API
+          |                 |
+          +--------+--------+
+                   |
+                   v
+       Insights and Review Workflows
+```
+
+The API server handles application requests and receivables-related logic. AI integration supports analysis and advisory functionality, while the administrative interface provides the workflows through which users review information and make decisions.
 
 ---
 
 ## Project Structure
 
-```
+```text
 .
-├── docs/                    # Screenshots, diagrams
-├── runpod/
-│   └── handler.py           # RunPod serverless handler (GPU workload)
-├── src/
-│   ├── main.py              # Application entry point
-│   └── utils.py             # Helper functions
-├── submission/              # Required submission documents
-│   ├── REPLIT PROOF OF USE.pdf
-│   ├── RUNPOD PROOF OF USE.pdf
-│   └── Submission Template SDC Hackathon.pdf
-├── tests/
-│   └── test_utils.py        # Unit tests
-├── .env.example             # Example environment variables
-├── .gitignore
-├── .replit                  # Replit run configuration
-├── LICENSE
-├── requirements.txt         # Python dependencies
+├── .agents/                     # Project agent guidance and memory
+├── artifacts/
+│   ├── api-server/              # Node.js / TypeScript API service
+│   │   ├── src/
+│   │   │   ├── app.ts
+│   │   │   ├── index.ts
+│   │   │   └── lib/
+│   │   │       └── receivables/ # Receivables and AI-related modules
+│   │   ├── build.mjs
+│   │   └── package.json
+│   ├── receivables-admin/       # Administrative web application
+│   └── mockup-sandbox/          # UI mockup / sandbox project
+├── attached_assets/             # Project assets
+├── docs/                        # Project documentation
+├── lib/                         # Shared application logic
+├── scripts/                     # Development and utility scripts
+├── package.json                 # Root project configuration
+├── pnpm-lock.yaml               # Dependency lockfile
+├── pnpm-workspace.yaml          # Workspace configuration
+├── tsconfig.json                # TypeScript configuration
+├── .replit                      # Replit configuration
 └── README.md
-```
-
-### Architecture
-
-```
-User ──► Replit (App / API) ──► RunPod Endpoint (GPU model)
-                │
-                └──► Response returned to user
 ```
 
 ---
 
 ## How to Run
 
-### Option 1 — Run on Replit (Recommended)
+### Option 1 — Use the Hosted Demo
 
-1. Open the [Replit Project](https://replit.com/@your-username/your-project), or import this repository via **Create Repl → Import from GitHub**.
-2. Open the **Secrets** tab (🔒) and add the variables listed in `.env.example`:
-   - `RUNPOD_API_KEY`
-   - `RUNPOD_ENDPOINT_ID`
-3. Click **Run**. Replit uses the `.replit` file to start `python src/main.py`.
+The simplest way to explore the application is through the live demo:
 
-### Option 2 — Run Locally
+[https://esg-ai-advisor.replit.app](https://esg-ai-advisor.replit.app)
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/your-project.git
-cd your-project
+Availability depends on the current deployment status.
 
-# 2. Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+### Option 2 — Open the Replit Project
 
-# 3. Install dependencies
-pip install -r requirements.txt
+1. Open the [ESG AI Advisor Replit project](https://replit.com/@lwjishereee/ESG-AI-Advisor).
+2. Review the project's configuration and workspace.
+3. Ensure the required environment variables are configured through **Replit Secrets**.
+4. Start the application using the project's configured run workflow.
 
-# 4. Configure environment variables
-cp .env.example .env            # then fill in your values
+### Option 3 — Run Locally
 
-# 5. Run the app
-python src/main.py
-```
+**Prerequisites**
 
-### Run Tests
+- Node.js compatible with the project dependencies
+- pnpm
+- The required environment variables and service credentials
+
+Clone the repository and install dependencies:
 
 ```bash
-python -m unittest discover tests
+git clone https://github.com/Lyuqiuyao/sdc-hackathon-JJ.git
+cd sdc-hackathon-JJ
+pnpm install
 ```
+
+Build the project:
+
+```bash
+pnpm run build
+```
+
+Configure the required environment variables before running the application. Refer to the package scripts and configuration files for the appropriate development and server startup commands.
+
+**Security note:** Never commit API keys, passwords, or production credentials to the repository. Store secrets in Replit Secrets or an appropriate local environment configuration.
 
 ---
 
-## How We Use Replit *(Required)*
+## How We Use Replit
 
-Describe how your team used Replit. For example:
+Replit is the development and hosting environment used for this project.
 
-- **Development:** Collaborative coding in a shared Repl using Multiplayer.
-- **Hosting:** The app is deployed with Replit Deployments at the Live Demo link above.
-- **Secrets:** API keys are stored in Replit Secrets, never in the code.
-
-📄 Proof of use: [`submission/REPLIT PROOF OF USE.pdf`](submission/REPLIT%20PROOF%20OF%20USE.pdf)
-
-## How We Use RunPod *(Required)*
-
-Describe how your team used RunPod. For example:
-
-- **Workload:** Model inference (e.g. text generation, image processing) runs on a RunPod GPU.
-- **Setup:** `runpod/handler.py` is deployed as a **RunPod Serverless Endpoint**.
-- **Integration:** The Replit app sends requests to the endpoint using `RUNPOD_API_KEY` and `RUNPOD_ENDPOINT_ID`.
-
-Example request:
-
-```bash
-curl -X POST https://api.runpod.ai/v2/$RUNPOD_ENDPOINT_ID/runsync \
-  -H "Authorization: Bearer $RUNPOD_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"input": {"prompt": "Hello"}}'
-```
-
-📄 Proof of use: [`submission/RUNPOD PROOF OF USE.pdf`](submission/RUNPOD%20PROOF%20OF%20USE.pdf)
+- **Development:** The project is organized as a multi-part application with an API server, administrative interface, shared libraries, and supporting documentation.
+- **Application Hosting:** The project is deployed through Replit, with the hosted demo available at the link above.
+- **Configuration:** Application configuration is managed through project settings and environment variables.
+- **Secret Management:** API credentials should be stored in Replit Secrets rather than committed to source control.
+- **Version Control:** The complete project source is maintained in GitHub to support code review, collaboration, and project evaluation.
 
 ---
 
 ## Challenges & Learnings
 
-- What challenges did you face, and how did you overcome them?
-- What did your team learn?
+### Challenges
+
+- Integrating AI-assisted analysis into practical receivables management workflows.
+- Designing approval and review processes that preserve user decisions and drafts during navigation.
+- Organizing the API service, administrative interface, and shared logic into a maintainable project structure.
+- Making AI-generated insights useful for financial review while keeping business decisions under human control.
+
+### Learnings
+
+- AI is most useful in business workflows when its outputs support, rather than replace, human decision-making.
+- Reliable state management and approval workflows are essential for financial applications.
+- Clear separation between frontend, backend, AI integration, and shared logic improves maintainability.
+- Secure configuration and version control are important parts of delivering a usable application.
+
+---
 
 ## Future Improvements
 
-- [ ] Improvement 1
-- [ ] Improvement 2
+- [ ] Enhance receivables risk scoring and collection-priority recommendations.
+- [ ] Incorporate more structured ESG-related indicators into risk analysis where reliable data is available.
+- [ ] Add clearer explanations and supporting evidence for AI-generated recommendations.
+- [ ] Expand reporting and receivables performance analytics.
+- [ ] Improve testing, monitoring, and deployment documentation.
+- [ ] Evaluate the system using representative SME receivables scenarios.
+
+---
 
 ## Team
 
-| Name        | Role                | GitHub                                   |
-| ----------- | ------------------- | ---------------------------------------- |
-| Member Name | Team Lead / Backend | [@username](https://github.com/username) |
-| Member Name | Frontend            | [@username](https://github.com/username) |
-| Member Name | AI / RunPod         | [@username](https://github.com/username) |
+| Name | Role |
+|---|---|
+| Lyu Qiuyao | Team Leader |
+| Team Member 2 | Project Development |
+
+*Replace “Team Member 2” with the second member's preferred name before submission.*
 
 ---
 
 ## Submission Checklist
 
-- [ ] Team name, domain (Domain 1 / Domain 2) and SDG track filled in
-- [ ] Slide deck link added
-- [ ] Demo video link added
-- [ ] Replit used, with proof of use in `submission/`
-- [ ] RunPod used, with proof of use in `submission/`
-- [ ] Submission template completed in `submission/`
-- [ ] "How to Run" steps verified
-- [ ] No API keys or secrets committed to the repository
+- [x] Team name, domain, and SDG track included
+- [x] GitHub repository link added
+- [x] Replit project and live demo links added
+- [x] Project overview and architecture documented
+- [x] Main source directories and technology stack described
+- [ ] Add the demo video link, if required
+- [ ] Confirm the team member names and roles
+- [ ] Verify that the live demo is accessible to judges
+- [ ] Confirm the required hackathon submission documents are included
+- [ ] Check that no API keys, passwords, or other secrets are committed
+- [ ] Verify the local setup instructions against the current Replit configuration
+
+---
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE).
+This project includes the license provided in the repository. Refer to the [`LICENSE`](LICENSE) file for the applicable terms.
