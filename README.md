@@ -16,14 +16,13 @@ An AI-powered receivables management solution designed to help Malaysian small a
 | **Number of Members** | 2 |
 
 ## Project Links
-
 | Resource | Link |
 |---|---|
-| GitHub Repository | [sdc-hackathon-JJ](https://github.com/Lyuqiuyao/sdc-hackathon-JJ) |
-| Replit Project | [ESG AI Advisor](https://replit.com/@lwjishereee/ESG-AI-Advisor) |
-| Live Demo | [Launch ESG AI Advisor](https://esg-ai-advisor.replit.app) |
-| Slide Deck | [View Presentation](https://khsj.cn/pfwzpg5hbt12kgt) |
-| Demo Video | [To be added](https://youtu.be/uoJu1BRrbKI?feature=shared) |
+| GitHub Repository | https://github.com/Lyuqiuyao/sdc-hackathon-JJ |
+| Replit Project | https://replit.com/@lwjishereee/ESG-AI-Advisor |
+| Live Demo | https://esg-ai-advisor.replit.app |
+| Slide Deck | https://khsj.cn/pfwzpg5hbt12kgt |
+| Demo Video | https://youtu.be/uoJu1BRrbKI?feature=shared |
 
 ---
 
@@ -225,17 +224,14 @@ Replit is the development and hosting environment used for this project.
 
 ## Submission Checklist
 
-- [x] Team name, domain, and SDG track included
-- [x] GitHub repository link added
-- [x] Replit project and live demo links added
-- [x] Project overview and architecture documented
-- [x] Main source directories and technology stack described
-- [ ] Add the demo video link, if required
-- [ ] Confirm the team member names and roles
-- [ ] Verify that the live demo is accessible to judges
-- [ ] Confirm the required hackathon submission documents are included
-- [ ] Check that no API keys, passwords, or other secrets are committed
-- [ ] Verify the local setup instructions against the current Replit configuration
+- [x] Team name, domain (Domain 1 / Domain 2) and SDG track filled in
+- [x] Slide deck link added
+- [x] Demo video link added
+- [ ] Replit used, with proof of use in `submission/`
+- [ ] RunPod used, with proof of use in `submission/`
+- [x] Submission template completed in `submission/`
+- [x] "How to Run" steps verified
+- [x] No API keys or secrets committed to the repository
 
 ---
 
