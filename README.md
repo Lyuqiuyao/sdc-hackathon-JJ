@@ -115,6 +115,9 @@ The API server handles application requests and receivables-related logic. AI in
 ├── attached_assets/             # Project assets
 ├── docs/                        # Project documentation
 ├── lib/                         # Shared application logic
+├── submission/                 # Hackathon submission documents
+│   ├── 2. SDC Hackathon_ Technical Tools Declaration.pdf
+│   └── Submission Template SDC Hackathon.pdf
 ├── scripts/                     # Development and utility scripts
 ├── package.json                 # Root project configuration
 ├── pnpm-lock.yaml               # Dependency lockfile
